@@ -45,6 +45,7 @@ export class QRScanPopup extends Component {
 
         this.videoElement = useRef("preview");
         this.canvas = useRef("canvas");
+        this.fileInput = useRef("fileInput");
 
         this.captureTimeout = 80; // Ultra-fast 80ms scan interval (12+ FPS) for instant sub-100ms detection
         this.stream = null;
@@ -387,5 +388,49 @@ export class QRScanPopup extends Component {
         if (gCtx) {
             this.gCtx = gCtx;
         }
+    }
+
+    triggerFileInput() {
+        if (this.fileInput && this.fileInput.el) {
+            this.fileInput.el.click();
+        }
+    }
+
+    async onFileSelected(ev) {
+        const file = ev.target.files && ev.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = async () => {
+                const w = img.width || 800;
+                const h = img.height || 600;
+                this.initCanvas(w, h);
+                if (this.gCtx) {
+                    this.gCtx.drawImage(img, 0, 0, w, h);
+
+                    // 1. Hardware accelerated BarcodeDetector
+                    if ("BarcodeDetector" in window) {
+                        try {
+                            const formats = ["qr_code", "ean_13", "ean_8", "code_128", "code_39", "upc_a", "upc_e", "data_matrix"];
+                            const detector = new window.BarcodeDetector({ formats });
+                            const barcodes = await detector.detect(img);
+                            if (barcodes && barcodes.length > 0 && barcodes[0].rawValue) {
+                                await this.read(barcodes[0].rawValue);
+                                return;
+                            }
+                        } catch (_err) {}
+                    }
+
+                    // 2. jsqrcode fallback
+                    if (typeof window.qrcode !== "undefined") {
+                        window.qrcode.decode();
+                    }
+                }
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
     }
 }

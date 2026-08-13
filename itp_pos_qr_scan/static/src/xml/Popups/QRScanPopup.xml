@@ -33,14 +33,19 @@
                         <div class="laser-line"/>
                     </div>
 
+                    <input type="file" t-ref="fileInput" accept="image/*" capture="environment" style="display: none;" t-on-change="onFileSelected"/>
+
                     <t t-if="state.permissionState === 'denied' or state.permissionState === 'error'">
                         <div class="permission-error-overlay">
                             <i class="fa fa-camera fa-3x mb-3 text-warning"/>
                             <h4 class="text-white fw-bold mb-2">Camera Access Required</h4>
                             <p class="text-light mb-4" style="max-width: 340px; font-size: 14px;" t-esc="state.permissionError || 'Please allow camera access in your browser to scan barcodes.'" />
-                            <div class="d-flex flex-column flex-sm-row gap-2 w-100 justify-content-center" style="max-width: 340px;">
+                            <div class="d-flex flex-column gap-2 w-100 justify-content-center" style="max-width: 340px;">
                                 <button class="btn btn-primary btn-lg w-100 py-3 fw-bold" t-on-click="requestCameraPermission">
                                     <i class="fa fa-refresh me-2"/> Allow / Retry Camera
+                                </button>
+                                <button class="btn btn-warning btn-lg w-100 py-3 fw-bold text-dark" t-on-click="triggerFileInput">
+                                    <i class="fa fa-camera-retro me-2"/> Take Photo / Upload QR Image
                                 </button>
                             </div>
                             <button class="btn btn-link text-white-50 mt-3 text-decoration-none" t-on-click="onClickCancel">
