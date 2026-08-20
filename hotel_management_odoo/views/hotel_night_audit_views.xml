@@ -74,14 +74,15 @@
         <field name="name">hotel.night.audit.search</field>
         <field name="model">hotel.night.audit</field>
         <field name="arch" type="xml">
-            <search string="Search Night Audits">
+            <search>
                 <field name="name"/>
                 <field name="date"/>
                 <field name="user_id"/>
                 <filter string="Night Audits" name="filter_night" domain="[('audit_type', '=', 'night')]"/>
                 <filter string="Day Audits" name="filter_day" domain="[('audit_type', '=', 'day')]"/>
                 <filter string="Closed" name="filter_done" domain="[('state', '=', 'done')]"/>
-                <group expand="0" string="Group By">
+                <separator/>
+                <group>
                     <filter string="Audit Type" name="group_by_type" context="{'group_by': 'audit_type'}"/>
                     <filter string="Date" name="group_by_date" context="{'group_by': 'date'}"/>
                     <filter string="Audited By" name="group_by_user" context="{'group_by': 'user_id'}"/>
@@ -95,7 +96,6 @@
         <field name="name">Night Audit</field>
         <field name="res_model">hotel.night.audit</field>
         <field name="view_mode">list,form</field>
-        <field name="search_view_id" ref="view_hotel_night_audit_search"/>
         <field name="context">{}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
