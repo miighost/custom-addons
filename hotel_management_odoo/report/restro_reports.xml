@@ -1,6 +1,6 @@
-<?xml version = "1.0" encoding = "UTF-8" ?>
+<?xml version="1.0" encoding="UTF-8"?>
 <odoo>
-    <!--    In-House Guest report action-->
+    <!-- In-House Guest report action -->
     <record id="action_report_restro_report" model="ir.actions.report">
         <field name="name">In-House Guest Report</field>
         <field name="model">room.booking</field>
@@ -10,55 +10,94 @@
         <field name="binding_model_id" ref="model_room_booking"/>
         <field name="binding_type">report</field>
     </record>
-    <!--    In-House Guest report template-->
+
+    <!-- In-House Guest report template matching Image 1 -->
     <template id="report_restro_report">
         <t t-call="web.html_container">
             <t t-call="web.external_layout">
-                <div class="page">
-                    <h2 class="text-center" style="font-weight: bold; margin-bottom: 20px;">In-House Guest Report</h2>
-                    <br/>
-                    <table class="table table-bordered table-sm">
+                <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 11px;">
+                    <style>
+                        .table-custom { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 10px; }
+                        .table-custom th { background-color: #f1f3f5; color: #111; font-weight: bold; border: 1px solid #444; padding: 5px 6px; }
+                        .table-custom td { border: 1px solid #777; padding: 4px 6px; }
+                        .table-custom tr.total-row td { font-weight: bold; background-color: #f8f9fa; border-top: 2px solid #000; }
+                        .text-right { text-align: right; }
+                        .text-center { text-align: center; }
+                        .report-banner { border: 1px solid #333; padding: 8px 12px; margin-bottom: 12px; background-color: #fafafa; }
+                    </style>
+
+                    <div class="report-banner">
+                        <div style="float: right; border: 1px solid #333; padding: 3px 10px; font-weight: bold; background: #fff;">
+                            <t t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y')"/>
+                        </div>
+                        <h2 style="margin: 0; font-size: 18px; font-weight: bold; text-transform: uppercase;">In House Guest List</h2>
+                    </div>
+
+                    <table class="table-custom">
                         <thead>
-                            <tr style="background-color: #f2f2f2; text-align: center;">
-                                <th>SN</th>
-                                <th>Guest Name</th>
-                                <th>Company</th>
-                                <th>Room No</th>
-                                <th>Board Type</th>
-                                <th>Status</th>
+                            <tr>
+                                <th style="width: 7%;">Rm No</th>
+                                <th style="width: 22%;">Name</th>
+                                <th class="text-center" style="width: 4%;">Pax</th>
+                                <th class="text-center" style="width: 10%;">Check In</th>
+                                <th class="text-center" style="width: 10%;">Dep Date</th>
+                                <th class="text-center" style="width: 8%;">Plan</th>
+                                <th style="width: 10%;">Reg</th>
+                                <th style="width: 11%;">Nationality</th>
+                                <th style="width: 11%;">City Ledger</th>
+                                <th class="text-right" style="width: 7%;">Room Rate</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <t t-set="i" t-value="0"/>
+                            <t t-set="total_rate" t-value="0.0"/>
+                            <t t-set="total_pax" t-value="0"/>
                             <t t-if="docs">
                                 <t t-foreach="docs" t-as="doc">
-                                    <t t-set="i" t-value="i+1"/>
-                                    <t t-set="board_dict" t-value="{'ro': 'Room Only (RO)', 'bb': 'Bed &amp; Breakfast (BB)', 'hb': 'Half Board (HB)', 'fb': 'Full Board (FB)'}"/>
-                                    <t t-set="state_dict" t-value="{'draft': 'Draft', 'reserved': 'Reserved', 'check_in': 'Check In', 'check_out': 'Check Out', 'cancel': 'Cancelled', 'done': 'Done'}"/>
-                                    <t t-set="p_comp" t-value="doc.partner_id.parent_id.name or doc.partner_id.company_name if doc.partner_id else False"/>
+                                    <t t-set="rate" t-value="sum(doc.room_line_ids.mapped('price_unit'))"/>
+                                    <t t-set="pax_cnt" t-value="len(doc.room_line_ids) or 1"/>
+                                    <t t-set="total_rate" t-value="total_rate + rate"/>
+                                    <t t-set="total_pax" t-value="total_pax + pax_cnt"/>
+                                    <t t-set="p_comp" t-value="doc.partner_id.parent_id.name or doc.partner_id.company_name if doc.partner_id else 'Walk In Guest'"/>
                                     <tr>
-                                        <td class="text-center"><t t-esc="i"/></td>
+                                        <td><strong><t t-esc="doc.room_number or ''"/></strong></td>
                                         <td><t t-esc="doc.partner_id.name if doc.partner_id else ''"/></td>
-                                        <td><t t-esc="p_comp or 'None'"/></td>
-                                        <td class="text-center"><t t-esc="doc.room_number or ''"/></td>
-                                        <td class="text-center"><t t-esc="board_dict.get(doc.board_type, doc.board_type or 'Room Only (RO)')"/></td>
-                                        <td class="text-center"><t t-esc="state_dict.get(doc.state, doc.state or 'Check In')"/></td>
+                                        <td class="text-center"><t t-esc="pax_cnt"/></td>
+                                        <td class="text-center"><t t-esc="doc.checkin_date.strftime('%d/%m/%Y') if doc.checkin_date else ''"/></td>
+                                        <td class="text-center"><t t-esc="doc.checkout_date.strftime('%d/%m/%Y') if doc.checkout_date else ''"/></td>
+                                        <td class="text-center"><t t-esc="doc.board_type.upper() if doc.board_type else 'RO'"/></td>
+                                        <td><t t-esc="doc.name"/></td>
+                                        <td><t t-esc="doc.partner_id.country_id.name if doc.partner_id and doc.partner_id.country_id else 'SOMALIA'"/></td>
+                                        <td><t t-esc="p_comp"/></td>
+                                        <td class="text-right"><t t-esc="'%.2f' % rate"/></td>
                                     </tr>
                                 </t>
                             </t>
                             <t t-elif="booking">
                                 <t t-foreach="booking" t-as="line">
-                                    <t t-set="i" t-value="i+1"/>
+                                    <t t-set="rate" t-value="line.get('room_rate', 0.0)"/>
+                                    <t t-set="pax_cnt" t-value="line.get('pax', 1)"/>
+                                    <t t-set="total_rate" t-value="total_rate + rate"/>
+                                    <t t-set="total_pax" t-value="total_pax + pax_cnt"/>
                                     <tr>
-                                        <td class="text-center"><t t-esc="i"/></td>
-                                        <td><t t-esc="line['guest_name']"/></td>
-                                        <td><t t-esc="line['company_name']"/></td>
-                                        <td class="text-center"><t t-esc="line['room']"/></td>
-                                        <td class="text-center"><t t-esc="line['board_type']"/></td>
-                                        <td class="text-center"><t t-esc="line['state']"/></td>
+                                        <td><strong><t t-esc="line.get('rm_no', line.get('room', ''))"/></strong></td>
+                                        <td><t t-esc="line.get('guest_name', '')"/></td>
+                                        <td class="text-center"><t t-esc="pax_cnt"/></td>
+                                        <td class="text-center"><t t-esc="line.get('checkin', '')"/></td>
+                                        <td class="text-center"><t t-esc="line.get('checkout', '')"/></td>
+                                        <td class="text-center"><t t-esc="line.get('board_type', '')"/></td>
+                                        <td><t t-esc="line.get('reg', '')"/></td>
+                                        <td><t t-esc="line.get('nationality', 'SOMALIA')"/></td>
+                                        <td><t t-esc="line.get('company_name', '')"/></td>
+                                        <td class="text-right"><t t-esc="'%.2f' % rate"/></td>
                                     </tr>
                                 </t>
                             </t>
+                            <tr class="total-row">
+                                <td colspan="2"><strong>Total Occupied Rooms: <t t-esc="len(docs) if docs else len(booking)"/></strong></td>
+                                <td class="text-center"><strong><t t-esc="total_pax"/></strong></td>
+                                <td colspan="6"></td>
+                                <td class="text-right"><strong><t t-esc="'%.2f' % total_rate"/></strong></td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>

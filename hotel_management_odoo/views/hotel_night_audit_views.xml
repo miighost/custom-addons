@@ -8,7 +8,6 @@
             <list string="Night Audits" decoration-info="state == 'draft'" decoration-success="state == 'done'">
                 <field name="date" string="Audit Date"/>
                 <field name="name" string="Audit Reference"/>
-                <field name="audit_type" widget="badge" decoration-info="audit_type == 'night'" decoration-warning="audit_type == 'day'"/>
                 <field name="company_id" groups="base.group_multi_company"/>
                 <field name="user_id" string="Audited / Printed By" widget="many2one_avatar_user"/>
                 <field name="total_checkin_count" string="Check-Ins"/>
@@ -41,18 +40,18 @@
                         <h1><field name="name" readonly="1"/></h1>
                     </div>
                     <group>
-                        <group string="Audit Parameters">
+                        <group string="Audit Date &amp; Company">
                             <field name="date" readonly="state == 'done'"/>
-                            <field name="audit_type" widget="radio" options="{'horizontal': true}" readonly="state == 'done'"/>
-                        </group>
-                        <group string="Audit Meta">
                             <field name="company_id" groups="base.group_multi_company" readonly="state == 'done'"/>
-                            <field name="user_id" readonly="state == 'done'"/>
+                        </group>
+                        <group string="Auditor &amp; System">
+                            <field name="user_id" readonly="1"/>
                             <field name="currency_id" invisible="1"/>
+                            <field name="audit_type" invisible="1"/>
                         </group>
                     </group>
 
-                    <group string="Daily Key Performance Indicators (KPIs)">
+                    <group string="24-Hour Key Performance Indicators (KPIs)">
                         <group>
                             <field name="total_checkin_count"/>
                             <field name="total_checkout_count"/>
@@ -78,12 +77,9 @@
                 <field name="name"/>
                 <field name="date"/>
                 <field name="user_id"/>
-                <filter string="Night Audits" name="filter_night" domain="[('audit_type', '=', 'night')]"/>
-                <filter string="Day Audits" name="filter_day" domain="[('audit_type', '=', 'day')]"/>
                 <filter string="Closed" name="filter_done" domain="[('state', '=', 'done')]"/>
                 <separator/>
                 <group>
-                    <filter string="Audit Type" name="group_by_type" context="{'group_by': 'audit_type'}"/>
                     <filter string="Date" name="group_by_date" context="{'group_by': 'date'}"/>
                     <filter string="Audited By" name="group_by_user" context="{'group_by': 'user_id'}"/>
                 </group>
@@ -102,7 +98,7 @@
                 Create a Daily Night Audit!
             </p>
             <p>
-                Run daily night/day audits to generate consolidated operations and financial reports (Check-ins, Check-outs, In-House Guests, Daily Rent, POS Restaurant Sales, and Guest Ledger).
+                Run daily night audits to generate 24-hour consolidated operations and financial reports (Check-ins, Check-outs, In-House Guests, Daily Rent, POS Restaurant Sales, and Guest Ledger).
             </p>
         </field>
     </record>
@@ -113,11 +109,4 @@
               parent="hotel_management_odoo.hotel_management_menu_root"
               action="action_hotel_night_audit"
               sequence="25"/>
-
-    <!-- Reporting Submenu in Hotel Management > Reporting -->
-    <menuitem id="menu_hotel_reporting_night_audit"
-              name="Night Audit Reports"
-              parent="hotel_management_odoo.hotel_reporting_menu"
-              action="action_hotel_night_audit"
-              sequence="1"/>
 </odoo>

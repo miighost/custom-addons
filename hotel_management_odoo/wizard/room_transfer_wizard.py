@@ -76,13 +76,12 @@ class RoomTransferWizard(models.TransientModel):
             raise ValidationError(_("No room line found on booking '%s' to transfer.") % booking.name)
 
         # 2. Update Old Room status
-        old_status = 'cleaning' if self.send_to_cleaning else 'available'
         old_room.sudo().write({
-            'status': old_status,
-            'is_room_avail': True if old_status == 'available' else False,
+            'status': 'available',
+            'is_room_avail': True if not self.send_to_cleaning else False,
         })
 
-        # If cleaning team module is present and cleaning requested, optionally create cleaning request
+        # If cleaning team module is present and cleaning requested, create cleaning request
         if self.send_to_cleaning and 'cleaning.request' in self.env:
             try:
                 self.env['cleaning.request'].sudo().create({

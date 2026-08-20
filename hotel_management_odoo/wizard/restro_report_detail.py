@@ -115,12 +115,22 @@ class RestroReportWizard(models.TransientModel):
                     company_name = comp
 
             raw_board = booking.board_type if hasattr(booking, 'board_type') else 'ro'
-            board_type_val = board_labels.get(raw_board, raw_board or "Room Only (RO)")
+            board_type_val = board_labels.get(raw_board, raw_board or "Room Only")
+            daily_rate = sum(booking.room_line_ids.mapped('price_unit'))
+            nationality = partner.country_id.name if partner and partner.country_id else 'SOMALIA'
+            pax = len(booking.room_line_ids) or 1
+
             restro_list.append({
+                "rm_no": room_names or booking.room_number or "",
                 "guest_name": guest_name,
-                "company_name": company_name,
-                "room": room_names or booking.name,
+                "pax": pax,
+                "checkin": booking.checkin_date.strftime('%d/%m/%Y') if booking.checkin_date else "",
+                "checkout": booking.checkout_date.strftime('%d/%m/%Y') if booking.checkout_date else "",
                 "board_type": board_type_val,
+                "reg": booking.name,
+                "nationality": nationality,
+                "company_name": company_name,
+                "room_rate": daily_rate,
                 "state": state_labels.get(booking.state, booking.state or "Check In"),
             })
         return restro_list

@@ -1,26 +1,36 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
-    <!--    Reporting Menu-->
+    <!-- Reporting Menu -->
     <menuitem id="hotel_reporting_menu"
               name="Reporting"
               sequence="30"
               parent="hotel_management_menu_root"/>
-    <!--    Room Booking Report Menu-->
+
+    <!-- 1. Room Booking Report -->
     <menuitem id="room_booking_detail_menu"
-              name="Room Booking"
+              name="Room Booking Report (PDF / XLS)"
               action="room_booking_detail_action"
               parent="hotel_reporting_menu"
-              sequence="20"/>
-    <!--    Sale Order Report Menu-->
+              sequence="10"/>
+
+    <!-- 2. Sale Order / Status Report -->
     <menuitem id="sale_order_detail_menu"
-              name="Sale Order"
+              name="Booking Status &amp; Sales Report"
               action="sale_order_detail_action"
               parent="hotel_reporting_menu"
               sequence="20"/>
-    <!--    In-House Guest Report Menu-->
+
+    <!-- 3. In-House Guest / Meal Plan Report -->
     <menuitem id="restro_report_detail_menu"
-              name="In-House Guest"
+              name="In-House Guest &amp; Meal Plan Report"
               action="restro_report_detail_action"
               parent="hotel_reporting_menu"
               sequence="30"/>
+
+    <!-- 4. Night Audit Pack -->
+    <menuitem id="menu_hotel_reporting_night_audit"
+              name="Daily Night Audit Pack"
+              action="hotel_management_odoo.action_hotel_night_audit"
+              parent="hotel_reporting_menu"
+              sequence="40"/>
 </odoo>

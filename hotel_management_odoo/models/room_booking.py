@@ -628,10 +628,10 @@ class RoomBooking(models.Model):
                 "checkout_date": now_dt,
             })
             for room in record.room_line_ids.filtered(lambda l: l.room_id and l.room_id.exists()):
-                # Mark room for cleaning so housekeeping is triggered
+                # Mark room as available and trigger checkout date
                 room.room_id.write({
-                    'status': 'cleaning',
-                    'is_room_avail': False,
+                    'status': 'available',
+                    'is_room_avail': True,
                 })
                 # Update line checkout date to actual checkout time
                 room.checkout_date = now_dt
