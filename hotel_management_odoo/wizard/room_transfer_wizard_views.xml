@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Room Transfer Wizard Form View -->
+    <record id="view_room_transfer_wizard_form" model="ir.ui.view">
+        <field name="name">room.transfer.wizard.form</field>
+        <field name="model">room.transfer.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Room Transfer">
+                <sheet>
+                    <div class="alert alert-info" role="alert">
+                        Transfer the guest to another available room. The old room will be marked for cleaning/available and the new room will become occupied.
+                    </div>
+                    <group>
+                        <group string="Current Details">
+                            <field name="booking_id"/>
+                            <field name="partner_id"/>
+                            <field name="current_room_id"/>
+                        </group>
+                        <group string="New Room Assignment">
+                            <field name="new_room_id" options="{'no_create': True, 'no_open': True}"/>
+                            <field name="send_to_cleaning"/>
+                            <field name="reason"/>
+                        </group>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_transfer_room" string="Transfer Room" type="object" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Room Transfer Action -->
+    <record id="action_room_transfer_wizard" model="ir.actions.act_window">
+        <field name="name">Transfer Room</field>
+        <field name="res_model">room.transfer.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

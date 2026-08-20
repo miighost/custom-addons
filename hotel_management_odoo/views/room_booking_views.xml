@@ -24,6 +24,9 @@
                     <button name="action_checkout" string="Check-Out"
                             class="btn-primary" invisible="state != 'check_in'"
                             type="object"/>
+                    <button name="action_transfer_room" string="Transfer Room"
+                            class="btn-secondary" invisible="state != 'check_in'"
+                            type="object"/>
                     <button name="action_done" string="Set as Done"
                             class="btn-primary"
                             invisible="state != 'check_out'" type="object"/>

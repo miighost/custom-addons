@@ -809,3 +809,19 @@ class RoomBooking(models.Model):
             'target': 'new',
             'context': {'default_booking_id': self.id}
         }
+
+    def action_transfer_room(self):
+        """Open the Room Transfer wizard for a checked-in booking."""
+        self.ensure_one()
+        current_room = self.room_line_ids.filtered(lambda l: l.room_id and l.room_id.exists())[:1].room_id
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Transfer Room'),
+            'res_model': 'room.transfer.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_booking_id': self.id,
+                'default_current_room_id': current_room.id if current_room else False,
+            }
+        }
