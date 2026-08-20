@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 #############################################################################
 #
-#    Cybrosys Technologies Pvt. Ltd.
+#    MiiG Solution
 #
-#    Copyright (C) 2026-TODAY Cybrosys Technologies(<https://www.cybrosys.com>)
-#    Author: Cybrosys Technologies (<https://www.cybrosys.com>)
+#    Copyright (C) 2026-TODAY MiiG Solution(<https://www.miigsolution.so>)
+#    Author: MiiG Solution (<https://www.miigsolution.so>)
 #
 #    You can modify it under the terms of the GNU LESSER
 #    GENERAL PUBLIC LICENSE (LGPL v3), Version 3.
@@ -27,10 +27,10 @@
      rest api requests""",
     "description": """The odoo Rest API module allow us to connect to database 
      with the help of GET , POST , PUT and DELETE requests""",
-    'author': 'Cybrosys Techno Solutions',
-    'company': 'Cybrosys Techno Solutions',
-    'maintainer': 'Cybrosys Techno Solutions',
-    'website': "https://www.cybrosys.com",
+    'author': 'MiiG Solution',
+    'company': 'MiiG Solution',
+    'maintainer': 'MiiG Solution',
+    'website': "https://www.miigsolution.so",
     "depends": ['base', 'web'],
     "data": [
         'security/ir.model.access.csv',

@@ -90,7 +90,7 @@
                                     <td style="border: none; width: 35%; text-align: right; font-size: 11px;">
                                         <div>Ref: <strong><t t-esc="doc.name"/></strong></div>
                                         <div>Audited By: <strong><t t-esc="doc.user_id.name"/></strong></div>
-                                        <div>Printed: <strong><t t-esc="context_timestamp(datetime.datetime.now()).strftime('%d-%m-%Y %H:%M')"/></strong></div>
+                                        <div>Printed: <strong><t t-esc="doc.write_date or doc.create_date" t-options='{"widget": "datetime", "format": "dd-MM-yyyy HH:mm"}'/></strong></div>
                                     </td>
                                 </tr>
                             </table>

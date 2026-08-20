@@ -94,7 +94,7 @@ GNU Lesser General Public License, Version 3 (LGPL v3).
 
 Credits
 =======
-Developers: Cybrosys Techno Solutions <https://www.cybrosys.com>
+Developers: MiiG Solution <https://www.miigsolution.so>
 
 Bug Tracker
 ===========
@@ -103,9 +103,9 @@ issue has already been reported.
 
 Maintainer
 ==========
-.. image:: https://cybrosys.com/images/logo.png
-   :target: https://cybrosys.com
+.. image:: https://www.miigsolution.so/images/logo.png
+   :target: https://www.miigsolution.so
 
-This module is maintained by Cybrosys Technologies.
+This module is maintained by MiiG Solution.
 
-For support and more information, please visit `Our Website <https://cybrosys.com/>`__
+For support and more information, please visit `Our Website <https://www.miigsolution.so/>`__

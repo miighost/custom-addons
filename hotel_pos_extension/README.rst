@@ -12,7 +12,7 @@ No configuration
 
 Company
 -------
-* `Cybrosys Techno Solutions <https://cybrosys.com/>`__
+* `MiiG Solution <https://www.miigsolution.so/>`__
 
 License
 -------
@@ -23,12 +23,12 @@ Credits
 =======
 Developer: (V19) Nubla Sherin K
 
-Contact: odoo@cybrosys.com
+Contact: odoo@miigsolution.so
 
 Contacts
 --------
-* Mail Contact : odoo@cybrosys.com
-* Website : https://cybrosys.com
+* Mail Contact : odoo@miigsolution.so
+* Website : https://www.miigsolution.so
 
 Bug Tracker
 -----------
@@ -36,12 +36,12 @@ Bugs are tracked on GitHub Issues. In case of trouble, please check there if you
 
 Maintainer
 ==========
-.. image:: https://cybrosys.com/images/logo.png
-   :target: https://cybrosys.com
+.. image:: https://www.miigsolution.so/images/logo.png
+   :target: https://www.miigsolution.so
 
-This module is maintained by Cybrosys Technologies.
+This module is maintained by MiiG Solution.
 
-For support and more information, please visit `Our Website <https://cybrosys.com/>`__
+For support and more information, please visit `Our Website <https://www.miigsolution.so/>`__
 
 Further information
 ===================

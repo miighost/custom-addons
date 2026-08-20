@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 #############################################################################
 #
-#    Cybrosys Technologies Pvt. Ltd.
+#    MiiG Solution
 #
-#    Copyright (C) 2026-TODAY Cybrosys Technologies (<https://www.cybrosys.com>).
-#    Author: Cybrosys Techno Solutions (<https://www.cybrosys.com>)
+#    Copyright (C) 2026-TODAY MiiG Solution (<https://www.miigsolution.so>).
+#    Author: MiiG Solution (<https://www.miigsolution.so>)
 #
 #    This program is free software: you can modify it under the terms of the
 #    GNU LESSER GENERAL PUBLIC LICENSE (LGPL v3), Version 3.

@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 ##############################################################################
 #
-#    Cybrosys Technologies Pvt. Ltd.
+#    MiiG Solution
 #
-#    Copyright (C) 2026-TODAY Cybrosys Technologies(<https://www.cybrosys.com>)
-#    Author: Cybrosys Technologies (odoo@cybrosys.com)
+#    Copyright (C) 2026-TODAY MiiG Solution(<https://www.miigsolution.so>)
+#    Author: MiiG Solution (odoo@miigsolution.so)
 #
 #    You can modify it under the terms of the GNU LESSER
 #    GENERAL PUBLIC LICENSE (LGPL v3), Version 3.
@@ -36,10 +36,10 @@ Key Features:
 - User Consent Injection for sensitive tools
 - AI Hub Dashboard & Tool Logging
     """,
-    'author': 'Cybrosys Techno Solutions',
-    'company': 'Cybrosys Techno Solutions',
-    'maintainer': 'Cybrosys Techno Solutions',
-    'website': 'https://www.cybrosys.com',
+    'author': 'MiiG Solution',
+    'company': 'MiiG Solution',
+    'maintainer': 'MiiG Solution',
+    'website': 'https://www.miigsolution.so',
     'depends': ['base', 'mail', 'web'],
     'data': [
         'security/res_groups.xml',
