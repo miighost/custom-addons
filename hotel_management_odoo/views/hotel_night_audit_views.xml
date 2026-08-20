@@ -110,14 +110,14 @@
     <!-- Top-level Menu in Hotel Management -->
     <menuitem id="menu_hotel_night_audit"
               name="Night Audit"
-              parent="hotel_management_odoo.hotel_management_menu"
+              parent="hotel_management_odoo.hotel_management_menu_root"
               action="action_hotel_night_audit"
               sequence="25"/>
 
     <!-- Reporting Submenu in Hotel Management > Reporting -->
     <menuitem id="menu_hotel_reporting_night_audit"
               name="Night Audit Reports"
-              parent="hotel_management_odoo.reporting_menu"
+              parent="hotel_management_odoo.hotel_reporting_menu"
               action="action_hotel_night_audit"
               sequence="1"/>
 </odoo>
