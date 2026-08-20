@@ -53,13 +53,7 @@ class HotelOperationalReportWizard(models.TransientModel):
         self.ensure_one()
         if self.date_from and self.date_to and self.date_from > self.date_to:
             raise ValidationError(_("From Date cannot be greater than To Date."))
-
-        report_data = self.get_report_data()
-        data = {
-            'wizard': self.read()[0],
-            'report_data': report_data,
-        }
-        return self.env.ref('hotel_management_odoo.action_report_hotel_operational').report_action(self, data=data)
+        return self.env.ref('hotel_management_odoo.action_report_hotel_operational').report_action(self)
 
     def get_report_data(self):
         """Compile data for the requested report type and date range."""
