@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Generic Operational Report Wizard View -->
+    <record id="view_hotel_operational_report_wizard_form" model="ir.ui.view">
+        <field name="name">hotel.operational.report.wizard.form</field>
+        <field name="model">hotel.operational.report.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Print Hotel Operational Report">
+                <sheet>
+                    <group>
+                        <group string="Report Selection">
+                            <field name="report_type"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                        <group string="Date Range">
+                            <field name="date_from"/>
+                            <field name="date_to"/>
+                        </group>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_print_pdf" string="Download PDF Report" type="object" class="btn-primary" icon="fa-file-pdf-o"/>
+                    <button special="cancel" string="Cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- 1. In-House Guest List Action -->
+    <record id="action_hotel_report_inhouse" model="ir.actions.act_window">
+        <field name="name">In House Guest List</field>
+        <field name="res_model">hotel.operational.report.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="context">{'default_report_type': 'inhouse'}</field>
+    </record>
+
+    <!-- 2. Room Analysis Summary Action -->
+    <record id="action_hotel_report_room_analysis" model="ir.actions.act_window">
+        <field name="name">Room Analysis Summary</field>
+        <field name="res_model">hotel.operational.report.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="context">{'default_report_type': 'room_analysis'}</field>
+    </record>
+
+    <!-- 3. Check-In / Arrivals Action -->
+    <record id="action_hotel_report_checkin" model="ir.actions.act_window">
+        <field name="name">Check In / Arrivals Report</field>
+        <field name="res_model">hotel.operational.report.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="context">{'default_report_type': 'checkin'}</field>
+    </record>
+
+    <!-- 4. Check-Out / Departures Action -->
+    <record id="action_hotel_report_checkout" model="ir.actions.act_window">
+        <field name="name">Check Out / Departures Report</field>
+        <field name="res_model">hotel.operational.report.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="context">{'default_report_type': 'checkout'}</field>
+    </record>
+
+    <!-- 5. Daily Rent Charges Action -->
+    <record id="action_hotel_report_daily_rent" model="ir.actions.act_window">
+        <field name="name">Daily Rent / Room Charges</field>
+        <field name="res_model">hotel.operational.report.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="context">{'default_report_type': 'daily_rent'}</field>
+    </record>
+
+    <!-- 6. Cash & Collections Action -->
+    <record id="action_hotel_report_cash" model="ir.actions.act_window">
+        <field name="name">Cash &amp; Collections Report</field>
+        <field name="res_model">hotel.operational.report.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="context">{'default_report_type': 'cash_report'}</field>
+    </record>
+
+    <!-- 7. Guest Ledger Action -->
+    <record id="action_hotel_report_guest_ledger" model="ir.actions.act_window">
+        <field name="name">Guest Ledger &amp; Open Balances</field>
+        <field name="res_model">hotel.operational.report.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="context">{'default_report_type': 'guest_ledger'}</field>
+    </record>
+</odoo>

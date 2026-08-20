@@ -22,5 +22,7 @@ access_cleaning_request_cleaning_team_group_user,access.cleaning.request.cleanin
 access_compute_bill_user,access.compute.bill.user,model_compute_bill,base.group_user,1,1,1,1
 access_room_transfer_wizard_user,access.room.transfer.wizard.user,model_room_transfer_wizard,base.group_user,1,1,1,1
 access_hotel_night_audit_user,access.hotel.night.audit.user,model_hotel_night_audit,base.group_user,1,1,1,1
+access_hotel_operational_report_wizard_user,access.hotel.operational.report.wizard.user,model_hotel_operational_report_wizard,base.group_user,1,1,1,1
+
 
 
