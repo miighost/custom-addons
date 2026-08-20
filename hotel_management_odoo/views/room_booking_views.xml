@@ -123,6 +123,8 @@
                                     <field groups="account.group_account_manager"
                                            name="price_total" widget="monetary"
                                            readonly="booking_line_visible == True"/>
+                                    <field name="days_stayed" string="Days Stayed"/>
+                                    <field name="todays_balance" string="Today's Balance" widget="monetary" sum="Total Due Today"/>
                                 </list>
                             </field>
                             <group colspan="2"
@@ -152,6 +154,9 @@
                                 <label for="amount_total"/>
                                 <field name="amount_total" nolabel="1"
                                        sum="Total amount" widget="monetary"/>
+                                <field name="amount_due_today" widget="monetary" string="Total Due Today"
+                                       invisible="state not in ['check_in', 'check_out']"
+                                       class="oe_subtotal_footer_separator text-primary fw-bold fs-5"/>
                             </group>
                             <div class="oe_clear"/>
                         </page>

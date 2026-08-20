@@ -136,6 +136,21 @@ class RoomBooking(models.Model):
         ('fb', 'Full Board (FB)'),
     ], string='Board Type', default='ro', help="Select the meal plan / board type for this booking.")
     room_number = fields.Char(string="Room No.", compute="_compute_room_number", store=True)
+    amount_due_today = fields.Monetary(string="Total Due Today", compute="_compute_amount_due_today", store=False,
+                                      help="Total accrued balance up to today including room charges and all services/POS.")
+
+    @api.depends('room_line_ids.todays_balance', 'food_order_line_ids.price_total',
+                 'service_line_ids.price_total', 'vehicle_line_ids.price_total',
+                 'event_line_ids.price_total')
+    def _compute_amount_due_today(self):
+        for rec in self:
+            pos_amt = getattr(rec, 'amount_total_pos', 0.0) or 0.0
+            room_today = sum(rec.room_line_ids.mapped('todays_balance'))
+            food_total = sum(rec.food_order_line_ids.mapped('price_total'))
+            service_total = sum(rec.service_line_ids.mapped('price_total'))
+            fleet_total = sum(rec.vehicle_line_ids.mapped('price_total'))
+            event_total = sum(rec.event_line_ids.mapped('price_total'))
+            rec.amount_due_today = room_today + pos_amt + food_total + service_total + fleet_total + event_total
 
     @api.depends('room_line_ids.room_id')
     def _compute_room_number(self):

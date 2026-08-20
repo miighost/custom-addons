@@ -92,6 +92,36 @@ class RoomBookingLine(models.Model):
                                           string="Booking Line Visible",
                                           help="If True, then Booking Line "
                                                "will be visible")
+    days_stayed = fields.Float(string="Days Stayed", compute="_compute_todays_balance", store=False,
+                               help="The number of days/nights stayed up to today.")
+    todays_balance = fields.Float(string="Today's Balance", compute="_compute_todays_balance", store=False,
+                                  help="The accrued room charge for the days stayed so far.")
+
+    @api.depends('checkin_date', 'checkout_date', 'uom_qty', 'price_total', 'price_unit', 'booking_id.state')
+    def _compute_todays_balance(self):
+        """Compute the days elapsed to date and the corresponding accrued room balance."""
+        now_dt = fields.Datetime.now()
+        for line in self:
+            if not line.checkin_date or line.booking_id.state in ['draft', 'cancel']:
+                line.days_stayed = 0.0
+                line.todays_balance = 0.0
+                continue
+
+            effective_end = min(now_dt, line.checkout_date) if line.checkout_date else now_dt
+            if effective_end > line.checkin_date:
+                diff = effective_end - line.checkin_date
+                days = diff.days
+                if diff.total_seconds() > 0:
+                    days += 1
+                days_stayed = min(max(1.0, float(days)), line.uom_qty if line.uom_qty > 0 else float(days))
+            else:
+                days_stayed = 1.0
+
+            line.days_stayed = days_stayed
+            if line.uom_qty and line.uom_qty > 0:
+                line.todays_balance = round((line.price_total / line.uom_qty) * days_stayed, 2)
+            else:
+                line.todays_balance = round(line.price_unit * days_stayed, 2)
 
     @api.depends('room_id', 'booking_id.pricelist_id', 'uom_qty')
     def _compute_price_unit(self):
