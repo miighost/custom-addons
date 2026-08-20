@@ -230,20 +230,20 @@ export class CustomDashBoard extends Component {
             target: 'current'
         }, options)
     }
-    //    food Orders
+    //    Rest Orders (hotel customer POS orders)
     async fetch_food_order(e) {
         var self = this;
-        const result = await this.orm.call('food.booking.line', 'search_food_orders', [{}], {});
         e.stopPropagation();
         e.preventDefault();
         var options = { on_reverse_breadcrum: this.on_reverse_breadcrum, };
         this.action.doAction({
-            name: _t("Food Orders"),
+            name: _t("Rest Orders"),
             type: 'ir.actions.act_window',
-            res_model: 'food.booking.line',
-            view_mode: 'list,form',
-            views: [[false, 'list'], [false, 'form']],
-            domain: [['id', 'in', result]],
+            res_model: 'pos.order',
+            view_mode: 'list,kanban,form',
+            views: [[false, 'list'], [false, 'kanban'], [false, 'form']],
+            domain: [['booking_id', '!=', false]],
+            context: {'search_default_hotel_orders': 1},
             target: 'current'
         }, options)
     }

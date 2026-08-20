@@ -152,3 +152,17 @@ class RoomBooking(models.Model):
         else:
             action = {'type': 'ir.actions.act_window_close'}
         return action
+
+    @api.model
+    def get_details(self):
+        """Returns dashboard counts, overriding food_order with hotel POS orders count."""
+        res = super().get_details()
+        try:
+            hotel_pos_count = self.env['pos.order'].search_count([
+                ('booking_id', '!=', False),
+                ('state', '!=', 'cancel'),
+            ])
+            res['food_order'] = hotel_pos_count
+        except Exception:
+            pass
+        return res

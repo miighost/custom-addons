@@ -25,4 +25,25 @@
             </xpath>
         </field>
     </record>
+
+    <!-- Rest Orders Action for Hotel Management -->
+    <record id="action_hotel_pos_orders" model="ir.actions.act_window">
+        <field name="name">Rest Orders</field>
+        <field name="res_model">pos.order</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="domain">[('booking_id', '!=', False)]</field>
+        <field name="context">{}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No Restaurant Orders linked to Hotel Guests found!
+            </p>
+        </field>
+    </record>
+
+    <!-- Rest Orders Menu in Hotel Management > Food -->
+    <menuitem id="menu_hotel_pos_orders"
+              name="Rest Orders"
+              parent="hotel_management_odoo.food_menu"
+              action="action_hotel_pos_orders"
+              sequence="5"/>
 </odoo>
