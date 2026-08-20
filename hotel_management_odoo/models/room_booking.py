@@ -620,15 +620,33 @@ class RoomBooking(models.Model):
         }
 
     def action_checkout(self):
-        """Button action_heck_out function"""
+        """Perform checkout: update actual checkout date, recalculate duration and billing."""
+        now_dt = fields.Datetime.now()
         for record in self:
-            record.write({"state": "check_out"})
+            record.write({
+                "state": "check_out",
+                "checkout_date": now_dt,
+            })
             for room in record.room_line_ids.filtered(lambda l: l.room_id and l.room_id.exists()):
+                # Mark room for cleaning so housekeeping is triggered
                 room.room_id.write({
-                    'status': 'available',
-                    'is_room_avail': True
+                    'status': 'cleaning',
+                    'is_room_avail': False,
                 })
-                room.write({'checkout_date': datetime.today()})
+                # Update line checkout date to actual checkout time
+                room.checkout_date = now_dt
+                if room.checkin_date and room.checkout_date:
+                    diffdate = room.checkout_date - room.checkin_date
+                    qty = diffdate.days
+                    if diffdate.total_seconds() > 0:
+                        qty += 1
+                    room.uom_qty = max(1.0, float(qty))
+                room._compute_price_unit()
+                room._compute_price_subtotal()
+
+            # Recalculate booking total duration and charges
+            record.duration = sum(record.room_line_ids.mapped('uom_qty'))
+            record._compute_amount_untaxed()
 
     def action_invoice(self):
         """Method for creating invoice"""
