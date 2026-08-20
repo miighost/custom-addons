@@ -670,7 +670,7 @@ class RoomBooking(models.Model):
         }
 
     @api.model
-    def get_details(self):
+    def get_details(self, *args, **kwargs):
         """ Returns different counts for displaying in dashboard"""
         today_date = fields.Date.context_today(self)
         

@@ -26,13 +26,37 @@
         </field>
     </record>
 
+    <!-- Dedicated Rest Orders List View aligned to Folio, Room, and Guest -->
+    <record id="view_hotel_pos_order_tree" model="ir.ui.view">
+        <field name="name">pos.order.hotel.list</field>
+        <field name="model">pos.order</field>
+        <field name="arch" type="xml">
+            <list string="Rest Orders" decoration-info="hotel_pos_status == 'draft'" decoration-danger="hotel_pos_status == 'cancel'" decoration-success="hotel_pos_status in ('paid', 'done', 'invoiced')">
+                <field name="pos_reference" string="Receipt Number"/>
+                <field name="booking_id" string="Folio / Booking"/>
+                <field name="room_number" string="Room No."/>
+                <field name="partner_id" string="Guest / Customer"/>
+                <field name="date_order" string="Order Date"/>
+                <field name="session_id" optional="hide"/>
+                <field name="user_id" string="Cashier" widget="many2one_avatar_user" optional="show"/>
+                <field name="amount_total" string="Total Amount" sum="Total" widget="monetary"/>
+                <field name="currency_id" invisible="1"/>
+                <field name="hotel_pos_status" string="Status" widget="badge"
+                       decoration-info="hotel_pos_status == 'draft'"
+                       decoration-success="hotel_pos_status in ('paid', 'done', 'invoiced')"
+                       decoration-danger="hotel_pos_status == 'cancel'"/>
+            </list>
+        </field>
+    </record>
+
     <!-- Rest Orders Action for Hotel Management -->
     <record id="action_hotel_pos_orders" model="ir.actions.act_window">
         <field name="name">Rest Orders</field>
         <field name="res_model">pos.order</field>
         <field name="view_mode">list,kanban,form</field>
+        <field name="view_id" ref="view_hotel_pos_order_tree"/>
         <field name="domain">[('booking_id', '!=', False)]</field>
-        <field name="context">{}</field>
+        <field name="context">{'search_default_group_by_booking': 1}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
                 No Restaurant Orders linked to Hotel Guests found!

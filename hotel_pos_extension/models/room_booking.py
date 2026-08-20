@@ -154,9 +154,9 @@ class RoomBooking(models.Model):
         return action
 
     @api.model
-    def get_details(self):
+    def get_details(self, *args, **kwargs):
         """Returns dashboard counts, overriding food_order with hotel POS orders count."""
-        res = super().get_details()
+        res = super().get_details(*args, **kwargs)
         try:
             hotel_pos_count = self.env['pos.order'].search_count([
                 ('booking_id', '!=', False),

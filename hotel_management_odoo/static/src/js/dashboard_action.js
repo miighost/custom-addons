@@ -37,7 +37,7 @@ export class CustomDashBoard extends Component {
             , {
                 model: 'room.booking',
                 method: 'get_details',
-                args: [{}],
+                args: [],
                 kwargs: {},
             }).then(function (result) {
                 document.getElementsByClassName("total_room").innerHTML = ['total_room']
