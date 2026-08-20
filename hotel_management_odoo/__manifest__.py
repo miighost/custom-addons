@@ -58,11 +58,13 @@
         'wizard/restro_report_detail_views.xml',
         'wizard/compute_bill_views.xml',
         'wizard/room_transfer_wizard_views.xml',
+        'views/hotel_night_audit_views.xml',
         'views/reporting_views.xml',
         'report/room_booking_reports.xml',
         'report/sale_order_reports.xml',
         'report/restro_reports.xml',
         'report/combined_bill_report.xml',
+        'report/night_audit_report.xml',
     ],
     'assets': {
         'web.assets_backend': [

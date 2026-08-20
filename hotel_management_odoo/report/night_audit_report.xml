@@ -1,0 +1,366 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Night Audit Report Action -->
+    <record id="action_report_night_audit" model="ir.actions.report">
+        <field name="name">Night Audit Pack</field>
+        <field name="model">hotel.night.audit</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">hotel_management_odoo.report_night_audit</field>
+        <field name="report_file">hotel_management_odoo.report_night_audit</field>
+        <field name="print_report_name">('Night_Audit_%s' % (object.date))</field>
+        <field name="binding_model_id" eval="False"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <!-- Consolidated Night Audit Pack Template -->
+    <template id="report_night_audit">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-set="data" t-value="doc.get_audit_report_data()"/>
+                <t t-set="kpis" t-value="data['kpis']"/>
+                <t t-set="company" t-value="doc.company_id"/>
+
+                <t t-call="web.external_layout">
+                    <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #212529;">
+                        <style>
+                            .cover-container { text-align: center; padding-top: 100px; height: 860px; }
+                            .cover-title { font-size: 48px; font-weight: 900; letter-spacing: 16px; color: #1e3c72; text-transform: uppercase; margin: 15px 0; }
+                            .cover-divider { width: 140px; height: 3px; background-color: #1e3c72; margin: 40px auto; }
+                            .cover-label { font-size: 13px; text-transform: uppercase; letter-spacing: 5px; color: #6c757d; font-weight: bold; margin-bottom: 6px; }
+                            .cover-value { font-size: 22px; font-weight: bold; color: #212529; letter-spacing: 2px; margin-bottom: 35px; }
+
+                            .audit-title-box { background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white; padding: 12px 18px; border-radius: 6px; margin-bottom: 20px; }
+                            .audit-section-title { font-size: 14px; font-weight: bold; color: #1e3c72; border-bottom: 2px solid #1e3c72; padding-bottom: 4px; margin-top: 22px; margin-bottom: 10px; text-transform: uppercase; }
+                            .kpi-card { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; padding: 8px; text-align: center; margin-bottom: 10px; }
+                            .kpi-num { font-size: 18px; font-weight: bold; color: #1e3c72; }
+                            .kpi-lbl { font-size: 10px; text-transform: uppercase; color: #6c757d; font-weight: bold; }
+                            .audit-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 11px; }
+                            .audit-table th { background-color: #f1f4f9; color: #333; font-weight: bold; padding: 6px 8px; border: 1px solid #dee2e6; text-align: left; }
+                            .audit-table td { padding: 5px 8px; border: 1px solid #dee2e6; }
+                            .audit-table tr:nth-child(even) { background-color: #fafbfc; }
+                            .page-break { page-break-before: always; }
+                            .text-right { text-align: right; }
+                            .text-center { text-align: center; }
+                        </style>
+
+                        <!-- ================= PAGE 1: COVER PAGE (With Company Header & Footer) ================= -->
+                        <div class="cover-container" style="text-align: center; padding-top: 130px; min-height: 620px;">
+                            <div style="margin-top: 20px; margin-bottom: 30px;">
+                                <div class="cover-title" style="font-size: 52px; font-weight: 900; letter-spacing: 18px; color: #1e3c72; text-transform: uppercase; margin: 15px 0;">
+                                    <t t-if="doc.audit_type == 'night'">N I G H T</t>
+                                    <t t-else="">D A Y</t>
+                                </div>
+                                <div class="cover-title" style="font-size: 52px; font-weight: 900; letter-spacing: 18px; color: #1e3c72; text-transform: uppercase; margin: 15px 0;">
+                                    A U D I T
+                                </div>
+                            </div>
+
+                            <div class="cover-divider" style="width: 150px; height: 3px; background-color: #1e3c72; margin: 50px auto;"/>
+
+                            <div class="cover-label" style="font-size: 15px; text-transform: uppercase; letter-spacing: 6px; color: #6c757d; font-weight: bold; margin-bottom: 10px;">
+                                O N
+                            </div>
+                            <div class="cover-value" style="font-size: 24px; font-weight: bold; color: #212529; letter-spacing: 2px; margin-bottom: 50px;">
+                                <t t-esc="doc.date" t-options='{"widget": "date", "format": "dd MMMM yyyy"}'/>
+                            </div>
+
+                            <div class="cover-label" style="font-size: 15px; text-transform: uppercase; letter-spacing: 6px; color: #6c757d; font-weight: bold; margin-bottom: 10px;">
+                                B Y
+                            </div>
+                            <div class="cover-value" style="font-size: 22px; font-weight: bold; color: #212529; letter-spacing: 1px;">
+                                <t t-esc="doc.user_id.name"/>
+                            </div>
+                        </div>
+
+                        <!-- ================= PAGE 2+: REPORT DETAILS ================= -->
+                        <div class="page-break"/>
+
+                        <!-- Header Info Banner -->
+                        <div class="audit-title-box">
+                            <table style="width: 100%; border: none; color: white;">
+                                <tr>
+                                    <td style="border: none; width: 65%;">
+                                        <h3 style="margin: 0; font-size: 18px; font-weight: bold; color: white;">
+                                            <t t-esc="doc.audit_type.capitalize()"/> Audit Report
+                                        </h3>
+                                        <div style="font-size: 12px; opacity: 0.9; margin-top: 3px;">
+                                            Audit Date: <strong><t t-esc="doc.date" t-options='{"widget": "date", "format": "dd MMMM yyyy"}'/></strong>
+                                        </div>
+                                    </td>
+                                    <td style="border: none; width: 35%; text-align: right; font-size: 11px;">
+                                        <div>Ref: <strong><t t-esc="doc.name"/></strong></div>
+                                        <div>Audited By: <strong><t t-esc="doc.user_id.name"/></strong></div>
+                                        <div>Printed: <strong><t t-esc="context_timestamp(datetime.datetime.now()).strftime('%d-%m-%Y %H:%M')"/></strong></div>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <!-- 1. Operational & Financial KPI Overview -->
+                        <div class="audit-section-title">1. Daily Operations &amp; Revenue Overview</div>
+                        <div class="row">
+                            <div class="col-2">
+                                <div class="kpi-card">
+                                    <div class="kpi-num"><t t-esc="kpis['checkin_count']"/></div>
+                                    <div class="kpi-lbl">Check-Ins</div>
+                                </div>
+                            </div>
+                            <div class="col-2">
+                                <div class="kpi-card">
+                                    <div class="kpi-num"><t t-esc="kpis['checkout_count']"/></div>
+                                    <div class="kpi-lbl">Check-Outs</div>
+                                </div>
+                            </div>
+                            <div class="col-2">
+                                <div class="kpi-card">
+                                    <div class="kpi-num"><t t-esc="kpis['inhouse_count']"/></div>
+                                    <div class="kpi-lbl">In-House Guests</div>
+                                </div>
+                            </div>
+                            <div class="col-2">
+                                <div class="kpi-card">
+                                    <div class="kpi-num"><t t-esc="kpis['room_revenue']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></div>
+                                    <div class="kpi-lbl">Daily Room Rent</div>
+                                </div>
+                            </div>
+                            <div class="col-2">
+                                <div class="kpi-card">
+                                    <div class="kpi-num"><t t-esc="kpis['pos_revenue']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></div>
+                                    <div class="kpi-lbl">POS / Rest Sales</div>
+                                </div>
+                            </div>
+                            <div class="col-2">
+                                <div class="kpi-card" style="background-color: #e8f4fd; border-color: #b8daff;">
+                                    <div class="kpi-num" style="color: #0056b3;"><t t-esc="kpis['total_revenue']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></div>
+                                    <div class="kpi-lbl" style="color: #0056b3;">Total Day Revenue</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 2. Check-In Report -->
+                        <div class="audit-section-title">2. Daily Check-In Report (Arrivals)</div>
+                        <t t-if="data['checkins']">
+                            <table class="audit-table">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Booking Ref</th>
+                                        <th>Guest Name</th>
+                                        <th>Room No</th>
+                                        <th>Check-In</th>
+                                        <th>Check-Out</th>
+                                        <th>Plan</th>
+                                        <th class="text-right">Daily Rent</th>
+                                        <th class="text-right">Total Booking</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-set="idx" t-value="1"/>
+                                    <t t-foreach="data['checkins']" t-as="ci">
+                                        <tr>
+                                            <td><t t-esc="idx"/></td>
+                                            <td><strong><t t-esc="ci['booking_no']"/></strong></td>
+                                            <td><t t-esc="ci['guest_name']"/></td>
+                                            <td><strong><t t-esc="ci['room']"/></strong></td>
+                                            <td><t t-esc="ci['checkin']" t-options='{"widget": "datetime", "format": "dd-MM-yyyy HH:mm"}'/></td>
+                                            <td><t t-esc="ci['checkout']" t-options='{"widget": "datetime", "format": "dd-MM-yyyy HH:mm"}'/></td>
+                                            <td><t t-esc="ci['board_type']"/></td>
+                                            <td class="text-right"><t t-esc="ci['daily_rate']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
+                                            <td class="text-right"><t t-esc="ci['total_amount']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
+                                        </tr>
+                                        <t t-set="idx" t-value="idx + 1"/>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </t>
+                        <t t-else="">
+                            <p style="font-size: 11px; color: #6c757d; font-style: italic;">No check-ins recorded on this date.</p>
+                        </t>
+
+                        <!-- 3. Check-Out Report -->
+                        <div class="audit-section-title">3. Daily Check-Out Report (Departures)</div>
+                        <t t-if="data['checkouts']">
+                            <table class="audit-table">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Booking Ref</th>
+                                        <th>Guest Name</th>
+                                        <th>Room No</th>
+                                        <th>Check-In</th>
+                                        <th>Check-Out</th>
+                                        <th>Nights</th>
+                                        <th class="text-right">Total Bill</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-set="idx" t-value="1"/>
+                                    <t t-foreach="data['checkouts']" t-as="co">
+                                        <tr>
+                                            <td><t t-esc="idx"/></td>
+                                            <td><strong><t t-esc="co['booking_no']"/></strong></td>
+                                            <td><t t-esc="co['guest_name']"/></td>
+                                            <td><strong><t t-esc="co['room']"/></strong></td>
+                                            <td><t t-esc="co['checkin']" t-options='{"widget": "datetime", "format": "dd-MM-yyyy HH:mm"}'/></td>
+                                            <td><t t-esc="co['checkout']" t-options='{"widget": "datetime", "format": "dd-MM-yyyy HH:mm"}'/></td>
+                                            <td><t t-esc="co['duration']"/></td>
+                                            <td class="text-right"><strong><t t-esc="co['total_amount']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></strong></td>
+                                        </tr>
+                                        <t t-set="idx" t-value="idx + 1"/>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </t>
+                        <t t-else="">
+                            <p style="font-size: 11px; color: #6c757d; font-style: italic;">No check-outs recorded on this date.</p>
+                        </t>
+
+                        <!-- 4. In-House Guest List (starts on clean page) -->
+                        <div class="page-break"/>
+                        <div class="audit-section-title">4. In-House Guest List (Current Occupancy)</div>
+                        <t t-if="data['inhouse']">
+                            <table class="audit-table">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Room No</th>
+                                        <th>Booking Ref</th>
+                                        <th>Guest Name</th>
+                                        <th>Arrival</th>
+                                        <th>Departure</th>
+                                        <th class="text-right">Daily Rent</th>
+                                        <th class="text-right">POS Orders</th>
+                                        <th class="text-right">Total Due Today</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-set="idx" t-value="1"/>
+                                    <t t-set="tot_rent" t-value="0.0"/>
+                                    <t t-set="tot_pos" t-value="0.0"/>
+                                    <t t-set="tot_due" t-value="0.0"/>
+                                    <t t-foreach="data['inhouse']" t-as="ih">
+                                        <tr>
+                                            <td><t t-esc="idx"/></td>
+                                            <td><strong><t t-esc="ih['room']"/></strong></td>
+                                            <td><t t-esc="ih['booking_no']"/></td>
+                                            <td><t t-esc="ih['guest_name']"/></td>
+                                            <td><t t-esc="ih['checkin']" t-options='{"widget": "datetime", "format": "dd-MM-yyyy"}'/></td>
+                                            <td><t t-esc="ih['checkout']" t-options='{"widget": "datetime", "format": "dd-MM-yyyy"}'/></td>
+                                            <td class="text-right"><t t-esc="ih['daily_rent']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
+                                            <td class="text-right"><t t-esc="ih['pos_charges']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
+                                            <td class="text-right"><strong><t t-esc="ih['total_due_today']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></strong></td>
+                                        </tr>
+                                        <t t-set="idx" t-value="idx + 1"/>
+                                        <t t-set="tot_rent" t-value="tot_rent + ih['daily_rent']"/>
+                                        <t t-set="tot_pos" t-value="tot_pos + ih['pos_charges']"/>
+                                        <t t-set="tot_due" t-value="tot_due + ih['total_due_today']"/>
+                                    </t>
+                                    <tr style="background-color: #f1f4f9; font-weight: bold;">
+                                        <td colspan="6" class="text-right">Total In-House:</td>
+                                        <td class="text-right"><t t-esc="tot_rent" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
+                                        <td class="text-right"><t t-esc="tot_pos" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
+                                        <td class="text-right"><t t-esc="tot_due" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </t>
+                        <t t-else="">
+                            <p style="font-size: 11px; color: #6c757d; font-style: italic;">No active in-house guests on this date.</p>
+                        </t>
+
+                        <!-- 5. Daily POS / Restaurant Sales -->
+                        <div class="audit-section-title">5. Daily Restaurant &amp; POS Orders</div>
+                        <t t-if="data['pos_orders']">
+                            <table class="audit-table">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Receipt Ref</th>
+                                        <th>Hotel Folio</th>
+                                        <th>Guest / Customer</th>
+                                        <th>Order Time</th>
+                                        <th>Cashier</th>
+                                        <th>Status</th>
+                                        <th class="text-right">Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-set="idx" t-value="1"/>
+                                    <t t-set="tot_pos_ord" t-value="0.0"/>
+                                    <t t-foreach="data['pos_orders']" t-as="po">
+                                        <tr>
+                                            <td><t t-esc="idx"/></td>
+                                            <td><strong><t t-esc="po['receipt']"/></strong></td>
+                                            <td><t t-esc="po['booking']"/></td>
+                                            <td><t t-esc="po['guest']"/></td>
+                                            <td><t t-esc="po['time']" t-options='{"widget": "datetime", "format": "HH:mm"}'/></td>
+                                            <td><t t-esc="po['cashier']"/></td>
+                                            <td><t t-esc="po['status']"/></td>
+                                            <td class="text-right"><strong><t t-esc="po['amount']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></strong></td>
+                                        </tr>
+                                        <t t-set="idx" t-value="idx + 1"/>
+                                        <t t-set="tot_pos_ord" t-value="tot_pos_ord + po['amount']"/>
+                                    </t>
+                                    <tr style="background-color: #f1f4f9; font-weight: bold;">
+                                        <td colspan="7" class="text-right">Total Restaurant Sales:</td>
+                                        <td class="text-right"><t t-esc="tot_pos_ord" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </t>
+                        <t t-else="">
+                            <p style="font-size: 11px; color: #6c757d; font-style: italic;">No POS / restaurant orders on this date.</p>
+                        </t>
+
+                        <!-- 6. Guest Ledger & Balances -->
+                        <div class="audit-section-title">6. Guest Ledger &amp; Open Folios</div>
+                        <t t-if="data['guest_ledger']">
+                            <table class="audit-table">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Booking Ref</th>
+                                        <th>Room No</th>
+                                        <th>Guest Name</th>
+                                        <th class="text-right">Room Charges</th>
+                                        <th class="text-right">POS Charges</th>
+                                        <th class="text-right">Other Services</th>
+                                        <th class="text-right">Total Folio</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-set="idx" t-value="1"/>
+                                    <t t-set="ledger_total" t-value="0.0"/>
+                                    <t t-foreach="data['guest_ledger']" t-as="gl">
+                                        <tr>
+                                            <td><t t-esc="idx"/></td>
+                                            <td><strong><t t-esc="gl['booking_no']"/></strong></td>
+                                            <td><strong><t t-esc="gl['room']"/></strong></td>
+                                            <td><t t-esc="gl['guest_name']"/></td>
+                                            <td class="text-right"><t t-esc="gl['room_charges']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
+                                            <td class="text-right"><t t-esc="gl['pos_charges']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
+                                            <td class="text-right"><t t-esc="gl['other_services']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
+                                            <td class="text-right"><strong><t t-esc="gl['total_folio']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></strong></td>
+                                            <td><t t-esc="gl['status']"/></td>
+                                        </tr>
+                                        <t t-set="idx" t-value="idx + 1"/>
+                                        <t t-set="ledger_total" t-value="ledger_total + gl['total_folio']"/>
+                                    </t>
+                                    <tr style="background-color: #f1f4f9; font-weight: bold;">
+                                        <td colspan="7" class="text-right">Total Ledger Balance:</td>
+                                        <td class="text-right"><t t-esc="ledger_total" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
+                                        <td/>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </t>
+                        <t t-else="">
+                            <p style="font-size: 11px; color: #6c757d; font-style: italic;">No open guest folios recorded.</p>
+                        </t>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

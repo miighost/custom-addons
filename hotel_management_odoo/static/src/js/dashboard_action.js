@@ -52,6 +52,7 @@ export class CustomDashBoard extends Component {
                 self.total_event = result['total_event']
                 self.today_events = result['today_events']
                 self.pending_events = result['pending_events']
+                self.night_audit = result['night_audit']
                 self.food_items = result['food_items']
                 self.food_order = result['food_order']
                 if (result['currency_position'] == 'before') {
@@ -214,16 +215,16 @@ export class CustomDashBoard extends Component {
             target: 'current'
         }, options)
     }
-    //    Food Items
-    fetch_food_item(e) {
+    //    Night Audit
+    fetch_night_audit(e) {
         var self = this;
         e.stopPropagation();
         e.preventDefault();
         var options = { on_reverse_breadcrum: this.on_reverse_breadcrum, };
         this.action.doAction({
-            name: _t("Food Items"),
+            name: _t("Night Audit"),
             type: 'ir.actions.act_window',
-            res_model: 'lunch.product',
+            res_model: 'hotel.night.audit',
             view_mode: 'list,form',
             views: [[false, 'list'], [false, 'form']],
             domain: [],

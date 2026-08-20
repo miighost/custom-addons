@@ -197,20 +197,20 @@
                     </div>
                 </div>
             </div>
-            <!--            Food Items-->
+            <!--            Night Audit-->
             <div groups="hotel_management_odoo.hotel_group_reception"
-                 class="col-md-3 col-sm-6 food_item dash-card"
-                 t-on-click="(e)=> this.fetch_food_item(e)">
+                 class="col-md-3 col-sm-6 night_audit dash-card"
+                 t-on-click="(e)=> this.fetch_night_audit(e)">
                 <div class="card" style="width: 18rem;">
                     <div class="card-img-top dash-icon-1"
-                         style="color:#d95f14;">
-                        <i class="fa fa-cutlery fa-lg"/>
+                         style="color:#7b4397;">
+                        <i class="fa fa-moon-o fa-lg"/>
                     </div>
                     <div class="card-body">
                         <div class="dash-count">
-                            <t t-esc="food_items"/>
+                            <t t-esc="night_audit"/>
                         </div>
-                        <div class="dash-head">Food Items</div>
+                        <div class="dash-head">Night Audit</div>
                     </div>
                 </div>
             </div>

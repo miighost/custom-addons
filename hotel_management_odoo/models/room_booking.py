@@ -270,12 +270,32 @@ class RoomBooking(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        """Sequence Generation"""
+        """Sequence Generation with automatic fallback"""
         for vals in vals_list:
-            if vals.get('name', 'New') == 'New':
-                vals['name'] = self.env['ir.sequence'].next_by_code(
-                    'room.booking')
+            if not vals.get('name') or vals.get('name') in ['New', 'Unnamed']:
+                seq_name = self.env['ir.sequence'].next_by_code('room.booking')
+                if not seq_name:
+                    # Fallback sequence creation if sequence is missing in DB
+                    seq = self.env['ir.sequence'].sudo().search([('code', '=', 'room.booking')], limit=1)
+                    if not seq:
+                        seq = self.env['ir.sequence'].sudo().create({
+                            'name': 'Hotel Folio',
+                            'code': 'room.booking',
+                            'prefix': 'BOOKING/%(year)s/',
+                            'padding': 5,
+                            'company_id': False,
+                        })
+                    seq_name = seq.next_by_id() or f"BOOKING/{fields.Date.today().year}/00001"
+                vals['name'] = seq_name
         return super().create(vals_list)
+
+    @api.depends('name')
+    def _compute_display_name(self):
+        for record in self:
+            if not record.name or record.name in ['New', 'Unnamed']:
+                seq_name = self.env['ir.sequence'].next_by_code('room.booking') or f"BOOKING/{record.id:05d}"
+                record.sudo().write({'name': seq_name})
+            record.display_name = record.name
 
     @api.depends('partner_id')
     def _compute_user_id(self):
@@ -791,6 +811,11 @@ class RoomBooking(models.Model):
         except Exception:
             pass
 
+        try:
+            night_audit_count = self.env['hotel.night.audit'].search_count([])
+        except Exception:
+            night_audit_count = 0
+
         currency = self.env.company.currency_id
         return {
             'total_room': total_room,
@@ -804,6 +829,7 @@ class RoomBooking(models.Model):
             'total_event': total_event,
             'today_events': today_events,
             'pending_events': pending_events,
+            'night_audit': night_audit_count,
             'food_items': food_items,
             'food_order': food_order,
             'total_revenue': round(total_revenue, 2),

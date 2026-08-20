@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <odoo>
-    <data noupdate="1">
+    <data noupdate="0">
         <!-- Room Booking Sequence-->
         <record id="seq_hotel_folio" model="ir.sequence">
             <field name="name">Hotel Folio</field>
             <field name="code">room.booking</field>
-            <field name="prefix">BOOKING/</field>
+            <field name="prefix">BOOKING/%(year)s/</field>
             <field name="padding">5</field>
+            <field name="company_id" eval="False"/>
         </record>
         <!-- Cleaning Request sequence-->
         <record id="seq_cleaning" model="ir.sequence">
@@ -14,6 +15,7 @@
             <field name="code">cleaning.request</field>
             <field name="prefix">CLEANING/</field>
             <field name="padding">4</field>
+            <field name="company_id" eval="False"/>
         </record>
         <!-- Maintenance Request Sequence-->
         <record id="seq_maintenance" model="ir.sequence">
@@ -21,6 +23,7 @@
             <field name="code">maintenance.request</field>
             <field name="prefix">MNTC/</field>
             <field name="padding">5</field>
+            <field name="company_id" eval="False"/>
         </record>
     </data>
 </odoo>
