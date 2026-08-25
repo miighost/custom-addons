@@ -46,7 +46,7 @@ class RoomBookingLine(models.Model):
                                     required=True)
     room_id = fields.Many2one('hotel.room', string="Room",
                               help="Indicates the Room",
-                              required=True)
+                              required=True, ondelete="cascade")
     uom_qty = fields.Float(string="Duration",
                            help="The quantity converted into the UoM used by "
                                 "the product", readonly=True)

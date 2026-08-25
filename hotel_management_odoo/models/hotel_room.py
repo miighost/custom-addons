@@ -29,10 +29,19 @@ class HotelRoom(models.Model):
     _description = 'Rooms'
     _inherit = ['mail.thread', 'mail.activity.mixin']
 
-    @tools.ormcache()
     def _get_default_uom_id(self):
         """Method for getting the default uom id"""
-        return self.env.ref('uom.product_uom_unit')
+        return self.env.ref('uom.product_uom_unit', raise_if_not_found=False) or self.env['uom.uom'].search([], limit=1)
+
+    def _default_taxes_ids(self):
+        """Method for getting default sale taxes safely"""
+        company = self.env.company
+        if hasattr(company, 'account_sale_tax_id') and company.account_sale_tax_id:
+            return company.account_sale_tax_id
+        return self.env['account.tax'].search([
+            ('type_tax_use', '=', 'sale'),
+            ('company_id', '=', company.id)
+        ], limit=1)
 
     name = fields.Char(string='Name', help="Name of the Room", index='trigram',
                        required=True, translate=True)
@@ -44,6 +53,8 @@ class HotelRoom(models.Model):
                               tracking=True)
     is_room_avail = fields.Boolean(default=True, string="Available",
                                    help="Check if the room is available")
+    active = fields.Boolean(default=True, string="Active",
+                            help="Check to keep room active, uncheck to archive.")
     list_price = fields.Float(string='Rent', digits='Product Price',
                               help="The rent of the room.")
     uom_id = fields.Many2one('uom.uom', string='Unit of Measure',
@@ -58,8 +69,7 @@ class HotelRoom(models.Model):
                                  help="Default taxes used when selling the"
                                       " room.", string='Customer Taxes',
                                  domain=[('type_tax_use', '=', 'sale')],
-                                 default=lambda self: self.env.company.
-                                 account_sale_tax_id)
+                                 default=_default_taxes_ids)
     room_amenities_ids = fields.Many2many("hotel.amenity",
                                           string="Room Amenities",
                                           help="List of room amenities.")

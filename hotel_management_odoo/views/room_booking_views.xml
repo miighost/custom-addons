@@ -39,9 +39,9 @@
                     <button name="action_cancel" string="Cancel"
                             invisible="state not in ['draft','reserved']"
                             type="object" class="btn-secondary"/>
-                    <field name="state" select="2" widget="statusbar"
+                    <field name="state" widget="statusbar"
                            statusbar_visible="draft,check_in,check_out,done"/>
-                    <field name="invoice_status" select="2" widget="statusbar"
+                    <field name="invoice_status" widget="statusbar"
                            invisible="1"/>
                 </header>
                 <sheet>
