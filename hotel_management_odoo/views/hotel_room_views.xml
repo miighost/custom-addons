@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
-    <!--    Hotel Room tree view-->
+    <!--    Hotel Room list view-->
     <record id="hotel_room_view_tree" model="ir.ui.view">
         <field name="name">hotel.room.view.tree</field>
         <field name="model">hotel.room</field>
@@ -14,6 +14,7 @@
             </list>
         </field>
     </record>
+
     <!--    Hotel Room form view-->
     <record id="hotel_room_view_form" model="ir.ui.view">
         <field name="name">hotel.room.view.form</field>
@@ -24,8 +25,6 @@
                     <field name="status" widget="statusbar" readonly="1"/>
                 </header>
                 <sheet>
-                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
-                    <field name="active" invisible="1"/>
                     <field name="room_image" widget="image"
                            class="oe_avatar"
                            options="{'preview_image': 'room_image'}"/>
@@ -75,36 +74,13 @@
             </form>
         </field>
     </record>
-    <!--    Hotel Room Search View -->
-    <record id="hotel_room_view_search" model="ir.ui.view">
-        <field name="name">hotel.room.view.search</field>
-        <field name="model">hotel.room</field>
-        <field name="arch" type="xml">
-            <search string="Search Rooms">
-                <field name="name" string="Room Name / Number"/>
-                <field name="room_type"/>
-                <field name="floor_id"/>
-                <filter string="Available" name="available" domain="[('status', '=', 'available')]"/>
-                <filter string="Occupied" name="occupied" domain="[('status', '=', 'occupied')]"/>
-                <filter string="Reserved" name="reserved" domain="[('status', '=', 'reserved')]"/>
-                <separator/>
-                <filter string="Archived" name="inactive" domain="[('active', '=', False)]"/>
-                <group expand="0" string="Group By">
-                    <filter string="Room Type" name="group_by_room_type" context="{'group_by': 'room_type'}"/>
-                    <filter string="Floor" name="group_by_floor" context="{'group_by': 'floor_id'}"/>
-                    <filter string="Status" name="group_by_status" context="{'group_by': 'status'}"/>
-                </group>
-            </search>
-        </field>
-    </record>
 
-    <!--    Hotel Room menu action-->
+    <!--    Hotel Room action-->
     <record id="hotel_room_action" model="ir.actions.act_window">
         <field name="name">Rooms</field>
         <field name="type">ir.actions.act_window</field>
         <field name="res_model">hotel.room</field>
         <field name="view_mode">list,form</field>
-        <field name="search_view_id" ref="hotel_room_view_search"/>
         <field name="context">{'default_is_room_avail':True}</field>
         <field name="help" type="html">
             <p class="oe_view_nocontent_create">
@@ -112,6 +88,7 @@
             </p>
         </field>
     </record>
+
     <!-- Direct Rooms Menu on Main Navbar -->
     <menuitem id="hotel_room_main_menu"
               name="Rooms"

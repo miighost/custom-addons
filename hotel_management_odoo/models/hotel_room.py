@@ -115,3 +115,14 @@ class HotelRoom(models.Model):
             self.num_person = 2
         else:
             self.num_person = 4
+
+    def unlink(self):
+        """Automatically clean up referencing folio lines and cleaning requests so rooms can be deleted without constraint errors"""
+        for room in self:
+            booking_lines = self.env['room.booking.line'].sudo().search([('room_id', '=', room.id)])
+            if booking_lines:
+                booking_lines.unlink()
+            cleaning_requests = self.env['cleaning.request'].sudo().search([('room_id', '=', room.id)])
+            if cleaning_requests:
+                cleaning_requests.unlink()
+        return super(HotelRoom, self).unlink()
