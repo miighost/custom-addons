@@ -55,6 +55,7 @@ class RoomBookingLine(models.Model):
                              string="Unit of Measure",
                              help="This will set the unit of measure used",
                              readonly=True)
+    board_type = fields.Selection(related='booking_id.board_type', string="Board Type", store=True, readonly=False)
     price_unit = fields.Float(related='room_id.list_price', string='Rent',
                               digits='Product Price',
                               help="The rent price of the selected room.")

@@ -89,8 +89,16 @@ class RoomBooking(models.Model):
         ('bb', 'Bed & Breakfast (BB)'),
         ('hb', 'Half Board (HB)'),
         ('fb', 'Full Board (FB)'),
-        ('ro', 'Room Only (RO)')
+        ('ro', 'Room Only (RO)'),
+        ('ai', 'All Inclusive (AI)')
     ], string="Meal Plan", default="bb", required=True, tracking=True, help="Select the meal plan for this booking")
+    board_type = fields.Selection([
+        ('bb', 'Bed & Breakfast (BB)'),
+        ('hb', 'Half Board (HB)'),
+        ('fb', 'Full Board (FB)'),
+        ('ro', 'Room Only (RO)'),
+        ('ai', 'All Inclusive (AI)')
+    ], string="Board Type", default="bb", tracking=True, help="Select the board/meal plan for this booking")
     description = fields.Text(string="Remarks", help="Additional remarks or notes for the booking")
     invoice_button_visible = fields.Boolean(string='Invoice Button Display',
                                             help="Invoice button will be "
