@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Report Action for Statement of Account -->
+    <record id="action_report_statement_account" model="ir.actions.report">
+        <field name="name">Statement of Account</field>
+        <field name="model">statement.account.wizard</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">hotel_management_odoo.report_statement_account</field>
+        <field name="report_file">hotel_management_odoo.report_statement_account</field>
+        <field name="binding_type">report</field>
+    </record>
+
+    <!-- QWeb PDF Template for Statement of Account -->
+    <template id="report_statement_account">
+        <t t-call="web.html_container">
+            <t t-call="web.external_layout">
+                <div class="page" style="font-family: Arial, sans-serif; font-size: 13px; color: #333;">
+                    
+                    <!-- Top Info Card (Boxed Header) -->
+                    <div style="border: 1px solid #999; border-radius: 12px; padding: 16px; margin-bottom: 24px; background-color: #fafafa;">
+                        <div class="row">
+                            <!-- Left Details -->
+                            <div class="col-6">
+                                <table style="width: 100%; border-collapse: separate; border-spacing: 0 6px;">
+                                    <tr>
+                                        <td style="width: 110px; font-weight: bold; color: #444;">Card No</td>
+                                        <td style="width: 15px;">:</td>
+                                        <td><t t-esc="header.get('card_no', '-')"/></td>
+                                    </tr>
+                                    <tr>
+                                        <td style="font-weight: bold; color: #444;">Guest No</td>
+                                        <td>:</td>
+                                        <td><t t-esc="header.get('guest_no', '-')"/></td>
+                                    </tr>
+                                    <tr>
+                                        <td style="font-weight: bold; color: #444;">Name</td>
+                                        <td>:</td>
+                                        <td style="font-weight: bold;"><t t-esc="header.get('name', '-')"/></td>
+                                    </tr>
+                                    <tr>
+                                        <td style="font-weight: bold; color: #444;">Nationality</td>
+                                        <td>:</td>
+                                        <td><t t-esc="header.get('nationality', '-')"/></td>
+                                    </tr>
+                                    <tr>
+                                        <td style="font-weight: bold; color: #444;">Company</td>
+                                        <td>:</td>
+                                        <td><t t-esc="header.get('company', '-')"/></td>
+                                    </tr>
+                                </table>
+                            </div>
+
+                            <!-- Right Details -->
+                            <div class="col-6">
+                                <table style="width: 100%; border-collapse: separate; border-spacing: 0 6px;">
+                                    <tr>
+                                        <td style="width: 130px; font-weight: bold; color: #444;">Room No</td>
+                                        <td style="width: 15px;">:</td>
+                                        <td><t t-esc="header.get('room_no', '-')"/></td>
+                                    </tr>
+                                    <tr>
+                                        <td style="font-weight: bold; color: #444;">No of Pax</td>
+                                        <td>:</td>
+                                        <td><t t-esc="header.get('pax', '1')"/></td>
+                                    </tr>
+                                    <tr>
+                                        <td style="font-weight: bold; color: #444;">Arrival Date</td>
+                                        <td>:</td>
+                                        <td><t t-esc="header.get('arrival_date', '-')"/></td>
+                                    </tr>
+                                    <tr>
+                                        <td style="font-weight: bold; color: #444;">Arrival Time</td>
+                                        <td>:</td>
+                                        <td><t t-esc="header.get('arrival_time', '-')"/></td>
+                                    </tr>
+                                    <tr>
+                                        <td style="font-weight: bold; color: #111;">Balance Amount</td>
+                                        <td>:</td>
+                                        <td style="font-weight: bold; font-size: 15px; color: #000;"><t t-esc="header.get('balance_amount', '0.00')"/></td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Statement Table -->
+                    <table class="table table-sm" style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                        <thead>
+                            <tr style="background-color: #888; color: #fff; text-align: center; font-weight: bold;">
+                                <th style="border: 1px solid #777; padding: 8px 4px; width: 6%;">S No</th>
+                                <th style="border: 1px solid #777; padding: 8px 6px; width: 13%;">Date</th>
+                                <th style="border: 1px solid #777; padding: 8px 8px; width: 33%; text-align: left;">Description</th>
+                                <th style="border: 1px solid #777; padding: 8px 6px; width: 12%;">Room No</th>
+                                <th style="border: 1px solid #777; padding: 8px 6px; width: 12%; text-align: right;">Debit</th>
+                                <th style="border: 1px solid #777; padding: 8px 6px; width: 12%; text-align: right;">Credit</th>
+                                <th style="border: 1px solid #777; padding: 8px 6px; width: 12%; text-align: right;">Balance</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-foreach="lines" t-as="l">
+                                <tr style="border-bottom: 1px solid #ccc;">
+                                    <td style="text-align: center; padding: 6px 4px; border-left: 1px solid #ddd; border-right: 1px solid #ddd;"><t t-esc="l['s_no']"/></td>
+                                    <td style="text-align: center; padding: 6px 4px; border-right: 1px solid #ddd;"><t t-esc="l['date']"/></td>
+                                    <td style="text-align: left; padding: 6px 8px; border-right: 1px solid #ddd;"><t t-esc="l['description']"/></td>
+                                    <td style="text-align: center; padding: 6px 4px; border-right: 1px solid #ddd;"><t t-esc="l['room_no']"/></td>
+                                    <td style="text-align: right; padding: 6px 6px; border-right: 1px solid #ddd;"><t t-esc="l['debit']"/></td>
+                                    <td style="text-align: right; padding: 6px 6px; border-right: 1px solid #ddd;"><t t-esc="l['credit']"/></td>
+                                    <td style="text-align: right; padding: 6px 6px; border-right: 1px solid #ddd; font-weight: bold;"><t t-esc="l['balance']"/></td>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+
+                </div>
+            </t>
+        </t>
+    </template>
+</odoo>

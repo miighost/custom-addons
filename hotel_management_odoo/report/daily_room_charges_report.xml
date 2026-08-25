@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Report Action for Daily Rent / Room Charges Report -->
+    <record id="action_report_daily_room_charges" model="ir.actions.report">
+        <field name="name">Daily Rent / Room Charges</field>
+        <field name="model">daily.room.charges.wizard</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">hotel_management_odoo.report_daily_room_charges</field>
+        <field name="report_file">hotel_management_odoo.report_daily_room_charges</field>
+        <field name="binding_type">report</field>
+    </record>
+
+    <!-- QWeb PDF Template for Daily Rent / Room Charges Report -->
+    <template id="report_daily_room_charges">
+        <t t-call="web.html_container">
+            <t t-call="web.external_layout">
+                <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 12px; color: #222;">
+                    
+                    <!-- Header Title -->
+                    <div class="row mt16 mb16">
+                        <div class="col-12 text-center">
+                            <h2 style="font-weight: bold; color: #111; margin-bottom: 4px;">Daily Rent / Room Charges Report</h2>
+                            <p style="font-size: 13px; color: #555; margin-bottom: 0;">Date: <span style="font-weight: bold; color: #000;" t-esc="date"/></p>
+                        </div>
+                    </div>
+
+                    <!-- Summary Info Box -->
+                    <div style="border: 1px solid #999; border-radius: 8px; padding: 10px 16px; margin-bottom: 18px; background-color: #fafafa;">
+                        <div class="row">
+                            <div class="col-4">
+                                <strong>Total Rooms Charged:</strong> <span t-esc="total_rooms"/>
+                            </div>
+                            <div class="col-4 text-center">
+                                <strong>Total Pax:</strong> <span t-esc="total_pax"/>
+                            </div>
+                            <div class="col-4 text-right">
+                                <strong>Total Daily Rent:</strong> <span style="font-size: 14px; font-weight: bold; color: #000;" t-esc="total_rent"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Data Table -->
+                    <table class="table table-sm table-bordered" style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                        <thead>
+                            <tr style="background-color: #f2f2f2; text-align: center; font-weight: bold; color: #111;">
+                                <th style="border: 1px solid #555; padding: 6px 3px; width: 5%;">S No</th>
+                                <th style="border: 1px solid #555; padding: 6px 4px; width: 20%;">Name</th>
+                                <th style="border: 1px solid #555; padding: 6px 4px; width: 10%;">Room No</th>
+                                <th style="border: 1px solid #555; padding: 6px 4px; width: 12%;">Card No</th>
+                                <th style="border: 1px solid #555; padding: 6px 4px; width: 11%;">Check In</th>
+                                <th style="border: 1px solid #555; padding: 6px 3px; width: 6%;">Pax</th>
+                                <th style="border: 1px solid #555; padding: 6px 4px; width: 21%;">Company Name</th>
+                                <th style="border: 1px solid #555; padding: 6px 4px; width: 15%; text-align: right;">Rent</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-foreach="lines" t-as="l">
+                                <tr>
+                                    <td class="text-center" style="border: 1px solid #666; padding: 5px 2px;"><t t-esc="l['s_no']"/></td>
+                                    <td style="border: 1px solid #666; padding: 5px;"><t t-esc="l['name']"/></td>
+                                    <td class="text-center" style="border: 1px solid #666; padding: 5px;"><t t-esc="l['room_no']"/></td>
+                                    <td class="text-center" style="border: 1px solid #666; padding: 5px;"><t t-esc="l['card_no']"/></td>
+                                    <td class="text-center" style="border: 1px solid #666; padding: 5px;"><t t-esc="l['check_in']"/></td>
+                                    <td class="text-center" style="border: 1px solid #666; padding: 5px;"><t t-esc="l['pax']"/></td>
+                                    <td style="border: 1px solid #666; padding: 5px;"><t t-esc="l['company_name']"/></td>
+                                    <td class="text-right" style="border: 1px solid #666; padding: 5px; font-weight: bold;"><t t-esc="l['rent']"/></td>
+                                </tr>
+                            </t>
+                        </tbody>
+                        <tfoot>
+                            <tr style="background-color: #eaeaea; font-weight: bold;">
+                                <td colspan="7" class="text-right" style="border: 1px solid #555; padding: 6px;">Total Daily Rent:</td>
+                                <td class="text-right" style="border: 1px solid #555; padding: 6px; font-size: 12px;"><t t-esc="total_rent"/></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </t>
+        </t>
+    </template>
+</odoo>

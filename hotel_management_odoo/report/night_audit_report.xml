@@ -1,414 +1,424 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Night Audit Report Action -->
+    <!-- Report Action for Night Audit Pack -->
     <record id="action_report_night_audit" model="ir.actions.report">
         <field name="name">Daily Night Audit Pack</field>
-        <field name="model">hotel.night.audit</field>
+        <field name="model">night.audit.wizard</field>
         <field name="report_type">qweb-pdf</field>
         <field name="report_name">hotel_management_odoo.report_night_audit</field>
         <field name="report_file">hotel_management_odoo.report_night_audit</field>
-        <field name="print_report_name">'Night_Audit_%s' % (object.date)</field>
-        <field name="binding_model_id" ref="model_hotel_night_audit"/>
         <field name="binding_type">report</field>
     </record>
 
-    <!-- Consolidated Night Audit QWeb Template -->
+    <!-- QWeb PDF Template for Night Audit Pack -->
     <template id="report_night_audit">
         <t t-call="web.html_container">
-            <t t-foreach="docs" t-as="doc">
-                <t t-call="web.external_layout">
-                    <t t-set="data" t-value="doc.get_audit_report_data()"/>
-                    <t t-set="kpis" t-value="data['kpis']"/>
-                    <t t-set="ra" t-value="data['room_analysis']"/>
-                    <t t-set="inhouse" t-value="data['inhouse']"/>
-                    <t t-set="daily_rent" t-value="data['daily_rent']"/>
-                    <t t-set="checkouts" t-value="data['checkouts']"/>
-                    <t t-set="checkins" t-value="data['checkins']"/>
-                    <t t-set="cash_rep" t-value="data['cash_report']"/>
-                    <t t-set="ledger" t-value="data['guest_ledger']"/>
+            <t t-call="web.external_layout">
+                <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #222;">
+                    
+                    <!-- ========================================================= -->
+                    <!-- PAGE 1: EXECUTIVE COVER / TITLE PAGE                      -->
+                    <!-- ========================================================= -->
+                    <div style="min-height: 880px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding-top: 120px;">
+                        
+                        <div style="margin-bottom: 50px;">
+                            <h1 style="font-size: 42px; font-weight: 900; letter-spacing: 16px; color: #111; margin-bottom: 20px; text-transform: uppercase;">
+                                N I G H T
+                            </h1>
+                            <h1 style="font-size: 42px; font-weight: 900; letter-spacing: 16px; color: #111; margin-bottom: 25px; text-transform: uppercase;">
+                                A U D I T
+                            </h1>
+                            <div style="width: 200px; height: 3px; background-color: #333; margin: 0 auto 40px auto;"></div>
+                        </div>
 
-                    <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 11px; color: #212529;">
-                        <style>
-                            .page-break { page-break-before: always; }
-                            .table-custom { width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 20px; font-size: 10px; }
-                            .table-custom th { background-color: #f1f3f5; color: #111; font-weight: bold; border: 1px solid #444; padding: 5px 6px; text-align: left; }
-                            .table-custom td { border: 1px solid #777; padding: 4px 6px; }
-                            .table-custom tr.total-row td { font-weight: bold; background-color: #f8f9fa; border-top: 2px solid #000; }
-                            .text-right { text-align: right; }
-                            .text-center { text-align: center; }
-                            .report-header-banner { border: 1px solid #333; padding: 8px 12px; margin-bottom: 12px; background-color: #fafafa; }
-                            .report-title-main { font-size: 18px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin: 0; }
-                            .date-badge { display: inline-block; border: 1px solid #333; padding: 3px 10px; font-weight: bold; font-size: 11px; float: right; background: #fff; }
-                        </style>
-
-                        <!-- ================= PAGE 1: BRANDED COVER PAGE ================= -->
-                        <div class="cover-container" style="text-align: center; padding-top: 130px; min-height: 620px;">
-                            <div style="margin-top: 20px; margin-bottom: 30px;">
-                                <div class="cover-title" style="font-size: 52px; font-weight: 900; letter-spacing: 18px; color: #1e3c72; text-transform: uppercase; margin: 15px 0;">
-                                    N I G H T
-                                </div>
-                                <div class="cover-title" style="font-size: 52px; font-weight: 900; letter-spacing: 18px; color: #1e3c72; text-transform: uppercase; margin: 15px 0;">
-                                    A U D I T
-                                </div>
-                            </div>
-
-                            <div class="cover-divider" style="width: 150px; height: 3px; background-color: #1e3c72; margin: 50px auto;"/>
-
-                            <div class="cover-label" style="font-size: 15px; text-transform: uppercase; letter-spacing: 6px; color: #6c757d; font-weight: bold; margin-bottom: 10px;">
+                        <div style="margin-bottom: 35px;">
+                            <p style="font-size: 14px; letter-spacing: 4px; font-weight: 700; color: #777; margin-bottom: 6px; text-transform: uppercase;">
                                 O N
-                            </div>
-                            <div class="cover-value" style="font-size: 24px; font-weight: bold; color: #212529; letter-spacing: 2px; margin-bottom: 50px;">
-                                <t t-esc="doc.date" t-options='{"widget": "date", "format": "dd MMMM yyyy"}'/>
-                            </div>
+                            </p>
+                            <h3 style="font-size: 22px; font-weight: 800; color: #000; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 0;">
+                                <t t-esc="cover.get('audit_date_formatted', '-')"/>
+                            </h3>
+                        </div>
 
-                            <div class="cover-label" style="font-size: 15px; text-transform: uppercase; letter-spacing: 6px; color: #6c757d; font-weight: bold; margin-bottom: 10px;">
+                        <div style="margin-bottom: 40px;">
+                            <p style="font-size: 14px; letter-spacing: 4px; font-weight: 700; color: #777; margin-bottom: 6px; text-transform: uppercase;">
                                 B Y
-                            </div>
-                            <div class="cover-value" style="font-size: 22px; font-weight: bold; color: #212529; letter-spacing: 1px;">
-                                <t t-esc="doc.user_id.name"/>
-                            </div>
+                            </p>
+                            <h4 style="font-size: 18px; font-weight: 700; color: #111; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 0;">
+                                <t t-esc="cover.get('audited_by', '-')"/>
+                            </h4>
                         </div>
 
-                        <!-- ================= PAGE 2: ROOM ANALYSIS SUMMARY (IMAGE 2) ================= -->
-                        <div class="page-break"/>
-                        <div class="report-header-banner">
-                            <div class="date-badge">Date: <t t-esc="doc.date" t-options='{"widget": "date", "format": "dd/MM/yyyy"}'/></div>
-                            <h2 class="report-title-main">Room Analysis Summary</h2>
-                            <div style="font-size: 10px; color: #666; margin-top: 4px;">24-Hour Operational &amp; Management Performance Audit</div>
+                        <t t-if="cover.get('notes')">
+                            <div style="margin-top: 30px; width: 80%; max-width: 550px; padding: 12px 18px; border: 1px dashed #aaa; background-color: #fafafa; border-radius: 6px; font-size: 12px; text-align: left;">
+                                <strong>Audit Remarks:</strong> <span t-esc="cover.get('notes')"/>
+                            </div>
+                        </t>
+
+                        <div style="margin-top: 60px; font-size: 11px; color: #888; letter-spacing: 1px;">
+                            24-HOUR CONSOLIDATED OPERATIONAL &amp; FINANCIAL AUDIT REPORT
+                        </div>
+                    </div>
+
+                    <!-- ========================================================= -->
+                    <!-- PAGE 2: ROOM ANALYSIS & 24-HR PERFORMANCE KPIS            -->
+                    <!-- ========================================================= -->
+                    <p style="page-break-before: always;"/>
+                    <div style="padding-top: 15px;">
+                        <div class="text-center mb-3">
+                            <h3 style="font-weight: bold; color: #111; margin-bottom: 4px; text-transform: uppercase;">1. Room Analysis &amp; 24-Hr Performance KPIs</h3>
+                            <p style="font-size: 12px; color: #555;">Audit Date: <strong style="color: #000;" t-esc="cover.get('audit_date', '-')"/></p>
                         </div>
 
-                        <table class="table-custom" style="width: 75%; margin: 15px auto;">
+                        <div class="row mb-3">
+                            <!-- Left: Room Inventory -->
+                            <div class="col-6">
+                                <div style="border: 1px solid #777; border-radius: 6px; overflow: hidden; background-color: #fff;">
+                                    <div style="background-color: #2c3e50; color: #fff; padding: 6px 10px; font-weight: bold; font-size: 11px;">
+                                        ROOM OCCUPANCY &amp; INVENTORY
+                                    </div>
+                                    <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                                        <tr style="border-bottom: 1px solid #eee;">
+                                            <td style="padding: 5px 10px; font-weight: 600;">Total Hotel Rooms</td>
+                                            <td style="padding: 5px 10px; text-align: right; font-weight: bold;"><t t-esc="kpis.get('total_rooms', 0)"/></td>
+                                        </tr>
+                                        <tr style="border-bottom: 1px solid #eee;">
+                                            <td style="padding: 5px 10px; font-weight: 600;">Available Rooms</td>
+                                            <td style="padding: 5px 10px; text-align: right;"><t t-esc="kpis.get('available_rooms', 0)"/></td>
+                                        </tr>
+                                        <tr style="border-bottom: 1px solid #eee; background-color: #f8f9fa;">
+                                            <td style="padding: 5px 10px; font-weight: 700; color: #0056b3;">Occupied Rooms</td>
+                                            <td style="padding: 5px 10px; text-align: right; font-weight: 700; color: #0056b3;"><t t-esc="kpis.get('occupied_rooms', 0)"/></td>
+                                        </tr>
+                                        <tr style="border-bottom: 1px solid #eee;">
+                                            <td style="padding: 5px 10px; font-weight: 600;">Vacant Rooms</td>
+                                            <td style="padding: 5px 10px; text-align: right;"><t t-esc="kpis.get('vacant_rooms', 0)"/></td>
+                                        </tr>
+                                        <tr style="border-bottom: 1px solid #eee;">
+                                            <td style="padding: 5px 10px; font-weight: 600;">Under Maintenance / Repair</td>
+                                            <td style="padding: 5px 10px; text-align: right;"><t t-esc="kpis.get('maintenance_rooms', 0)"/></td>
+                                        </tr>
+                                        <tr style="border-bottom: 1px solid #eee;">
+                                            <td style="padding: 5px 10px; font-weight: 600;">House Use / Cleaning</td>
+                                            <td style="padding: 5px 10px; text-align: right;"><t t-esc="kpis.get('house_use_cleaning', 0)"/></td>
+                                        </tr>
+                                        <tr style="border-bottom: 1px solid #eee; background-color: #e8f4fd;">
+                                            <td style="padding: 6px 10px; font-weight: 700;">Occupancy Rate (%)</td>
+                                            <td style="padding: 6px 10px; text-align: right; font-weight: 800; font-size: 13px; color: #0b5ed7;"><t t-esc="kpis.get('occupancy_rate', '0%')"/></td>
+                                        </tr>
+                                        <tr style="border-bottom: 1px solid #eee;">
+                                            <td style="padding: 5px 10px; font-weight: 600;">Arrivals (Check-Ins Today)</td>
+                                            <td style="padding: 5px 10px; text-align: right;"><t t-esc="kpis.get('arrivals', 0)"/></td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 5px 10px; font-weight: 600;">Departures (Check-Outs Today)</td>
+                                            <td style="padding: 5px 10px; text-align: right;"><t t-esc="kpis.get('departures', 0)"/></td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Right: Financial Metrics -->
+                            <div class="col-6">
+                                <div style="border: 1px solid #777; border-radius: 6px; overflow: hidden; background-color: #fff;">
+                                    <div style="background-color: #2c3e50; color: #fff; padding: 6px 10px; font-weight: bold; font-size: 11px;">
+                                        FINANCIAL PERFORMANCE (24-HR)
+                                    </div>
+                                    <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                                        <tr style="border-bottom: 1px solid #eee;">
+                                            <td style="padding: 5px 10px; font-weight: 600;">Total Room Rent</td>
+                                            <td style="padding: 5px 10px; text-align: right; font-weight: bold;"><t t-esc="kpis.get('total_room_rent', '0.00')"/></td>
+                                        </tr>
+                                        <tr style="border-bottom: 1px solid #eee;">
+                                            <td style="padding: 5px 10px; font-weight: 600;">Total Restaurant &amp; POS</td>
+                                            <td style="padding: 5px 10px; text-align: right;"><t t-esc="kpis.get('total_restaurant_pos', '0.00')"/></td>
+                                        </tr>
+                                        <tr style="border-bottom: 1px solid #eee; background-color: #eafaf1;">
+                                            <td style="padding: 6px 10px; font-weight: 700; color: #198754;">Grand Total Daily Revenue</td>
+                                            <td style="padding: 6px 10px; text-align: right; font-weight: 800; font-size: 13px; color: #198754;"><t t-esc="kpis.get('grand_total_revenue', '0.00')"/></td>
+                                        </tr>
+                                        <tr style="border-bottom: 1px solid #eee;">
+                                            <td style="padding: 5px 10px; font-weight: 600;">ARR (Average Room Rate)</td>
+                                            <td style="padding: 5px 10px; text-align: right; font-weight: 700;"><t t-esc="kpis.get('arr', '0.00')"/></td>
+                                        </tr>
+                                        <tr style="border-bottom: 1px solid #eee;">
+                                            <td style="padding: 5px 10px; font-weight: 600;">RevPAR (Rev per Avail Room)</td>
+                                            <td style="padding: 5px 10px; text-align: right; font-weight: 700;"><t t-esc="kpis.get('revpar', '0.00')"/></td>
+                                        </tr>
+                                        <tr style="border-bottom: 1px solid #eee;">
+                                            <td style="padding: 5px 10px; font-weight: 600;">In-House Guests (Pax)</td>
+                                            <td style="padding: 5px 10px; text-align: right;"><t t-esc="kpis.get('inhouse_pax', 0)"/></td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 5px 10px; font-weight: 600;">Average Guest Rate (AGR)</td>
+                                            <td style="padding: 5px 10px; text-align: right; font-weight: 700;"><t t-esc="kpis.get('agr', '0.00')"/></td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ========================================================= -->
+                    <!-- PAGE 3: IN-HOUSE GUEST LIST                               -->
+                    <!-- ========================================================= -->
+                    <p style="page-break-before: always;"/>
+                    <div style="padding-top: 15px;">
+                        <div class="text-center mb-3">
+                            <h3 style="font-weight: bold; color: #111; margin-bottom: 4px; text-transform: uppercase;">2. In-House Guest List</h3>
+                            <p style="font-size: 12px; color: #555;">Total In-House Bookings: <strong style="color: #000;" t-esc="len(inhouse_list)"/></p>
+                        </div>
+                        <table class="table table-sm table-bordered" style="width: 100%; border-collapse: collapse; font-size: 10px;">
                             <thead>
-                                <tr>
-                                    <th style="width: 60%;">Metric / Indicator</th>
-                                    <th class="text-right" style="width: 40%;">Today (24 Hours)</th>
+                                <tr style="background-color: #f2f2f2; text-align: center; font-weight: bold; color: #111;">
+                                    <th style="border: 1px solid #555; padding: 5px 2px; width: 4%;">SN</th>
+                                    <th style="border: 1px solid #555; padding: 5px 4px; width: 18%;">Guest Name</th>
+                                    <th style="border: 1px solid #555; padding: 5px 3px; width: 9%;">Room No</th>
+                                    <th style="border: 1px solid #555; padding: 5px 3px; width: 9%;">Check In</th>
+                                    <th style="border: 1px solid #555; padding: 5px 3px; width: 9%;">Dep Date</th>
+                                    <th style="border: 1px solid #555; padding: 5px 3px; width: 12%;">Pricelist</th>
+                                    <th style="border: 1px solid #555; padding: 5px 3px; width: 13%;">Nationality</th>
+                                    <th style="border: 1px solid #555; padding: 5px 3px; width: 14%;">City Ledger</th>
+                                    <th style="border: 1px solid #555; padding: 5px 3px; width: 12%; text-align: right;">Room Rate</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr>
-                                    <td><strong>Occupied Rooms</strong></td>
-                                    <td class="text-right"><t t-esc="ra['occupied']"/></td>
+                                <t t-if="inhouse_list">
+                                    <t t-foreach="inhouse_list" t-as="ih">
+                                        <tr>
+                                            <td class="text-center" style="border: 1px solid #666; padding: 4px 2px;"><t t-esc="ih['s_no']"/></td>
+                                            <td style="border: 1px solid #666; padding: 4px;"><t t-esc="ih['guest_name']"/></td>
+                                            <td class="text-center" style="border: 1px solid #666; padding: 4px;"><t t-esc="ih['room_no']"/></td>
+                                            <td class="text-center" style="border: 1px solid #666; padding: 4px;"><t t-esc="ih['checkin']"/></td>
+                                            <td class="text-center" style="border: 1px solid #666; padding: 4px;"><t t-esc="ih['checkout']"/></td>
+                                            <td style="border: 1px solid #666; padding: 4px;"><t t-esc="ih['pricelist']"/></td>
+                                            <td style="border: 1px solid #666; padding: 4px;"><t t-esc="ih['nationality']"/></td>
+                                            <td style="border: 1px solid #666; padding: 4px;"><t t-esc="ih['company']"/></td>
+                                            <td class="text-right" style="border: 1px solid #666; padding: 4px; font-weight: bold;"><t t-esc="ih['room_rate']"/></td>
+                                        </tr>
+                                    </t>
+                                </t>
+                                <t t-else="">
+                                    <tr>
+                                        <td colspan="9" class="text-center" style="border: 1px solid #666; padding: 10px; color: #777;">No active in-house guests recorded.</td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- ========================================================= -->
+                    <!-- PAGE 4: CHECK-INS (ARRIVALS) & CHECK-OUTS (DEPARTURES)    -->
+                    <!-- ========================================================= -->
+                    <p style="page-break-before: always;"/>
+                    <div style="padding-top: 15px;">
+                        <div class="text-center mb-3">
+                            <h3 style="font-weight: bold; color: #111; margin-bottom: 4px; text-transform: uppercase;">3. Daily Arrivals &amp; Departures Activity</h3>
+                            <p style="font-size: 12px; color: #555;">Audit Date: <strong style="color: #000;" t-esc="cover.get('audit_date', '-')"/></p>
+                        </div>
+
+                        <!-- Arrivals Section -->
+                        <h4 style="font-weight: bold; font-size: 11px; margin-bottom: 6px; color: #0056b3;">ARRIVALS (CHECK-INS TODAY)</h4>
+                        <table class="table table-sm table-bordered mb-4" style="width: 100%; border-collapse: collapse; font-size: 10px;">
+                            <thead>
+                                <tr style="background-color: #f2f2f2; text-align: center; font-weight: bold; color: #111;">
+                                    <th style="border: 1px solid #555; padding: 4px 2px; width: 5%;">S No</th>
+                                    <th style="border: 1px solid #555; padding: 4px; width: 25%;">Guest Name</th>
+                                    <th style="border: 1px solid #555; padding: 4px; width: 12%;">Room No</th>
+                                    <th style="border: 1px solid #555; padding: 4px; width: 15%;">In Time</th>
+                                    <th style="border: 1px solid #555; padding: 4px; width: 15%;">Expected Departure</th>
+                                    <th style="border: 1px solid #555; padding: 4px; width: 15%;">Booking No</th>
+                                    <th style="border: 1px solid #555; padding: 4px; width: 13%;">Plan</th>
                                 </tr>
-                                <tr>
-                                    <td><strong>Vacant Rooms</strong></td>
-                                    <td class="text-right"><t t-esc="ra['vacant']"/></td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Under Repair / Maintenance</strong></td>
-                                    <td class="text-right"><t t-esc="ra['repair']"/></td>
-                                </tr>
-                                <tr>
-                                    <td><strong>House Use</strong></td>
-                                    <td class="text-right"><t t-esc="ra['house_use']"/></td>
-                                </tr>
-                                <tr style="background-color: #f8f9fa; font-weight: bold;">
-                                    <td><strong>Total Rooms</strong></td>
-                                    <td class="text-right"><t t-esc="ra['total_rooms']"/></td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Total Rooms (Available)</strong></td>
-                                    <td class="text-right"><t t-esc="ra['total_avail']"/></td>
-                                </tr>
-                                <tr>
-                                    <td><strong>ARR (Average Room Rate)</strong></td>
-                                    <td class="text-right"><t t-esc="ra['arr']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Guest In-House (Pax)</strong></td>
-                                    <td class="text-right"><t t-esc="ra['guest_inhouse']"/></td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Avg Guest Rate</strong></td>
-                                    <td class="text-right"><t t-esc="ra['avg_guest_rate']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
-                                </tr>
-                                <tr>
-                                    <td><strong>RevPAR (Revenue Per Available Room)</strong></td>
-                                    <td class="text-right"><t t-esc="ra['revpar']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
-                                </tr>
-                                <tr style="font-weight: bold; background-color: #e9ecef;">
-                                    <td><strong>Occupancy Rate (%)</strong></td>
-                                    <td class="text-right"><t t-esc="ra['occupancy_pct']"/> %</td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Arrivals / Check-Ins Today</strong></td>
-                                    <td class="text-right"><t t-esc="ra['checkin_today']"/></td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Departures / Check-Outs Today</strong></td>
-                                    <td class="text-right"><t t-esc="ra['checkout_today']"/></td>
-                                </tr>
-                                <tr style="border-top: 2px solid #000;">
-                                    <td><strong>Total Room Rent Revenue</strong></td>
-                                    <td class="text-right"><t t-esc="kpis['room_revenue']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Total Restaurant &amp; POS Revenue</strong></td>
-                                    <td class="text-right"><t t-esc="kpis['pos_revenue']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
-                                </tr>
-                                <tr style="background-color: #d1e7dd; font-size: 12px; font-weight: bold;">
-                                    <td><strong>Grand Total Daily Revenue</strong></td>
-                                    <td class="text-right"><t t-esc="kpis['total_revenue']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
-                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-if="arrivals_list">
+                                    <t t-foreach="arrivals_list" t-as="a">
+                                        <tr>
+                                            <td class="text-center" style="border: 1px solid #666; padding: 4px 2px;"><t t-esc="a['s_no']"/></td>
+                                            <td style="border: 1px solid #666; padding: 4px;"><t t-esc="a['guest_name']"/></td>
+                                            <td class="text-center" style="border: 1px solid #666; padding: 4px;"><t t-esc="a['room_no']"/></td>
+                                            <td class="text-center" style="border: 1px solid #666; padding: 4px;"><t t-esc="a['in_time']"/></td>
+                                            <td class="text-center" style="border: 1px solid #666; padding: 4px;"><t t-esc="a['out_date']"/></td>
+                                            <td class="text-center" style="border: 1px solid #666; padding: 4px;"><t t-esc="a['booking_no']"/></td>
+                                            <td class="text-center" style="border: 1px solid #666; padding: 4px;"><t t-esc="a['plan']"/></td>
+                                        </tr>
+                                    </t>
+                                </t>
+                                <t t-else="">
+                                    <tr>
+                                        <td colspan="7" class="text-center" style="border: 1px solid #666; padding: 8px; color: #777;">No check-ins recorded today.</td>
+                                    </tr>
+                                </t>
                             </tbody>
                         </table>
 
-                        <!-- ================= PAGE 3: IN HOUSE GUEST LIST (IMAGE 1) ================= -->
-                        <div class="page-break"/>
-                        <div class="report-header-banner">
-                            <div class="date-badge"><t t-esc="doc.date" t-options='{"widget": "date", "format": "dd/MM/yyyy"}'/></div>
-                            <h2 class="report-title-main">In House Guest List</h2>
-                        </div>
-
-                        <t t-if="inhouse">
-                            <table class="table-custom">
-                                <thead>
-                                    <tr>
-                                        <th style="width: 7%;">Rm No</th>
-                                        <th style="width: 22%;">Name</th>
-                                        <th class="text-center" style="width: 4%;">Pax</th>
-                                        <th class="text-center" style="width: 10%;">Check In</th>
-                                        <th class="text-center" style="width: 10%;">Dep Date</th>
-                                        <th class="text-center" style="width: 8%;">Plan</th>
-                                        <th style="width: 10%;">Reg</th>
-                                        <th style="width: 11%;">Nationality</th>
-                                        <th style="width: 11%;">City Ledger</th>
-                                        <th class="text-right" style="width: 7%;">Room Rate</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <t t-set="total_rate" t-value="0.0"/>
-                                    <t t-set="total_pax" t-value="0"/>
-                                    <t t-foreach="inhouse" t-as="row">
-                                        <t t-set="total_rate" t-value="total_rate + row['room_rate']"/>
-                                        <t t-set="total_pax" t-value="total_pax + row['pax']"/>
+                        <!-- Departures Section -->
+                        <h4 style="font-weight: bold; font-size: 11px; margin-bottom: 6px; color: #dc3545;">DEPARTURES (CHECK-OUTS TODAY)</h4>
+                        <table class="table table-sm table-bordered" style="width: 100%; border-collapse: collapse; font-size: 10px;">
+                            <thead>
+                                <tr style="background-color: #f2f2f2; text-align: center; font-weight: bold; color: #111;">
+                                    <th style="border: 1px solid #555; padding: 4px 2px; width: 5%;">S No</th>
+                                    <th style="border: 1px solid #555; padding: 4px; width: 24%;">Guest Name</th>
+                                    <th style="border: 1px solid #555; padding: 4px; width: 10%;">Room No</th>
+                                    <th style="border: 1px solid #555; padding: 4px; width: 14%;">Out Time</th>
+                                    <th style="border: 1px solid #555; padding: 4px; width: 15%;">Invoice No</th>
+                                    <th style="border: 1px solid #555; padding: 4px; width: 18%;">Company</th>
+                                    <th style="border: 1px solid #555; padding: 4px; width: 14%; text-align: right;">Total Rate</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-if="departures_list">
+                                    <t t-foreach="departures_list" t-as="d">
                                         <tr>
-                                            <td><strong><t t-esc="row['rm_no']"/></strong></td>
-                                            <td><t t-esc="row['name']"/></td>
-                                            <td class="text-center"><t t-esc="row['pax']"/></td>
-                                            <td class="text-center"><t t-esc="row['checkin']"/></td>
-                                            <td class="text-center"><t t-esc="row['checkout']"/></td>
-                                            <td class="text-center"><t t-esc="row['plan']"/></td>
-                                            <td><t t-esc="row['reg']"/></td>
-                                            <td><t t-esc="row['nationality']"/></td>
-                                            <td><t t-esc="row['city_ledger']"/></td>
-                                            <td class="text-right"><t t-esc="'%.2f' % row['room_rate']"/></td>
+                                            <td class="text-center" style="border: 1px solid #666; padding: 4px 2px;"><t t-esc="d['s_no']"/></td>
+                                            <td style="border: 1px solid #666; padding: 4px;"><t t-esc="d['guest_name']"/></td>
+                                            <td class="text-center" style="border: 1px solid #666; padding: 4px;"><t t-esc="d['room_no']"/></td>
+                                            <td class="text-center" style="border: 1px solid #666; padding: 4px;"><t t-esc="d['out_time']"/></td>
+                                            <td class="text-center" style="border: 1px solid #666; padding: 4px;"><t t-esc="d['invoice_no']"/></td>
+                                            <td style="border: 1px solid #666; padding: 4px;"><t t-esc="d['company']"/></td>
+                                            <td class="text-right" style="border: 1px solid #666; padding: 4px; font-weight: bold;"><t t-esc="d['rate']"/></td>
                                         </tr>
                                     </t>
-                                    <tr class="total-row">
-                                        <td colspan="2"><strong>Total Occupied Rooms: <t t-esc="len(inhouse)"/></strong></td>
-                                        <td class="text-center"><strong><t t-esc="total_pax"/></strong></td>
-                                        <td colspan="6"></td>
-                                        <td class="text-right"><strong><t t-esc="total_rate" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></strong></td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </t>
-                        <t t-else="">
-                            <p style="font-style: italic; color: #777;">No in-house guests recorded for this date.</p>
-                        </t>
-
-                        <!-- ================= PAGE 4: DAILY RENT / ROOM CHARGES (IMAGE 4) ================= -->
-                        <div class="page-break"/>
-                        <div class="report-header-banner">
-                            <div class="date-badge">From <t t-esc="doc.date" t-options='{"widget": "date", "format": "dd/MM/yyyy"}'/> To <t t-esc="doc.date" t-options='{"widget": "date", "format": "dd/MM/yyyy"}'/></div>
-                            <h2 class="report-title-main">Daily Rent</h2>
-                            <div style="font-size: 10px; font-weight: bold; color: #555; margin-top: 2px;">ROOM CHARGES</div>
-                        </div>
-
-                        <t t-if="daily_rent">
-                            <table class="table-custom">
-                                <thead>
+                                </t>
+                                <t t-else="">
                                     <tr>
-                                        <th class="text-center" style="width: 5%;">S No</th>
-                                        <th style="width: 25%;">Name</th>
-                                        <th class="text-center" style="width: 9%;">Room No</th>
-                                        <th style="width: 13%;">Card No</th>
-                                        <th class="text-center" style="width: 12%;">Check In</th>
-                                        <th class="text-center" style="width: 5%;">Pax</th>
-                                        <th style="width: 20%;">Company Name</th>
-                                        <th class="text-right" style="width: 11%;">Rent</th>
+                                        <td colspan="7" class="text-center" style="border: 1px solid #666; padding: 8px; color: #777;">No check-outs recorded today.</td>
                                     </tr>
-                                </thead>
-                                <tbody>
-                                    <t t-set="total_rent" t-value="0.0"/>
-                                    <t t-foreach="daily_rent" t-as="row">
-                                        <t t-set="total_rent" t-value="total_rent + row['rent']"/>
-                                        <tr>
-                                            <td class="text-center"><t t-esc="row['s_no']"/></td>
-                                            <td><t t-esc="row['name']"/></td>
-                                            <td class="text-center"><strong><t t-esc="row['room_no']"/></strong></td>
-                                            <td><t t-esc="row['card_no']"/></td>
-                                            <td class="text-center"><t t-esc="row['checkin']"/></td>
-                                            <td class="text-center"><t t-esc="row['pax']"/></td>
-                                            <td><t t-esc="row['company_name']"/></td>
-                                            <td class="text-right"><t t-esc="'%.2f' % row['rent']"/></td>
-                                        </tr>
-                                    </t>
-                                    <tr class="total-row">
-                                        <td colspan="5"><strong>Total Records: <t t-esc="len(daily_rent)"/></strong></td>
-                                        <td colspan="2"></td>
-                                        <td class="text-right"><strong><t t-esc="total_rent" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></strong></td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </t>
-                        <t t-else="">
-                            <p style="font-style: italic; color: #777;">No room rent charges for this date.</p>
-                        </t>
-
-                        <!-- ================= PAGE 5: CHECK OUT REPORT (IMAGE 3) ================= -->
-                        <div class="page-break"/>
-                        <div class="report-header-banner">
-                            <div class="date-badge">From <t t-esc="doc.date" t-options='{"widget": "date", "format": "dd/MM/yyyy"}'/> To <t t-esc="doc.date" t-options='{"widget": "date", "format": "dd/MM/yyyy"}'/></div>
-                            <h2 class="report-title-main">Check Out Report</h2>
-                        </div>
-
-                        <t t-if="checkouts">
-                            <table class="table-custom">
-                                <thead>
-                                    <tr>
-                                        <th class="text-center" style="width: 4%;">S No</th>
-                                        <th style="width: 20%;">Guest Name</th>
-                                        <th class="text-center" style="width: 7%;">Room No</th>
-                                        <th class="text-center" style="width: 4%;">Pax</th>
-                                        <th style="width: 9%;">Card No</th>
-                                        <th style="width: 9%;">Invoice No</th>
-                                        <th style="width: 14%;">Company</th>
-                                        <th class="text-right" style="width: 7%;">Rate</th>
-                                        <th class="text-center" style="width: 8%;">In Date</th>
-                                        <th class="text-center" style="width: 6%;">In Time</th>
-                                        <th class="text-center" style="width: 8%;">Out Date</th>
-                                        <th class="text-center" style="width: 6%;">Out Time</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <t t-set="total_out_rate" t-value="0.0"/>
-                                    <t t-foreach="checkouts" t-as="row">
-                                        <t t-set="total_out_rate" t-value="total_out_rate + row['rate']"/>
-                                        <tr>
-                                            <td class="text-center"><t t-esc="row['s_no']"/></td>
-                                            <td><t t-esc="row['guest_name']"/></td>
-                                            <td class="text-center"><strong><t t-esc="row['room_no']"/></strong></td>
-                                            <td class="text-center"><t t-esc="row['pax']"/></td>
-                                            <td><t t-esc="row['card_no']"/></td>
-                                            <td><t t-esc="row['invoice_no']"/></td>
-                                            <td><t t-esc="row['company']"/></td>
-                                            <td class="text-right"><t t-esc="'%.2f' % row['rate']"/></td>
-                                            <td class="text-center"><t t-esc="row['in_date']"/></td>
-                                            <td class="text-center"><t t-esc="row['in_time']"/></td>
-                                            <td class="text-center"><t t-esc="row['out_date']"/></td>
-                                            <td class="text-center"><t t-esc="row['out_time']"/></td>
-                                        </tr>
-                                    </t>
-                                    <tr class="total-row">
-                                        <td colspan="7"><strong>Total Departures: <t t-esc="len(checkouts)"/></strong></td>
-                                        <td class="text-right"><strong><t t-esc="total_out_rate" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></strong></td>
-                                        <td colspan="4"></td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </t>
-                        <t t-else="">
-                            <p style="font-style: italic; color: #777;">No check-outs recorded on this date.</p>
-                        </t>
-
-                        <!-- ================= PAGE 6: CASH & TRANSACTIONS REPORT (IMAGE 5) ================= -->
-                        <div class="page-break"/>
-                        <div class="report-header-banner">
-                            <div class="date-badge">From <t t-esc="doc.date" t-options='{"widget": "date", "format": "dd/MM/yyyy"}'/> To <t t-esc="doc.date" t-options='{"widget": "date", "format": "dd/MM/yyyy"}'/></div>
-                            <h2 class="report-title-main">Cash Report</h2>
-                            <div style="font-size: 10px; color: #666; margin-top: 2px;">Daily Collections &amp; Restaurant Transactions</div>
-                        </div>
-
-                        <t t-if="cash_rep">
-                            <table class="table-custom">
-                                <thead>
-                                    <tr>
-                                        <th class="text-center" style="width: 4%;">S.No</th>
-                                        <th style="width: 12%;">Date</th>
-                                        <th class="text-center" style="width: 6%;">CAS</th>
-                                        <th style="width: 18%;">Name</th>
-                                        <th style="width: 10%;">Voucher No</th>
-                                        <th style="width: 16%;">Remarks</th>
-                                        <th style="width: 8%;">CardNo</th>
-                                        <th class="text-center" style="width: 6%;">RoomNo</th>
-                                        <th class="text-right" style="width: 7%;">Debit</th>
-                                        <th class="text-right" style="width: 6%;">Credit</th>
-                                        <th class="text-right" style="width: 7%;">Balance</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <t t-set="total_debit" t-value="0.0"/>
-                                    <t t-foreach="cash_rep" t-as="row">
-                                        <t t-set="total_debit" t-value="total_debit + row['debit']"/>
-                                        <tr>
-                                            <td class="text-center"><t t-esc="row['s_no']"/></td>
-                                            <td><t t-esc="row['date_time']"/></td>
-                                            <td class="text-center"><t t-esc="row['method']"/></td>
-                                            <td><t t-esc="row['name']"/></td>
-                                            <td><t t-esc="row['voucher_no']"/></td>
-                                            <td><t t-esc="row['remarks']"/></td>
-                                            <td><t t-esc="row['card_no']"/></td>
-                                            <td class="text-center"><t t-esc="row['room_no']"/></td>
-                                            <td class="text-right"><t t-esc="'%.2f' % row['debit']"/></td>
-                                            <td class="text-right"><t t-esc="'%.2f' % row['credit']"/></td>
-                                            <td class="text-right"><t t-esc="'%.2f' % row['balance']"/></td>
-                                        </tr>
-                                    </t>
-                                    <tr class="total-row">
-                                        <td colspan="8"><strong>Total Collections: <t t-esc="len(cash_rep)"/></strong></td>
-                                        <td class="text-right"><strong><t t-esc="total_debit" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></strong></td>
-                                        <td></td>
-                                        <td class="text-right"><strong><t t-esc="total_debit" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></strong></td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </t>
-                        <t t-else="">
-                            <p style="font-style: italic; color: #777;">No cash or restaurant transactions for this date.</p>
-                        </t>
-
-                        <!-- ================= PAGE 7: GUEST LEDGER ================= -->
-                        <div class="page-break"/>
-                        <div class="report-header-banner">
-                            <div class="date-badge"><t t-esc="doc.date" t-options='{"widget": "date", "format": "dd/MM/yyyy"}'/></div>
-                            <h2 class="report-title-main">Guest Ledger &amp; Open Balances</h2>
-                        </div>
-
-                        <t t-if="ledger">
-                            <table class="table-custom">
-                                <thead>
-                                    <tr>
-                                        <th class="text-center" style="width: 4%;">S No</th>
-                                        <th style="width: 14%;">Folio / Booking</th>
-                                        <th class="text-center" style="width: 7%;">Room</th>
-                                        <th style="width: 20%;">Guest Name</th>
-                                        <th style="width: 15%;">Company / Ledger</th>
-                                        <th class="text-center" style="width: 10%;">Check-In</th>
-                                        <th class="text-center" style="width: 10%;">Check-Out</th>
-                                        <th class="text-right" style="width: 10%;">Room Total</th>
-                                        <th class="text-right" style="width: 10%;">POS Total</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <t t-foreach="ledger" t-as="row">
-                                        <tr>
-                                            <td class="text-center"><t t-esc="row['s_no']"/></td>
-                                            <td><strong><t t-esc="row['booking_no']"/></strong></td>
-                                            <td class="text-center"><t t-esc="row['room']"/></td>
-                                            <td><t t-esc="row['guest_name']"/></td>
-                                            <td><t t-esc="row['company']"/></td>
-                                            <td class="text-center"><t t-esc="row['checkin']"/></td>
-                                            <td class="text-center"><t t-esc="row['checkout']"/></td>
-                                            <td class="text-right"><t t-esc="row['room_charges']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
-                                            <td class="text-right"><t t-esc="row['pos_charges']" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
-                                        </tr>
-                                    </t>
-                                </tbody>
-                            </table>
-                        </t>
+                                </t>
+                            </tbody>
+                        </table>
                     </div>
-                </t>
+
+                    <!-- ========================================================= -->
+                    <!-- PAGE 5: DAILY ACCRUED ROOM CHARGES                        -->
+                    <!-- ========================================================= -->
+                    <p style="page-break-before: always;"/>
+                    <div style="padding-top: 15px;">
+                        <div class="text-center mb-3">
+                            <h3 style="font-weight: bold; color: #111; margin-bottom: 4px; text-transform: uppercase;">4. Daily Accrued Room Charges</h3>
+                            <p style="font-size: 12px; color: #555;">Audit Date: <strong style="color: #000;" t-esc="cover.get('audit_date', '-')"/></p>
+                        </div>
+                        <table class="table table-sm table-bordered" style="width: 100%; border-collapse: collapse; font-size: 10px;">
+                            <thead>
+                                <tr style="background-color: #f2f2f2; text-align: center; font-weight: bold; color: #111;">
+                                    <th style="border: 1px solid #555; padding: 5px 2px; width: 4%;">S No</th>
+                                    <th style="border: 1px solid #555; padding: 5px 4px; width: 20%;">Name</th>
+                                    <th style="border: 1px solid #555; padding: 5px 3px; width: 10%;">Room No</th>
+                                    <th style="border: 1px solid #555; padding: 5px 3px; width: 12%;">Card No</th>
+                                    <th style="border: 1px solid #555; padding: 5px 3px; width: 11%;">Check In</th>
+                                    <th style="border: 1px solid #555; padding: 5px 2px; width: 6%;">Pax</th>
+                                    <th style="border: 1px solid #555; padding: 5px 4px; width: 22%;">Company Name</th>
+                                    <th style="border: 1px solid #555; padding: 5px 3px; width: 15%; text-align: right;">Daily Rent</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-if="daily_rent_list">
+                                    <t t-foreach="daily_rent_list" t-as="r">
+                                        <tr>
+                                            <td class="text-center" style="border: 1px solid #666; padding: 4px 2px;"><t t-esc="r['s_no']"/></td>
+                                            <td style="border: 1px solid #666; padding: 4px;"><t t-esc="r['name']"/></td>
+                                            <td class="text-center" style="border: 1px solid #666; padding: 4px;"><t t-esc="r['room_no']"/></td>
+                                            <td class="text-center" style="border: 1px solid #666; padding: 4px;"><t t-esc="r['card_no']"/></td>
+                                            <td class="text-center" style="border: 1px solid #666; padding: 4px;"><t t-esc="r['check_in']"/></td>
+                                            <td class="text-center" style="border: 1px solid #666; padding: 4px;"><t t-esc="r['pax']"/></td>
+                                            <td style="border: 1px solid #666; padding: 4px;"><t t-esc="r['company_name']"/></td>
+                                            <td class="text-right" style="border: 1px solid #666; padding: 4px; font-weight: bold;"><t t-esc="r['rent']"/></td>
+                                        </tr>
+                                    </t>
+                                </t>
+                                <t t-else="">
+                                    <tr>
+                                        <td colspan="8" class="text-center" style="border: 1px solid #666; padding: 10px; color: #777;">No occupied rooms charged on this audit date.</td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                            <tfoot>
+                                <tr style="background-color: #eaeaea; font-weight: bold;">
+                                    <td colspan="7" class="text-right" style="border: 1px solid #555; padding: 5px;">Total Daily Accrued Rent:</td>
+                                    <td class="text-right" style="border: 1px solid #555; padding: 5px; font-size: 11px;"><t t-esc="kpis.get('total_room_rent', '0.00')"/></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+
+                    <!-- ========================================================= -->
+                    <!-- PAGE 6: CASH REPORT / POS & GUEST COLLECTIONS             -->
+                    <!-- ========================================================= -->
+                    <p style="page-break-before: always;"/>
+                    <div style="padding-top: 15px;">
+                        <div class="text-center mb-3">
+                            <h3 style="font-weight: bold; color: #111; margin-bottom: 4px; text-transform: uppercase;">5. Cash Report &amp; POS Collections</h3>
+                            <p style="font-size: 12px; color: #555;">Audit Date: <strong style="color: #000;" t-esc="cover.get('audit_date', '-')"/></p>
+                        </div>
+
+                        <!-- Summary of Collections by Payment Method -->
+                        <t t-if="method_summary">
+                            <div style="border: 1px solid #999; border-radius: 6px; padding: 8px 12px; margin-bottom: 14px; background-color: #fafafa;">
+                                <div style="font-weight: bold; margin-bottom: 4px; color: #333; font-size: 11px;">COLLECTIONS SUMMARY BY PAYMENT METHOD:</div>
+                                <div class="row" style="font-size: 10px;">
+                                    <t t-foreach="method_summary" t-as="m">
+                                        <div class="col-3" style="margin-bottom: 3px;">
+                                            <strong style="color: #555;"><t t-esc="m['method']"/>:</strong> <span style="font-weight: bold; color: #000;" t-esc="m['total']"/>
+                                        </div>
+                                    </t>
+                                </div>
+                            </div>
+                        </t>
+
+                        <!-- Cash Transaction Table -->
+                        <table class="table table-sm table-bordered" style="width: 100%; border-collapse: collapse; font-size: 9px;">
+                            <thead>
+                                <tr style="background-color: #f2f2f2; text-align: center; font-weight: bold; color: #111;">
+                                    <th style="border: 1px solid #555; padding: 4px 2px; width: 4%;">S.No</th>
+                                    <th style="border: 1px solid #555; padding: 4px 2px; width: 13%;">Date</th>
+                                    <th style="border: 1px solid #555; padding: 4px 2px; width: 6%;">CAS</th>
+                                    <th style="border: 1px solid #555; padding: 4px 2px; width: 14%;">Name</th>
+                                    <th style="border: 1px solid #555; padding: 4px 2px; width: 12%;">Voucher No</th>
+                                    <th style="border: 1px solid #555; padding: 4px 2px; width: 15%;">Remarks</th>
+                                    <th style="border: 1px solid #555; padding: 4px 2px; width: 8%;">CardNo</th>
+                                    <th style="border: 1px solid #555; padding: 4px 2px; width: 6%;">RoomNo</th>
+                                    <th style="border: 1px solid #555; padding: 4px 2px; width: 7%; text-align: right;">Debit</th>
+                                    <th style="border: 1px solid #555; padding: 4px 2px; width: 7%; text-align: right;">Credit</th>
+                                    <th style="border: 1px solid #555; padding: 4px 2px; width: 8%; text-align: right;">Balance</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-if="cash_lines">
+                                    <t t-foreach="cash_lines" t-as="cl">
+                                        <tr>
+                                            <td class="text-center" style="border: 1px solid #666; padding: 3px 2px;"><t t-esc="cl['s_no']"/></td>
+                                            <td class="text-center" style="border: 1px solid #666; padding: 3px 2px;"><t t-esc="cl['date']"/></td>
+                                            <td class="text-center" style="border: 1px solid #666; padding: 3px 2px; font-weight: bold;"><t t-esc="cl['cas']"/></td>
+                                            <td style="border: 1px solid #666; padding: 3px 2px;"><t t-esc="cl['name']"/></td>
+                                            <td class="text-center" style="border: 1px solid #666; padding: 3px 2px;"><t t-esc="cl['voucher_no']"/></td>
+                                            <td style="border: 1px solid #666; padding: 3px 2px;"><t t-esc="cl['remarks']"/></td>
+                                            <td class="text-center" style="border: 1px solid #666; padding: 3px 2px;"><t t-esc="cl['card_no']"/></td>
+                                            <td class="text-center" style="border: 1px solid #666; padding: 3px 2px;"><t t-esc="cl['room_no']"/></td>
+                                            <td class="text-right" style="border: 1px solid #666; padding: 3px 2px;"><t t-esc="cl['debit']"/></td>
+                                            <td class="text-right" style="border: 1px solid #666; padding: 3px 2px; font-weight: bold; color: #198754;"><t t-esc="cl['credit']"/></td>
+                                            <td class="text-right" style="border: 1px solid #666; padding: 3px 2px; font-weight: bold;"><t t-esc="cl['balance']"/></td>
+                                        </tr>
+                                    </t>
+                                </t>
+                                <t t-else="">
+                                    <tr>
+                                        <td colspan="11" class="text-center" style="border: 1px solid #666; padding: 8px; color: #777;">No cash or POS transactions recorded on this date.</td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                            <tfoot>
+                                <tr style="background-color: #eaeaea; font-weight: bold;">
+                                    <td colspan="8" class="text-right" style="border: 1px solid #555; padding: 5px;">Total / Closing Balance:</td>
+                                    <td class="text-right" style="border: 1px solid #555; padding: 5px;"><t t-esc="total_debit"/></td>
+                                    <td class="text-right" style="border: 1px solid #555; padding: 5px; color: #198754;"><t t-esc="total_credit"/></td>
+                                    <td class="text-right" style="border: 1px solid #555; padding: 5px; font-size: 10px;"><t t-esc="closing_balance"/></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+
+                </div>
             </t>
         </t>
     </template>

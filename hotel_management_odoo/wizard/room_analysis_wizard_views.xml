@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Room Analysis Wizard Form View -->
+    <record id="room_analysis_wizard_view_form" model="ir.ui.view">
+        <field name="name">room.analysis.wizard.view.form</field>
+        <field name="model">room.analysis.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Room Analysis Summary">
+                <group>
+                    <field name="date"/>
+                </group>
+                <footer>
+                    <button name="action_print_pdf" string="Download PDF" type="object" class="btn-primary" icon="fa-download"/>
+                    <button name="action_print_excel" string="Download XLS" type="object" class="btn-primary" icon="fa-download"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Room Analysis Wizard Action -->
+    <record id="room_analysis_wizard_action" model="ir.actions.act_window">
+        <field name="name">Room Analysis Summary</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">room.analysis.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

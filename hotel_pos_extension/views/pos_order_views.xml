@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-        <!-- Extend POS order form to add hotel booking field -->
+    <!-- Extend POS order form to add hotel booking field -->
     <record id="pos_order_view_form_inherit_hotel" model="ir.ui.view">
         <field name="name">pos.order.view.form.inherit.hotel</field>
         <field name="model">pos.order</field>
@@ -11,12 +11,16 @@
             </xpath>
         </field>
     </record>
-        <!-- Extend POS order list to show hotel-specific status -->
+
+    <!-- Extend POS order list to show hotel booking and hotel-specific status -->
     <record id="pos_order_view_tree_inherit_hotel" model="ir.ui.view">
         <field name="name">pos.order.view.tree.inherit.hotel</field>
         <field name="model">pos.order</field>
         <field name="inherit_id" ref="point_of_sale.view_pos_order_tree"/>
         <field name="arch" type="xml">
+            <xpath expr="//field[@name='partner_id']" position="after">
+                <field name="booking_id" string="Room / Folio" optional="show"/>
+            </xpath>
             <xpath expr="//field[@name='state']" position="replace">
                 <field name="hotel_pos_status" widget="badge"
                        decoration-info="hotel_pos_status == 'draft'"
@@ -26,48 +30,19 @@
         </field>
     </record>
 
-    <!-- Dedicated Rest Orders List View aligned to Folio, Room, and Guest -->
-    <record id="view_hotel_pos_order_tree" model="ir.ui.view">
-        <field name="name">pos.order.hotel.list</field>
+    <!-- Extend POS search view with filter for Hotel Guest Orders -->
+    <record id="pos_order_view_search_inherit_hotel" model="ir.ui.view">
+        <field name="name">pos.order.view.search.inherit.hotel</field>
         <field name="model">pos.order</field>
+        <field name="inherit_id" ref="point_of_sale.view_pos_order_search"/>
         <field name="arch" type="xml">
-            <list string="Rest Orders" decoration-info="hotel_pos_status == 'draft'" decoration-danger="hotel_pos_status == 'cancel'" decoration-success="hotel_pos_status in ('paid', 'done', 'invoiced')">
-                <field name="pos_reference" string="Receipt Number"/>
-                <field name="booking_id" string="Folio / Booking"/>
-                <field name="room_number" string="Room No."/>
-                <field name="partner_id" string="Guest / Customer"/>
-                <field name="date_order" string="Order Date"/>
-                <field name="session_id" optional="hide"/>
-                <field name="user_id" string="Cashier" widget="many2one_avatar_user" optional="show"/>
-                <field name="amount_total" string="Total Amount" sum="Total" widget="monetary"/>
-                <field name="currency_id" invisible="1"/>
-                <field name="hotel_pos_status" string="Status" widget="badge"
-                       decoration-info="hotel_pos_status == 'draft'"
-                       decoration-success="hotel_pos_status in ('paid', 'done', 'invoiced')"
-                       decoration-danger="hotel_pos_status == 'cancel'"/>
-            </list>
+            <xpath expr="//filter[@name='posted']" position="after">
+                <separator/>
+                <filter string="Hotel Guest Orders" name="hotel_orders" domain="[('booking_id', '!=', False)]"/>
+            </xpath>
+            <xpath expr="//group" position="inside">
+                <filter string="Hotel Booking" name="group_by_booking" context="{'group_by': 'booking_id'}"/>
+            </xpath>
         </field>
     </record>
-
-    <!-- Rest Orders Action for Hotel Management -->
-    <record id="action_hotel_pos_orders" model="ir.actions.act_window">
-        <field name="name">Rest Orders</field>
-        <field name="res_model">pos.order</field>
-        <field name="view_mode">list,kanban,form</field>
-        <field name="view_id" ref="view_hotel_pos_order_tree"/>
-        <field name="domain">[('booking_id', '!=', False)]</field>
-        <field name="context">{'search_default_group_by_booking': 1}</field>
-        <field name="help" type="html">
-            <p class="o_view_nocontent_smiling_face">
-                No Restaurant Orders linked to Hotel Guests found!
-            </p>
-        </field>
-    </record>
-
-    <!-- Rest Orders Menu in Hotel Management > Food -->
-    <menuitem id="menu_hotel_pos_orders"
-              name="Rest Orders"
-              parent="hotel_management_odoo.food_menu"
-              action="action_hotel_pos_orders"
-              sequence="5"/>
 </odoo>

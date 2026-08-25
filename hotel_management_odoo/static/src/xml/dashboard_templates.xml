@@ -203,8 +203,8 @@
                  t-on-click="(e)=> this.fetch_night_audit(e)">
                 <div class="card" style="width: 18rem;">
                     <div class="card-img-top dash-icon-1"
-                         style="color:#7b4397;">
-                        <i class="fa fa-moon-o fa-lg"/>
+                         style="color:#4a69bd;">
+                        <i class="fa fa-file-text-o fa-lg"/>
                     </div>
                     <div class="card-body">
                         <div class="dash-count">
@@ -214,7 +214,7 @@
                     </div>
                 </div>
             </div>
-            <!--            Rest Orders-->
+            <!--            POS Orders (Guest Restaurant & POS Orders)-->
             <div groups="hotel_management_odoo.hotel_group_reception"
                  class="col-md-3 col-sm-6 food_order dash-card"
                  t-on-click="(e)=>this.fetch_food_order(e)">
@@ -227,13 +227,14 @@
                         <div class="dash-count">
                             <t t-esc="food_order"/>
                         </div>
-                        <div class="dash-head">Rest Orders</div>
+                        <div class="dash-head">POS Orders</div>
                     </div>
                 </div>
             </div>
             <!--            Total Revenue-->
             <div groups="hotel_management_odoo.hotel_group_reception"
-                 class="col-md-3 col-sm-6 total_revenue dash-card">
+                 class="col-md-3 col-sm-6 total_revenue dash-card"
+                 t-on-click="(e) => this.fetch_total_revenue(e)">
                 <div class="card" style="width: 18rem;">
                     <div class="card-img-top dash-icon-1"
                          style="color:#666660">
@@ -250,7 +251,8 @@
             </div>
             <!--            Today Revenue-->
             <div groups="hotel_management_odoo.hotel_group_reception"
-                 class="col-md-3 col-sm-6 today_revenue dash-card">
+                 class="col-md-3 col-sm-6 today_revenue dash-card"
+                 t-on-click="(e) => this.fetch_today_revenue(e)">
                 <div class="card" style="width: 18rem;">
                     <div class="card-img-top dash-icon-1"
                          style="color:#397303;">
@@ -267,7 +269,8 @@
             </div>
             <!--            Pending Payment-->
             <div groups="hotel_management_odoo.hotel_group_reception"
-                 class="col-md-3 col-sm-6 pending_payment dash-card">
+                 class="col-md-3 col-sm-6 pending_payment dash-card"
+                 t-on-click="(e) => this.fetch_pending_payment(e)">
                 <div class="card" style="width: 18rem;">
                     <div class="card-img-top dash-icon-1"
                          style="color:#f0b686;">

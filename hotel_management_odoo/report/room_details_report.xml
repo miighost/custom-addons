@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Report Action for Room Details Report -->
+    <record id="action_report_room_details" model="ir.actions.report">
+        <field name="name">Room Details Report</field>
+        <field name="model">hotel.room</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">hotel_management_odoo.report_room_details</field>
+        <field name="report_file">hotel_management_odoo.report_room_details</field>
+        <field name="binding_model_id" ref="model_hotel_room"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <!-- QWeb PDF Template for Room Details Report -->
+    <template id="report_room_details">
+        <t t-call="web.html_container">
+            <t t-call="web.external_layout">
+                <div class="page">
+                    <div class="row mt16 mb16">
+                        <div class="col-12 text-center">
+                            <h2 style="font-weight: bold; color: #111;">Room Details Report</h2>
+                        </div>
+                    </div>
+                    <table class="table table-sm table-bordered mt16" style="width: 100%; font-size: 13px;">
+                        <thead>
+                            <tr style="background-color: #f2f2f2; text-align: center;">
+                                <th style="border: 1px solid #000; padding: 6px; width: 10%;">SN</th>
+                                <th style="border: 1px solid #000; padding: 6px; width: 45%;">Room No</th>
+                                <th style="border: 1px solid #000; padding: 6px; width: 45%;">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-set="i" t-value="0"/>
+                            <t t-foreach="docs" t-as="o">
+                                <t t-set="i" t-value="i+1"/>
+                                <tr>
+                                    <td class="text-center" style="border: 1px solid #000; padding: 6px;"><t t-esc="i"/></td>
+                                    <td style="border: 1px solid #000; padding: 6px;"><span t-field="o.name"/></td>
+                                    <td class="text-center" style="border: 1px solid #000; padding: 6px;"><span t-field="o.status"/></td>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+                </div>
+            </t>
+        </t>
+    </template>
+</odoo>

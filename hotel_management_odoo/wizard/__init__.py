@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 #############################################################################
 #
-#    MiiG Solution
+#    Cybrosys Technologies Pvt. Ltd.
 #
-#    Copyright (C) 2026-TODAY MiiG Solution(<https://www.miigsolution.so>)
-#    Author: MiiG Solution(<https://www.miigsolution.so>)
+#    Copyright (C) 2026-TODAY Cybrosys Technologies(<https://www.cybrosys.com>)
+#    Author: Cybrosys Techno Solutions(<https://www.cybrosys.com>)
 #
 #    You can modify it under the terms of the GNU LESSER
 #    GENERAL PUBLIC LICENSE (LGPL v3), Version 3.
@@ -22,8 +22,11 @@
 from . import room_booking_detail
 from . import sale_order_detail
 from . import compute_bill
-from . import restro_report_detail
-from . import room_transfer_wizard
-from . import hotel_operational_reports_wizard
-
-
+from . import statement_account_wizard
+from . import change_room_type_wizard
+from . import checkout_report_wizard
+from . import daily_room_charges_wizard
+from . import room_analysis_wizard
+from . import daily_cash_report_wizard
+from . import hotel_room_transfer_wizard
+from . import night_audit_wizard

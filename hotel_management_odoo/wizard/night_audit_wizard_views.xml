@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Night Audit Wizard Form View -->
+    <record id="night_audit_wizard_view_form" model="ir.ui.view">
+        <field name="name">night.audit.wizard.view.form</field>
+        <field name="model">night.audit.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Night Audit Pack">
+                <sheet>
+                    <div class="oe_title mb-3">
+                        <h2>Daily Night Audit Pack (5-in-1)</h2>
+                        <p class="text-muted">Generate a consolidated 24-hour operational and financial night audit report package with full executive cover page.</p>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="date"/>
+                            <field name="user_id" options="{'no_create': True, 'no_open': True}"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="notes" placeholder="Optional audit notes or handover remarks..."/>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_print_pdf" string="Download Audit Pack PDF" type="object" class="btn-primary" icon="fa-download"/>
+                    <button name="action_print_excel" string="Download Audit XLS" type="object" class="btn-primary" icon="fa-download"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Night Audit Wizard Action -->
+    <record id="night_audit_wizard_action" model="ir.actions.act_window">
+        <field name="name">Daily Night Audit Pack</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">night.audit.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

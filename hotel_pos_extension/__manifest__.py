@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 #############################################################################
 #
-#    MiiG Solution
+#    Cybrosys Technologies Pvt. Ltd.
 #
-#    Copyright (C) 2026-TODAY MiiG Solution(<https://www.miigsolution.so>)
-#    Author: MiiG Solution(<https://www.miigsolution.so>)
+#    Copyright (C) 2026-TODAY Cybrosys Technologies(<https://www.cybrosys.com>)
+#    Author: Cybrosys Techno Solutions(<https://www.cybrosys.com>)
 #
 #    You can modify it under the terms of the GNU LESSER
 #    GENERAL PUBLIC LICENSE (LGPL v3), Version 3.
@@ -25,10 +25,10 @@
     'category': 'Point of Sale',
     'summary': 'Hotel Room Charge from POS',
     'description': """This module allows charging POS orders directly to hotel folios.""",
-    'author': 'MiiG Solution',
-    'company': 'MiiG Solution',
-    'maintainer': 'MiiG Solution',
-    'website': 'https://www.miigsolution.so',
+    'author': 'Cybrosys Techno Solutions',
+    'company': 'Cybrosys Techno Solutions',
+    'maintainer': 'Cybrosys Techno Solutions',
+    'website': 'https://www.cybrosys.com',
     'depends': ['point_of_sale', 'hotel_management_odoo'],
     'data': [
         'security/ir.model.access.csv',

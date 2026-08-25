@@ -20,7 +20,7 @@ patch(PosOrder.prototype, {
 
         // room.booking is not a model loaded in POS, keep id in uiState and push to ORM payload.
         this.uiState.bookingId = booking.id;
-        this.uiState.roomName = booking.room_numbers || booking.display_name || booking.name || "";
+        this.uiState.roomName = booking.room_name || booking.name || "";
     },
 
     getBookingId() {

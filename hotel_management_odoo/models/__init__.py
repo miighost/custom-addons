@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 #############################################################################
 #
-#    MiiG Solution
+#    Cybrosys Technologies Pvt. Ltd.
 #
-#    Copyright (C) 2026-TODAY MiiG Solution(<https://www.miigsolution.so>)
-#    Author: MiiG Solution(<https://www.miigsolution.so>)
+#    Copyright (C) 2026-TODAY Cybrosys Technologies(<https://www.cybrosys.com>)
+#    Author: Cybrosys Techno Solutions(<https://www.cybrosys.com>)
 #
 #    You can modify it under the terms of the GNU LESSER
 #    GENERAL PUBLIC LICENSE (LGPL v3), Version 3.
@@ -29,12 +29,11 @@ from . import fleet_vehicle_model
 from . import food_booking_line
 from . import hotel_amenity
 from . import hotel_floor
+from . import hotel_room
 from . import hotel_service
 from . import maintenance_request
 from . import maintenance_team
 from . import room_booking
 from . import room_booking_line
 from . import service_booking_line
-from . import product_template
 from . import hotel_night_audit
-

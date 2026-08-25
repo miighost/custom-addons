@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 #############################################################################
 #
-#    MiiG Solution
+#    Cybrosys Technologies Pvt. Ltd.
 #
-#    Copyright (C) 2026-TODAY MiiG Solution(<https://www.miigsolution.so>)
-#    Author: MiiG Solution(<https://www.miigsolution.so>)
+#    Copyright (C) 2026-TODAY Cybrosys Technologies(<https://www.cybrosys.com>)
+#    Author: Cybrosys Techno Solutions(<https://www.cybrosys.com>)
 #
 #    You can modify it under the terms of the GNU LESSER
 #    GENERAL PUBLIC LICENSE (LGPL v3), Version 3.
@@ -37,10 +37,7 @@ class CleaningTeam(models.Model):
                                            'cleaning_team_group_head').id)])
     member_ids = fields.Many2many('res.users',
                                   relation='cleaning_team_member_user_rel',
-                                  column1='team_id', column2='user_id',
+                                  column1='team_id',
+                                  column2='user_id',
                                   string="Member",
-                                  help="Team Members",
-                                  domain=lambda self: [
-                                      ('group_ids', 'in', self.env.ref(
-                                          'hotel_management_odoo.'
-                                          'cleaning_team_group_user').id)])
+                                  help="Team Members")

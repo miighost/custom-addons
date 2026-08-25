@@ -10,6 +10,9 @@
                     <button name="action_reserve" string="Reserve"
                             invisible="state != 'draft'" type="object"
                             class="btn-primary"/>
+                    <button name="action_print_reservation_acknowledgement" string="Print Acknowledgement"
+                            invisible="state not in ['reserved', 'check_in']" type="object"
+                            class="btn-primary"/>
                     <button name="action_compute_bill" string="COMPUTE BILL"
                             invisible="state not in ['check_in', 'check_out', 'done'] or has_pos_orders == False"
                             type="object" class="btn-primary"/>
@@ -17,15 +20,15 @@
                             class="btn-primary"
                             invisible="is_checkin == True or (state in ['check_in','check_out','done','cancel'])"
                             type="object"/>
+                    <button name="action_room_transfer" string="Transfer Room"
+                            type="object" class="btn-primary" icon="fa-exchange"
+                            invisible="state not in ['check_in', 'reserved'] or not room_line_ids"/>
                     <button name="action_maintenance_request"
                             string="Maintenance Request" type="object"
                             class="btn-primary"
                             invisible=" maintenance_request_sent == True or ( state not in ['check_in', 'reserved'])"/>
                     <button name="action_checkout" string="Check-Out"
                             class="btn-primary" invisible="state != 'check_in'"
-                            type="object"/>
-                    <button name="action_transfer_room" string="Transfer Room"
-                            class="btn-secondary" invisible="state != 'check_in'"
                             type="object"/>
                     <button name="action_done" string="Set as Done"
                             class="btn-primary"
@@ -76,11 +79,11 @@
                                    options="{'always_reload': True}"/>
                         </group>
                         <group>
+                            <field name="checkin_date"/>
+                            <field name="checkout_date"/>
                             <field name="date_order"/>
-                            <field name="checkin_date" string="Check In"/>
-                            <field name="checkout_date" string="Check Out"/>
                             <field name="pricelist_id"/>
-                            <field name="board_type"/>
+                            <field name="plan"/>
                             <field name="need_service"
                                    invisible=" state not in ['check_in']"/>
                             <field name="need_fleet"
@@ -99,13 +102,14 @@
                                 <list editable="bottom">
                                     <field name="room_id" string="Room"
                                            required="1"
-                                           domain="[('is_room','=',True)]"
                                            options="{'no_open': True, 'no_create': True}"/>
                                     <field name="checkin_date"/>
                                     <field name="booking_line_visible"
                                            invisible="1"/>
                                     <field name="checkout_date"/>
                                     <field name="uom_qty" string="Duration"
+                                           readonly="1" force_save="1"/>
+                                    <field name="elapsed_days" string="Stayed Days"
                                            readonly="1" force_save="1"/>
                                     <field name="uom_id"
                                            readonly="booking_line_visible == True"
@@ -120,11 +124,13 @@
                                     <field name="price_subtotal"
                                            widget="monetary"
                                            readonly="booking_line_visible == True"/>
+                                    <field name="today_accrued_rent"
+                                           string="Today's Balance"
+                                           widget="monetary"
+                                           readonly="1"/>
                                     <field groups="account.group_account_manager"
                                            name="price_total" widget="monetary"
                                            readonly="booking_line_visible == True"/>
-                                    <field name="days_stayed" string="Days Stayed"/>
-                                    <field name="todays_balance" string="Today's Balance" widget="monetary" sum="Total Due Today"/>
                                 </list>
                             </field>
                             <group colspan="2"
@@ -154,9 +160,12 @@
                                 <label for="amount_total"/>
                                 <field name="amount_total" nolabel="1"
                                        sum="Total amount" widget="monetary"/>
-                                <field name="amount_due_today" widget="monetary" string="Total Due Today"
-                                       invisible="state not in ['check_in', 'check_out']"
-                                       class="oe_subtotal_footer_separator text-primary fw-bold fs-5"/>
+                                <field name="amount_accrued_today" widget="monetary" string="Accrued (Today)"/>
+                                <field name="amount_paid" widget="monetary" string="Amount Paid" invisible="amount_paid == 0"/>
+                                <div class="oe_subtotal_footer_separator oe_inline o_td_label">
+                                    <label for="today_balance" string="Today's Due Balance" style="font-weight: bold; font-size: 14px; color: #0056b3;"/>
+                                </div>
+                                <field name="today_balance" nolabel="1" class="oe_subtotal_footer_separator" widget="monetary" style="font-weight: bold; font-size: 14px; color: #0056b3;"/>
                             </group>
                             <div class="oe_clear"/>
                         </page>
@@ -326,11 +335,14 @@
         <field name="arch" type="xml">
             <list>
                 <field name="name" string="Folio Number"/>
-                <field name="room_number" string="Room No."/>
-                <field name="partner_id"/>
-                <field name="board_type"/>
-                <field name="date_order"/>
-                <field name="state"/>
+                <field name="room_name" string="Room No"/>
+                <field name="partner_id" string="Customer"/>
+                <field name="date_order" string="Order Date"/>
+                <field name="checkin_date" string="Check In" optional="show"/>
+                <field name="checkout_date" string="Check Out" optional="show"/>
+                <field name="today_balance" string="Today's Balance" widget="monetary" decoration-bf="1"/>
+                <field name="amount_total" string="Total Expected" widget="monetary" optional="show"/>
+                <field name="state" string="Status" widget="badge" decoration-info="state == 'draft'" decoration-warning="state == 'reserved'" decoration-success="state == 'check_in'" decoration-muted="state == 'check_out'"/>
             </list>
         </field>
     </record>

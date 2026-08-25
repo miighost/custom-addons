@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 #############################################################################
 #
-#    MiiG Solution
+#    Cybrosys Technologies Pvt. Ltd.
 #
-#    Copyright (C) 2026-TODAY MiiG Solution(<https://www.miigsolution.so>)
-#    Author: MiiG Solution(<https://www.miigsolution.so>)
+#    Copyright (C) 2026-TODAY Cybrosys Technologies(<https://www.cybrosys.com>)
+#    Author: Cybrosys Techno Solutions(<https://www.cybrosys.com>)
 #
 #    You can modify it under the terms of the GNU LESSER
 #    GENERAL PUBLIC LICENSE (LGPL v3), Version 3.
@@ -22,7 +22,7 @@
 import io
 import json
 from datetime import datetime, timedelta
-from odoo import _, fields, models
+from odoo import fields, models
 from odoo.exceptions import ValidationError
 from odoo.tools import json_default
 
@@ -40,7 +40,7 @@ class RoomBookingWizard(models.TransientModel):
 
     checkin = fields.Date(help="Choose the Checkin Date", string="Checkin")
     checkout = fields.Date(help="Choose the Checkout Date", string="Checkout")
-    room_id = fields.Many2one("product.template", string="Room",
+    room_id = fields.Many2one("hotel.room", string="Room",
                               help="Choose The Room")
 
     def action_room_booking_pdf(self):
@@ -75,7 +75,7 @@ class RoomBookingWizard(models.TransientModel):
         if self.checkin and self.checkout:
             if self.checkin > self.checkout:
                 raise ValidationError(
-                    _("Check-in date should be less than Check-out date")
+                    ("Check-in date should be less than Check-out date")
                 )
         if self.checkin:
             domain.append(
@@ -85,33 +85,34 @@ class RoomBookingWizard(models.TransientModel):
             domain.append(
                 ("checkout_date", "<", self.checkout + timedelta(days=1)),
             )
-        if self.room_id:
-            domain.append(
-                ("room_id", "=", self.room_id.id),
+        room_booking = self.env["room.booking"].search_read(
+            domain=domain,
+            fields=["partner_id", "name", "checkin_date", "checkout_date"],
+        )
+        for rec in room_booking:
+            rooms = (
+                self.env["room.booking"]
+                .browse(rec["id"])
+                .room_line_ids.room_id.mapped("name")
             )
+            rec["partner_id"] = rec["partner_id"][1] if isinstance(rec["partner_id"], (list, tuple)) else (rec["partner_id"] or "-")
+            if rooms:
+                for room in rooms:
+                    if self.room_id:
+                        if self.room_id.name == room:
+                            rec_copy = rec.copy()
+                            rec_copy["room"] = room
+                            room_list.append(rec_copy)
+                    else:
+                        rec_copy = rec.copy()
+                        rec_copy["room"] = room
+                        room_list.append(rec_copy)
+            else:
+                if not self.room_id:
+                    rec_copy = rec.copy()
+                    rec_copy["room"] = "-"
+                    room_list.append(rec_copy)
 
-        state_labels = {
-            'draft': 'Draft',
-            'reserved': 'Reserved',
-            'check_in': 'Check In',
-            'check_out': 'Check Out',
-            'cancel': 'Cancelled',
-            'done': 'Done',
-        }
-        room_booking_lines = self.env["room.booking.line"].search(domain)
-        for line in room_booking_lines:
-            room_name = line.room_id.name if line.room_id and line.room_id.exists() else ""
-            partner_name = line.booking_id.partner_id.name if line.booking_id and line.booking_id.partner_id else ""
-            booking_name = line.booking_id.name if line.booking_id else ""
-            raw_state = line.booking_id.state if line.booking_id else ""
-            room_list.append({
-                "partner_id": partner_name,
-                "name": booking_name,
-                "checkin_date": line.checkin_date,
-                "checkout_date": line.checkout_date,
-                "room": room_name,
-                "state": state_labels.get(raw_state, raw_state),
-            })
         return room_list
 
     def _format_datetime(self, value):
@@ -142,8 +143,8 @@ class RoomBookingWizard(models.TransientModel):
         )
         body = workbook.add_format(
             {"align": "left", "text_wrap": True, "border": True})
-        sheet.merge_range("A1:G1", "Room Booking", head)
-        sheet.set_column("A2:G2", 18)
+        sheet.merge_range("A1:F1", "Room Booking", head)
+        sheet.set_column("A2:F2", 18)
         sheet.set_row(0, 30)
         sheet.set_row(1, 20)
         sheet.write("A2", "Sl No.", cell_format)
@@ -152,7 +153,6 @@ class RoomBookingWizard(models.TransientModel):
         sheet.write("D2", "Check In", cell_format)
         sheet.write("E2", "Check Out", cell_format)
         sheet.write("F2", "Reference No.", cell_format)
-        sheet.write("G2", "Status", cell_format)
         row = 2
         column = 0
         value = 1
@@ -163,7 +163,6 @@ class RoomBookingWizard(models.TransientModel):
             sheet.write(row, column + 3, self._format_datetime(i["checkin_date"]), body)
             sheet.write(row, column + 4, self._format_datetime(i["checkout_date"]), body)
             sheet.write(row, column + 5, i["name"], body)
-            sheet.write(row, column + 6, i["state"], body)
             row = row + 1
             value = value + 1
         workbook.close()

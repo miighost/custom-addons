@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 #############################################################################
 #
-#    MiiG Solution
+#    Cybrosys Technologies Pvt. Ltd.
 #
-#    Copyright (C) 2026-TODAY MiiG Solution(<https://www.miigsolution.so>)
-#    Author: MiiG Solution(<https://www.miigsolution.so>)
+#    Copyright (C) 2026-TODAY Cybrosys Technologies(<https://www.cybrosys.com>)
+#    Author: Cybrosys Techno Solutions(<https://www.cybrosys.com>)
 #
 #    You can modify it under the terms of the GNU LESSER
 #    GENERAL PUBLIC LICENSE (LGPL v3), Version 3.
@@ -20,7 +20,7 @@
 #
 #############################################################################
 from datetime import datetime, timedelta
-from odoo import _, api, fields, models
+from odoo import api, fields, models
 from odoo.exceptions import ValidationError
 
 
@@ -33,10 +33,19 @@ class RoomBooking(models.Model):
 
     name = fields.Char(string="Folio Number", readonly=True, index=True,
                        default="New", help="Name of Folio")
+    room_name = fields.Char(string="Room No", compute="_compute_room_name")
+    room_number = fields.Char(string="Room Number", related="room_name")
     company_id = fields.Many2one('res.company', string="Company",
                                  help="Choose the Company",
                                  required=True, index=True,
                                  default=lambda self: self.env.company)
+
+    @api.depends('room_line_ids.room_id.name')
+    def _compute_room_name(self):
+        """Compute room numbers associated with this booking."""
+        for rec in self:
+            rooms = [line.room_id.name for line in rec.room_line_ids if line.room_id and line.room_id.name]
+            rec.room_name = ", ".join(rooms) if rooms else ""
     partner_id = fields.Many2one('res.partner', string="Customer",
                                  help="Customers of hotel",
                                  required=True, index=True, tracking=1,
@@ -76,6 +85,13 @@ class RoomBooking(models.Model):
                               help="Number of days which will automatically "
                                    "count from the check-in and check-out "
                                    "date.", )
+    plan = fields.Selection([
+        ('bb', 'Bed & Breakfast (BB)'),
+        ('hb', 'Half Board (HB)'),
+        ('fb', 'Full Board (FB)'),
+        ('ro', 'Room Only (RO)')
+    ], string="Meal Plan", default="bb", required=True, tracking=True, help="Select the meal plan for this booking")
+    description = fields.Text(string="Remarks", help="Additional remarks or notes for the booking")
     invoice_button_visible = fields.Boolean(string='Invoice Button Display',
                                             help="Invoice button will be "
                                                  "visible if this button is "
@@ -129,35 +145,6 @@ class RoomBooking(models.Model):
                                                " to Customer and"
                                                " it will included in the "
                                                "main invoice.", )
-    board_type = fields.Selection([
-        ('ro', 'Room Only (RO)'),
-        ('bb', 'Bed & Breakfast (BB)'),
-        ('hb', 'Half Board (HB)'),
-        ('fb', 'Full Board (FB)'),
-    ], string='Board Type', default='ro', help="Select the meal plan / board type for this booking.")
-    room_number = fields.Char(string="Room No.", compute="_compute_room_number", store=True)
-    amount_due_today = fields.Monetary(string="Total Due Today", compute="_compute_amount_due_today", store=False,
-                                      help="Total accrued balance up to today including room charges and all services/POS.")
-
-    @api.depends('room_line_ids.todays_balance', 'food_order_line_ids.price_total',
-                 'service_line_ids.price_total', 'vehicle_line_ids.price_total',
-                 'event_line_ids.price_total')
-    def _compute_amount_due_today(self):
-        for rec in self:
-            pos_amt = getattr(rec, 'amount_total_pos', 0.0) or 0.0
-            room_today = sum(rec.room_line_ids.mapped('todays_balance'))
-            food_total = sum(rec.food_order_line_ids.mapped('price_total'))
-            service_total = sum(rec.service_line_ids.mapped('price_total'))
-            fleet_total = sum(rec.vehicle_line_ids.mapped('price_total'))
-            event_total = sum(rec.event_line_ids.mapped('price_total'))
-            rec.amount_due_today = room_today + pos_amt + food_total + service_total + fleet_total + event_total
-
-    @api.depends('room_line_ids.room_id')
-    def _compute_room_number(self):
-        for record in self:
-            valid_rooms = record.room_line_ids.filtered(lambda l: l.room_id and l.room_id.exists()).mapped('room_id.name')
-            record.room_number = ", ".join(valid_rooms) if valid_rooms else ""
-
     state = fields.Selection(selection=[('draft', 'Draft'),
                                         ('reserved', 'Reserved'),
                                         ('check_in', 'Check In'),
@@ -260,8 +247,45 @@ class RoomBooking(models.Model):
                                          compute='_compute_amount_untaxed',
                                          help="This is the Total Amount for "
                                               "Fleet", tracking=5)
+    amount_accrued_today = fields.Monetary(
+        string="Accrued (Today)", compute="_compute_today_balance",
+        help="Total accrued charges up to today"
+    )
+    amount_paid = fields.Monetary(
+        string="Amount Paid", compute="_compute_today_balance",
+        help="Total payments received on this folio"
+    )
+    today_balance = fields.Monetary(
+        string="Today's Balance", compute="_compute_today_balance",
+        help="Current outstanding balance accrued up to today"
+    )
     has_pos_orders = fields.Boolean(compute='_compute_has_pos_orders', string='Has POS Orders',
                                     help='Indicates if there are POS orders linked to this booking')
+
+    @api.depends('room_line_ids.today_accrued_rent', 'food_order_line_ids.price_total',
+                 'service_line_ids.price_total', 'vehicle_line_ids.price_total',
+                 'event_line_ids.price_total', 'hotel_invoice_id.amount_residual',
+                 'hotel_invoice_id.amount_total', 'state')
+    def _compute_today_balance(self):
+        """Compute the real-time balance accrued up to today."""
+        for rec in self:
+            room_accrued = sum(rec.room_line_ids.mapped('today_accrued_rent'))
+            incidental = (sum(rec.food_order_line_ids.mapped('price_total')) +
+                          sum(rec.service_line_ids.mapped('price_total')) +
+                          sum(rec.vehicle_line_ids.mapped('price_total')) +
+                          sum(rec.event_line_ids.mapped('price_total')))
+            pos_total = 0.0
+            if 'pos_order_line_ids' in rec._fields and rec.pos_order_line_ids:
+                pos_total = sum(rec.pos_order_line_ids.mapped('amount_total'))
+
+            total_accrued = room_accrued + incidental + pos_total
+            rec.amount_accrued_today = total_accrued
+
+            paid = 0.0
+            if rec.hotel_invoice_id:
+                paid = rec.hotel_invoice_id.amount_total - rec.hotel_invoice_id.amount_residual
+            rec.amount_paid = paid
+            rec.today_balance = max(0.0, total_accrued - paid)
 
     def _compute_has_pos_orders(self):
         """Compute POS order availability."""
@@ -270,32 +294,12 @@ class RoomBooking(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        """Sequence Generation with automatic fallback"""
+        """Sequence Generation"""
         for vals in vals_list:
-            if not vals.get('name') or vals.get('name') in ['New', 'Unnamed']:
-                seq_name = self.env['ir.sequence'].next_by_code('room.booking')
-                if not seq_name:
-                    # Fallback sequence creation if sequence is missing in DB
-                    seq = self.env['ir.sequence'].sudo().search([('code', '=', 'room.booking')], limit=1)
-                    if not seq:
-                        seq = self.env['ir.sequence'].sudo().create({
-                            'name': 'Hotel Folio',
-                            'code': 'room.booking',
-                            'prefix': 'BOOKING/%(year)s/',
-                            'padding': 5,
-                            'company_id': False,
-                        })
-                    seq_name = seq.next_by_id() or f"BOOKING/{fields.Date.today().year}/00001"
-                vals['name'] = seq_name
+            if vals.get('name', 'New') == 'New':
+                vals['name'] = self.env['ir.sequence'].next_by_code(
+                    'room.booking')
         return super().create(vals_list)
-
-    @api.depends('name')
-    def _compute_display_name(self):
-        for record in self:
-            if not record.name or record.name in ['New', 'Unnamed']:
-                seq_name = self.env['ir.sequence'].next_by_code('room.booking') or f"BOOKING/{record.id:05d}"
-                record.sudo().write({'name': seq_name})
-            record.display_name = record.name
 
     @api.depends('partner_id')
     def _compute_user_id(self):
@@ -359,7 +363,7 @@ class RoomBooking(models.Model):
             record.amount_untaxed_room = sum(record.room_line_ids.mapped('price_subtotal'))
             record.amount_taxed_room = sum(record.room_line_ids.mapped('price_tax'))
             record.amount_total_room = sum(record.room_line_ids.mapped('price_total'))
-            for room in record.room_line_ids.filtered(lambda l: l.room_id and l.room_id.exists()):
+            for room in record.room_line_ids:
                 delta = get_delta(room.room_id.name, room.uom_qty, room.price_unit, 'room')
                 if delta > 0:
                     booking_list.append({'name': room.room_id.name, 'quantity': delta, 'price_unit': room.price_unit,
@@ -452,20 +456,20 @@ class RoomBooking(models.Model):
                     event.unlink()
 
     @api.onchange('checkin_date', 'checkout_date')
-    def _onchange_checkin_checkout_dates(self):
-        """Update duration and sync dates to room lines when checkin/checkout dates are changed."""
-        if self.checkout_date and self.checkin_date:
+    def _onchange_header_dates(self):
+        """Update room line checkin/checkout dates when header dates are changed."""
+        if self.checkin_date and self.checkout_date:
             if self.checkout_date < self.checkin_date:
-                raise ValidationError(_("Checkout date must be greater or equal to checkin date."))
-            diffdate = self.checkout_date - self.checkin_date
-            qty = diffdate.days
-            if diffdate.total_seconds() > 0:
-                qty = qty + 1
+                raise ValidationError(("Checkout date must be greater than or equal to checkin date."))
+            diff = self.checkout_date - self.checkin_date
+            qty = diff.days
+            if diff.total_seconds() > 0:
+                qty += 1
             self.duration = qty
             for line in self.room_line_ids:
                 line.checkin_date = self.checkin_date
                 line.checkout_date = self.checkout_date
-                line.uom_qty = qty
+                line._onchange_checkin_date()
 
     @api.onchange('food_order_line_ids', 'room_line_ids',
                   'service_line_ids', 'vehicle_line_ids', 'event_line_ids')
@@ -541,7 +545,7 @@ class RoomBooking(models.Model):
                     }
                 }
             if record.room_line_ids:
-                for room in record.room_line_ids.filtered(lambda l: l.room_id and l.room_id.exists()):
+                for room in record.room_line_ids:
                     room.room_id.write({
                         'status': 'reserved',
                     })
@@ -559,13 +563,18 @@ class RoomBooking(models.Model):
             }
         }
 
+    def action_print_reservation_acknowledgement(self):
+        """Print Reservation Acknowledgement PDF report."""
+        self.ensure_one()
+        return self.env.ref('hotel_management_odoo.action_report_reservation_acknowledgement').report_action(self)
+
     def action_cancel(self):
         """
         @param self: object pointer
         """
         for record in self:
             if record.room_line_ids:
-                for room in record.room_line_ids.filtered(lambda l: l.room_id and l.room_id.exists()):
+                for room in record.room_line_ids:
                     room.room_id.write({
                         'status': 'available',
                     })
@@ -576,15 +585,18 @@ class RoomBooking(models.Model):
         """
         Function that handles the maintenance request
         """
-        valid_lines = self.room_line_ids.filtered(lambda l: l.room_id and l.room_id.exists())
-        if valid_lines:
-            room_id = valid_lines.mapped('room_id')
+        room_list = []
+        for rec in self.room_line_ids.room_id.ids:
+            room_list.append(rec)
+        if room_list:
+            room_id = self.env['hotel.room'].search([
+                ('id', 'in', room_list)])
             self.env['maintenance.request'].sudo().create({
                 'name': 'Maintenance Request - %s' % self.name,
                 'date': fields.Date.today(),
                 'state': 'draft',
                 'type': 'room',
-                'room_maintenance_ids': [(6, 0, room_id.ids)],
+                'room_maintenance_ids': room_id.ids,
                 'is_hotel': True,
             })
             self.maintenance_request_sent = True
@@ -597,7 +609,22 @@ class RoomBooking(models.Model):
                     'next': {'type': 'ir.actions.act_window_close'},
                 }
             }
-        raise ValidationError(("Please Enter Room Details"))
+    def action_room_transfer(self):
+        """Open Room Transfer wizard dialog."""
+        self.ensure_one()
+        if not self.room_line_ids:
+            raise ValidationError("No room lines found on this booking to transfer.")
+        return {
+            'name': 'Transfer Room',
+            'type': 'ir.actions.act_window',
+            'res_model': 'hotel.room.transfer.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_booking_id': self.id,
+                'default_current_room_line_id': self.room_line_ids[0].id if self.room_line_ids else False,
+            }
+        }
 
     def action_done(self):
         """Button action_confirm function"""
@@ -620,32 +647,29 @@ class RoomBooking(models.Model):
         }
 
     def action_checkout(self):
-        """Perform checkout: update actual checkout date, recalculate duration and billing."""
-        now_dt = fields.Datetime.now()
+        """Button action_checkout function that updates actual checkout timestamp and recalculates duration and charges."""
+        now = fields.Datetime.now()
         for record in self:
             record.write({
                 "state": "check_out",
-                "checkout_date": now_dt,
+                "checkout_date": now,
             })
-            for room in record.room_line_ids.filtered(lambda l: l.room_id and l.room_id.exists()):
-                # Mark room as available and trigger checkout date
+            for room in record.room_line_ids:
                 room.room_id.write({
                     'status': 'available',
-                    'is_room_avail': True,
+                    'is_room_avail': True
                 })
-                # Update line checkout date to actual checkout time
-                room.checkout_date = now_dt
-                if room.checkin_date and room.checkout_date:
-                    diffdate = room.checkout_date - room.checkin_date
-                    qty = diffdate.days
-                    if diffdate.total_seconds() > 0:
-                        qty += 1
-                    room.uom_qty = max(1.0, float(qty))
-                room._compute_price_unit()
-                room._compute_price_subtotal()
+                r_in = room.checkin_date or record.checkin_date or now
+                diffdate = now - r_in
+                qty = diffdate.days
+                if diffdate.total_seconds() > 0:
+                    qty = qty + 1
+                qty = max(1.0, float(qty))
 
-            # Recalculate booking total duration and charges
-            record.duration = sum(record.room_line_ids.mapped('uom_qty'))
+                room.write({
+                    'checkout_date': now,
+                    'uom_qty': qty,
+                })
             record._compute_amount_untaxed()
 
     def action_invoice(self):
@@ -706,7 +730,7 @@ class RoomBooking(models.Model):
             if not record.room_line_ids:
                 raise ValidationError(("Please Enter Room Details"))
             else:
-                for room in record.room_line_ids.filtered(lambda l: l.room_id and l.room_id.exists()):
+                for room in record.room_line_ids:
                     room.room_id.write({
                         'status': 'occupied',
                     })
@@ -722,122 +746,79 @@ class RoomBooking(models.Model):
             }
         }
 
-    @api.model
-    def get_details(self, *args, **kwargs):
+    def get_details(self):
         """ Returns different counts for displaying in dashboard"""
         today_date = fields.Date.context_today(self)
-        
-        try:
-            total_room = self.env['product.template'].search_count([('is_room', '=', True)])
-        except Exception:
-            total_room = 0
-
-        try:
-            available_room_count = len(self.env['product.template'].search([('is_room', '=', True), ('status', '=', 'available')]))
-        except Exception:
-            available_room_count = 0
-
-        try:
-            check_in = self.env['room.booking'].search_count([('state', '=', 'check_in')])
-        except Exception:
-            check_in = 0
-
-        try:
-            reservation = self.env['room.booking'].search_count([('state', '=', 'reserved')])
-        except Exception:
-            reservation = 0
-
+        total_room = self.env['hotel.room'].search_count([])
+        check_in = self.env['room.booking'].search_count(
+            [('state', '=', 'check_in')])
+        available_room = self.env['hotel.room'].search(
+            [('status', '=', 'available')])
+        reservation = self.env['room.booking'].search_count(
+            [('state', '=', 'reserved')])
+        check_outs = self.env['room.booking'].search([])
         check_out = 0
-        try:
-            check_outs = self.env['room.booking'].search([])
-            for rec in check_outs:
-                for room in rec.room_line_ids:
-                    if room.checkout_date and fields.Date.to_date(fields.Datetime.context_timestamp(self, room.checkout_date)) == today_date:
-                        check_out += 1
-        except Exception:
-            check_out = 0
-
         staff = 0
-        try:
-            group_xmlids = [
-                'hotel_management_odoo.hotel_group_admin',
-                'hotel_management_odoo.cleaning_team_group_head',
-                'hotel_management_odoo.cleaning_team_group_user',
-                'hotel_management_odoo.hotel_group_reception',
-                'hotel_management_odoo.maintenance_team_group_leader',
-                'hotel_management_odoo.maintenance_team_group_user',
-            ]
-            group_ids = []
-            for xml_id in group_xmlids:
-                group = self.env.ref(xml_id, raise_if_not_found=False)
-                if group:
-                    group_ids.append(group.id)
-            if group_ids:
-                staff = self.env['res.users'].search_count([('group_ids', 'in', group_ids)])
-        except Exception:
-            staff = 0
-
-        try:
-            total_vehicle = self.env['fleet.vehicle.model'].search_count([])
-        except Exception:
-            total_vehicle = 0
-
-        try:
-            available_vehicle = total_vehicle - self.env['fleet.booking.line'].search_count([('state', '=', 'check_in')])
-        except Exception:
-            available_vehicle = 0
-
-        try:
-            total_event = self.env['event.event'].search_count([])
-        except Exception:
-            total_event = 0
-
+        for rec in check_outs:
+            for room in rec.room_line_ids:
+                if room.checkout_date and fields.Date.to_date(
+                        fields.Datetime.context_timestamp(self, room.checkout_date)) == today_date:
+                    check_out += 1
+            """staff"""
+            staff = self.env['res.users'].search_count(
+                [('group_ids', 'in',
+                  [self.env.ref('hotel_management_odoo.hotel_group_admin').id,
+                   self.env.ref(
+                       'hotel_management_odoo.cleaning_team_group_head').id,
+                   self.env.ref(
+                       'hotel_management_odoo.cleaning_team_group_user').id,
+                   self.env.ref(
+                       'hotel_management_odoo.hotel_group_reception').id,
+                   self.env.ref(
+                       'hotel_management_odoo.maintenance_team_group_leader').id,
+                   self.env.ref(
+                       'hotel_management_odoo.maintenance_team_group_user').id
+                   ])])
+        total_vehicle = self.env['fleet.vehicle.model'].search_count([])
+        available_vehicle = total_vehicle - self.env[
+            'fleet.booking.line'].search_count(
+            [('state', '=', 'check_in')])
+        total_event = self.env['event.event'].search_count([])
+        pending_event = self.env['event.event'].search([])
         pending_events = 0
         today_events = 0
-        try:
-            for pending in self.env['event.event'].search([]):
-                if pending.date_end and pending.date_end >= fields.Datetime.now():
-                    pending_events += 1
-                if pending.date_end and fields.Date.to_date(fields.Datetime.context_timestamp(self, pending.date_end)) == today_date:
-                    today_events += 1
-        except Exception:
-            pass
-
-        try:
-            food_items = self.env['lunch.product'].search_count([])
-        except Exception:
-            food_items = 0
-
-        try:
+        for pending in pending_event:
+            if pending.date_end >= fields.Datetime.now():
+                pending_events += 1
+            if fields.Date.to_date(fields.Datetime.context_timestamp(self, pending.date_end)) == today_date:
+                today_events += 1
+        food_items = self.env['lunch.product'].search_count([])
+        if 'pos.order' in self.env:
+            food_order = self.env['pos.order'].search_count([('booking_id', '!=', False)])
+        elif 'hotel.pos.line' in self.env:
+            food_order = self.env['hotel.pos.line'].search_count([])
+        else:
             food_order = len(self.env['food.booking.line'].search([]).filtered(
-                lambda r: r.booking_id and r.booking_id.state not in ['check_out', 'cancel', 'done']))
-        except Exception:
-            food_order = 0
-
+                lambda r: r.booking_id.state not in ['check_out', 'cancel', 'done']))
+        """total Revenue"""
         total_revenue = 0
         today_revenue = 0
         pending_payment = 0
-        try:
-            for rec in self.env['account.move'].search([('payment_state', '=', 'paid')]):
-                if rec.ref and ('BOOKING' in rec.ref or 'HP/' in rec.ref):
+        for rec in self.env['account.move'].search(
+                [('payment_state', '=', 'paid')]):
+            if rec.ref:
+                if 'BOOKING' in rec.ref:
                     total_revenue += rec.amount_total
                     if rec.date == fields.Date.today():
                         today_revenue += rec.amount_total
-            for rec in self.env['account.move'].search([('payment_state', '=', 'not_paid')]):
-                if rec.ref and ('BOOKING' in rec.ref or 'HP/' in rec.ref):
+        for rec in self.env['account.move'].search(
+                [('payment_state', '=', 'not_paid')]):
+            if rec.ref:
+                if 'BOOKING' in rec.ref:
                     pending_payment += rec.amount_total
-        except Exception:
-            pass
-
-        try:
-            night_audit_count = self.env['hotel.night.audit'].search_count([])
-        except Exception:
-            night_audit_count = 0
-
-        currency = self.env.company.currency_id
         return {
             'total_room': total_room,
-            'available_room': available_room_count,
+            'available_room': len(available_room),
             'staff': staff,
             'check_in': check_in,
             'reservation': reservation,
@@ -847,14 +828,14 @@ class RoomBooking(models.Model):
             'total_event': total_event,
             'today_events': today_events,
             'pending_events': pending_events,
-            'night_audit': night_audit_count,
             'food_items': food_items,
+            'night_audit': self.env['hotel.night.audit'].search_count([]) if 'hotel.night.audit' in self.env else 0,
             'food_order': food_order,
             'total_revenue': round(total_revenue, 2),
             'today_revenue': round(today_revenue, 2),
             'pending_payment': round(pending_payment, 2),
-            'currency_symbol': currency.symbol if currency else '$',
-            'currency_position': currency.position if currency else 'before'
+            'currency_symbol': self.env.user.company_id.currency_id.symbol,
+            'currency_position': self.env.user.company_id.currency_id.position
         }
 
     def action_compute_bill(self):
@@ -867,20 +848,4 @@ class RoomBooking(models.Model):
             'view_mode': 'form',
             'target': 'new',
             'context': {'default_booking_id': self.id}
-        }
-
-    def action_transfer_room(self):
-        """Open the Room Transfer wizard for a checked-in booking."""
-        self.ensure_one()
-        current_room = self.room_line_ids.filtered(lambda l: l.room_id and l.room_id.exists())[:1].room_id
-        return {
-            'type': 'ir.actions.act_window',
-            'name': _('Transfer Room'),
-            'res_model': 'room.transfer.wizard',
-            'view_mode': 'form',
-            'target': 'new',
-            'context': {
-                'default_booking_id': self.id,
-                'default_current_room_id': current_room.id if current_room else False,
-            }
         }

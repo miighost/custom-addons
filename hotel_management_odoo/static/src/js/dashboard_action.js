@@ -37,7 +37,7 @@ export class CustomDashBoard extends Component {
             , {
                 model: 'room.booking',
                 method: 'get_details',
-                args: [],
+                args: [{}],
                 kwargs: {},
             }).then(function (result) {
                 document.getElementsByClassName("total_room").innerHTML = ['total_room']
@@ -52,8 +52,8 @@ export class CustomDashBoard extends Component {
                 self.total_event = result['total_event']
                 self.today_events = result['today_events']
                 self.pending_events = result['pending_events']
-                self.night_audit = result['night_audit']
                 self.food_items = result['food_items']
+                self.night_audit = result['night_audit']
                 self.food_order = result['food_order']
                 if (result['currency_position'] == 'before') {
                     self.total_revenue = result['currency_symbol'] + " " + result['total_revenue']
@@ -78,10 +78,9 @@ export class CustomDashBoard extends Component {
         this.action.doAction({
             name: _t("Rooms"),
             type: 'ir.actions.act_window',
-            res_model: 'product.template',
+            res_model: 'hotel.room',
             view_mode: 'list,form',
             views: [[false, 'list'], [false, 'form']],
-            domain: [['is_room', '=', true]],
             target: 'current'
         }, options)
     }
@@ -192,10 +191,10 @@ export class CustomDashBoard extends Component {
         this.action.doAction({
             name: _t("Available Room"),
             type: 'ir.actions.act_window',
-            res_model: 'product.template',
+            res_model: 'hotel.room',
             view_mode: 'list,form',
             views: [[false, 'list'], [false, 'form']],
-            domain: [['is_room', '=', true], ['status', '=', 'available']],
+            domain: [['status', '=', 'available']],
             target: 'current'
         }, options)
     }
@@ -231,18 +230,18 @@ export class CustomDashBoard extends Component {
             target: 'current'
         }, options)
     }
-    //    Rest Orders (hotel customer POS orders)
+    //    POS Orders (Guest Orders)
     async fetch_food_order(e) {
         var self = this;
         e.stopPropagation();
         e.preventDefault();
         var options = { on_reverse_breadcrum: this.on_reverse_breadcrum, };
         this.action.doAction({
-            name: _t("Rest Orders"),
+            name: _t("Guest POS Orders"),
             type: 'ir.actions.act_window',
             res_model: 'pos.order',
-            view_mode: 'list,kanban,form',
-            views: [[false, 'list'], [false, 'kanban'], [false, 'form']],
+            view_mode: 'list,form',
+            views: [[false, 'list'], [false, 'form']],
             domain: [['booking_id', '!=', false]],
             context: {'search_default_hotel_orders': 1},
             target: 'current'
@@ -277,6 +276,57 @@ export class CustomDashBoard extends Component {
             view_mode: 'list,form',
             views: [[false, 'list'], [false, 'form']],
             domain: [['id', 'not in', result]],
+            target: 'current'
+        }, options)
+    }
+    //    Total Revenue
+    fetch_total_revenue(e) {
+        var self = this;
+        e.stopPropagation();
+        e.preventDefault();
+        var options = { on_reverse_breadcrum: this.on_reverse_breadcrum, };
+        this.action.doAction({
+            name: _t("Paid Invoices (Total Revenue)"),
+            type: 'ir.actions.act_window',
+            res_model: 'account.move',
+            view_mode: 'list,form',
+            views: [[false, 'list'], [false, 'form']],
+            domain: [['payment_state', '=', 'paid'], ['move_type', 'in', ['out_invoice', 'out_refund']]],
+            context: {'default_move_type': 'out_invoice'},
+            target: 'current'
+        }, options)
+    }
+    //    Today's Revenue
+    fetch_today_revenue(e) {
+        var self = this;
+        e.stopPropagation();
+        e.preventDefault();
+        var options = { on_reverse_breadcrum: this.on_reverse_breadcrum, };
+        this.action.doAction({
+            name: _t("Today's Paid Invoices"),
+            type: 'ir.actions.act_window',
+            res_model: 'account.move',
+            view_mode: 'list,form',
+            views: [[false, 'list'], [false, 'form']],
+            domain: [['payment_state', '=', 'paid'], ['date', '=', formattedDate], ['move_type', 'in', ['out_invoice', 'out_refund']]],
+            context: {'default_move_type': 'out_invoice'},
+            target: 'current'
+        }, options)
+    }
+    //    Pending Payment
+    fetch_pending_payment(e) {
+        var self = this;
+        e.stopPropagation();
+        e.preventDefault();
+        var options = { on_reverse_breadcrum: this.on_reverse_breadcrum, };
+        this.action.doAction({
+            name: _t("Pending / Unpaid Invoices"),
+            type: 'ir.actions.act_window',
+            res_model: 'account.move',
+            view_mode: 'list,form',
+            views: [[false, 'list'], [false, 'form']],
+            domain: [['payment_state', '=', 'not_paid'], ['state', '=', 'posted'], ['move_type', 'in', ['out_invoice', 'out_refund']]],
+            context: {'default_move_type': 'out_invoice'},
             target: 'current'
         }, options)
     }

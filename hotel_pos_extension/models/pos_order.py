@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 #############################################################################
 #
-#    MiiG Solution
+#    Cybrosys Technologies Pvt. Ltd.
 #
-#    Copyright (C) 2026-TODAY MiiG Solution(<https://www.miigsolution.so>)
-#    Author: MiiG Solution(<https://www.miigsolution.so>)
+#    Copyright (C) 2026-TODAY Cybrosys Technologies(<https://www.cybrosys.com>)
+#    Author: Cybrosys Techno Solutions(<https://www.cybrosys.com>)
 #
 #    You can modify it under the terms of the GNU LESSER
 #    GENERAL PUBLIC LICENSE (LGPL v3), Version 3.
@@ -26,7 +26,6 @@ class PosOrder(models.Model):
     _inherit = 'pos.order'
 
     booking_id = fields.Many2one('room.booking', string='Hotel Booking', help='Hotel booking associated with this POS order.')
-    room_number = fields.Char(related='booking_id.room_number', string='Room No.', store=False)
     hotel_pos_status = fields.Selection([
         ('draft', 'New'),
         ('cancel', 'Cancelled'),

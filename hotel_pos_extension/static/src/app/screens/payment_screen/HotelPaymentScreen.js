@@ -34,7 +34,41 @@ patch(PaymentScreen.prototype, {
                 });
                 return false;
             }
-            if (!order.partner_id) {
+            if (!order.partner_id && typeof order.get_partner === "function" && !order.get_partner()) {
+                if (order.getBookingId()) {
+                    try {
+                        const [booking] = await this.orm.read("room.booking", [order.getBookingId()], ["partner_id"]);
+                        if (booking && booking.partner_id) {
+                            const partnerId = booking.partner_id[0];
+                            let partner = this.pos.models["res.partner"]?.get(partnerId);
+                            if (!partner) {
+                                const [fetchedPartner] = await this.orm.read(
+                                    "res.partner",
+                                    [partnerId],
+                                    ["id", "name", "email", "phone", "street", "city", "vat"]
+                                );
+                                if (fetchedPartner) {
+                                    partner = this.pos.models["res.partner"]?.create(fetchedPartner) || fetchedPartner;
+                                }
+                            }
+                            if (partner) {
+                                if (typeof order.setPartner === "function") {
+                                    order.setPartner(partner);
+                                } else if (typeof order.set_partner === "function") {
+                                    order.set_partner(partner);
+                                } else {
+                                    order.partner_id = partner;
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        console.warn("Could not auto-fetch booking customer:", e);
+                    }
+                }
+            }
+
+            const currentPartner = order.partner_id || (typeof order.get_partner === "function" && order.get_partner());
+            if (!currentPartner) {
                 this.dialog.add(AlertDialog, {
                     title: _t("Customer Required"),
                     body: _t("Please select a customer before using the hotel charge payment method as an invoice will be created."),

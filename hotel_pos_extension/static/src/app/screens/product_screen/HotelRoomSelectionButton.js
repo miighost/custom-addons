@@ -22,46 +22,47 @@ patch(ProductScreen.prototype, {
     },
 
     async onClickAddRoom() {
-        const bookings = await this.orm.searchRead("room.booking",
-            [["state", "=", "check_in"]],
-            ["id", "name", "partner_id", "room_line_ids", "board_type"]
-        );
+        let bookings = [];
+        try {
+            bookings = await this.orm.searchRead("room.booking",
+                [["state", "=", "check_in"]],
+                ["id", "name", "partner_id", "room_line_ids", "plan"]
+            );
+        } catch (err) {
+            console.warn("Could not fetch plan field, falling back without plan:", err);
+            bookings = await this.orm.searchRead("room.booking",
+                [["state", "=", "check_in"]],
+                ["id", "name", "partner_id", "room_line_ids"]
+            );
+        }
 
         if (bookings.length === 0) {
             this.env.services.notification.add(_t("No active hotel bookings found."), { type: 'warning' });
             return;
         }
 
-        const allLineIds = bookings.flatMap(b => b.room_line_ids || []);
-        let roomLineMap = {};
-        if (allLineIds.length > 0) {
-            const roomLines = await this.orm.searchRead("room.booking.line",
-                [["id", "in", allLineIds]],
-                ["id", "booking_id", "room_id"]
-            );
-            for (const line of roomLines) {
-                const bId = line.booking_id[0];
-                if (!roomLineMap[bId]) {
-                    roomLineMap[bId] = [];
-                }
-                if (line.room_id) {
-                    roomLineMap[bId].push(line.room_id[1]);
-                }
-            }
-        }
-
-        const boardLabels = {
-            'ro': 'Room Only (RO)',
-            'bb': 'Bed & Breakfast (BB)',
-            'hb': 'Half Board (HB)',
-            'fb': 'Full Board (FB)',
+        const planLabels = {
+            bb: "Bed & Breakfast (BB)",
+            hb: "Half Board",
+            fb: "Full Board",
+            ro: "Room Only"
         };
 
-        for (const b of bookings) {
-            const roomNames = roomLineMap[b.id] ? roomLineMap[b.id].join(", ") : "";
-            b.display_name = roomNames || b.name;
-            b.room_numbers = roomNames || b.name;
-            b.board_type_display = boardLabels[b.board_type] || b.board_type || "Room Only (RO)";
+        const bookingIds = bookings.map(b => b.id);
+        const roomLines = await this.orm.searchRead("room.booking.line",
+            [["booking_id", "in", bookingIds]],
+            ["booking_id", "room_id"]
+        );
+
+        for (const booking of bookings) {
+            const lines = roomLines.filter(l => l.booking_id && l.booking_id[0] === booking.id);
+            const roomNames = lines
+                .map(l => (Array.isArray(l.room_id) ? l.room_id[1] : ""))
+                .filter(Boolean);
+            booking.room_name = roomNames.length > 0 ? roomNames.join(", ") : booking.name;
+            const planText = planLabels[booking.plan] || booking.plan || "";
+            booking.plan_display = planText;
+            booking.name_with_plan = planText ? `${booking.name} ${planText}` : booking.name;
         }
 
         const selectedBooking = await makeAwaitable(this.dialog, HotelRoomPopup, {
@@ -72,25 +73,30 @@ patch(ProductScreen.prototype, {
         if (selectedBooking) {
             const order = this.pos.getOrder();
             order?.setBooking(selectedBooking);
-            if (selectedBooking.partner_id && selectedBooking.partner_id[0]) {
+            if (selectedBooking.partner_id) {
                 const partnerId = selectedBooking.partner_id[0];
-                let partner = this.pos.models["res.partner"]?.getBy?.("id", partnerId) ||
-                              this.pos.models["res.partner"]?.get?.(partnerId);
+                let partner = this.pos.models["res.partner"]?.get(partnerId);
                 if (!partner) {
                     try {
-                        const [pData] = await this.orm.read("res.partner", [partnerId], []);
-                        if (pData) {
-                            partner = this.pos.models["res.partner"].insert(pData);
+                        const [fetchedPartner] = await this.orm.read(
+                            "res.partner",
+                            [partnerId],
+                            ["id", "name", "email", "phone", "street", "city", "vat"]
+                        );
+                        if (fetchedPartner) {
+                            partner = this.pos.models["res.partner"]?.create(fetchedPartner) || fetchedPartner;
                         }
                     } catch (e) {
-                        console.warn("Could not load partner for room booking", e);
+                        console.warn("Could not fetch partner from ORM:", e);
                     }
                 }
-                if (partner && order) {
-                    if (typeof order.setPartner === 'function') {
+                if (partner) {
+                    if (typeof order.setPartner === "function") {
                         order.setPartner(partner);
-                    } else if (typeof order.set_partner === 'function') {
+                    } else if (typeof order.set_partner === "function") {
                         order.set_partner(partner);
+                    } else {
+                        order.partner_id = partner;
                     }
                 }
             }

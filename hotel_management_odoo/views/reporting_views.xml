@@ -1,78 +1,85 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
-    <!-- Main Reporting Top Menu in Hotel Management -->
+    <!--    Reporting Menu-->
     <menuitem id="hotel_reporting_menu"
               name="Reporting"
               sequence="30"
               parent="hotel_management_menu_root"/>
 
-    <!-- 1. In-House Guest List -->
-    <menuitem id="menu_report_inhouse"
+    <!--    Daily Night Audit Pack Menu-->
+    <menuitem id="night_audit_report_menu"
+              name="Night Audit"
+              action="hotel_night_audit_action"
+              parent="hotel_reporting_menu"
+              sequence="1"/>
+
+    <!--    Statement of Account Report Menu-->
+    <menuitem id="statement_account_report_menu"
+              name="Statement of Account"
+              action="statement_account_wizard_action"
+              parent="hotel_reporting_menu"
+              sequence="5"/>
+
+    <!--    In House Guest List Report Menu-->
+    <menuitem id="in_house_guest_report_menu"
               name="In House Guest List"
-              action="action_hotel_report_inhouse"
+              action="action_report_in_house_guest"
               parent="hotel_reporting_menu"
               sequence="10"/>
 
-    <!-- 2. Room Analysis Summary -->
-    <menuitem id="menu_report_room_analysis"
-              name="Room Analysis Summary"
-              action="action_hotel_report_room_analysis"
+    <!--    Check Out Report Menu-->
+    <menuitem id="checkout_report_menu"
+              name="Check Out Report"
+              action="checkout_report_wizard_action"
+              parent="hotel_reporting_menu"
+              sequence="12"/>
+
+    <!--    Room Status Report Menu-->
+    <menuitem id="room_status_report_menu"
+              name="Room Status Report"
+              action="action_report_room_status"
+              parent="hotel_reporting_menu"
+              sequence="15"/>
+
+    <!--    Room Details Report Menu-->
+    <menuitem id="room_details_report_menu"
+              name="Room Details"
+              action="action_report_room_details"
+              parent="hotel_reporting_menu"
+              sequence="18"/>
+
+    <!--    Daily Rent / Room Charges Report Menu-->
+    <menuitem id="daily_room_charges_report_menu"
+              name="Daily Rent / Room Charges"
+              action="daily_room_charges_wizard_action"
+              parent="hotel_reporting_menu"
+              sequence="19"/>
+
+    <!--    Room Booking Report Menu-->
+    <menuitem id="room_booking_detail_menu"
+              name="Room Booking"
+              action="room_booking_detail_action"
               parent="hotel_reporting_menu"
               sequence="20"/>
 
-    <!-- 3. Check In / Arrivals Report -->
-    <menuitem id="menu_report_checkin"
-              name="Check In / Arrivals Report"
-              action="action_hotel_report_checkin"
+    <!--    Room Analysis Summary Report Menu-->
+    <menuitem id="room_analysis_report_menu"
+              name="Room Analysis Summary"
+              action="room_analysis_wizard_action"
               parent="hotel_reporting_menu"
-              sequence="30"/>
+              sequence="25"/>
 
-    <!-- 4. Check Out / Departures Report -->
-    <menuitem id="menu_report_checkout"
-              name="Check Out / Departures Report"
-              action="action_hotel_report_checkout"
+    <!--    Cash Report / Daily Collections & POS Transactions Menu-->
+    <menuitem id="daily_cash_report_menu"
+              name="Cash Report / Collections &amp; POS"
+              action="daily_cash_report_wizard_action"
               parent="hotel_reporting_menu"
-              sequence="40"/>
+              sequence="28"/>
 
-    <!-- 5. Daily Rent Charges -->
-    <menuitem id="menu_report_daily_rent"
-              name="Daily Rent / Room Charges"
-              action="action_hotel_report_daily_rent"
-              parent="hotel_reporting_menu"
-              sequence="50"/>
-
-    <!-- 6. Cash & Collections Report -->
-    <menuitem id="menu_report_cash"
-              name="Cash &amp; Collections Report"
-              action="action_hotel_report_cash"
-              parent="hotel_reporting_menu"
-              sequence="60"/>
-
-    <!-- 7. Guest Ledger & Balances -->
-    <menuitem id="menu_report_guest_ledger"
-              name="Guest Ledger &amp; Open Balances"
-              action="action_hotel_report_guest_ledger"
-              parent="hotel_reporting_menu"
-              sequence="70"/>
-
-    <!-- 8. Room Booking / Reservations Report (PDF / XLS) -->
-    <menuitem id="room_booking_detail_menu"
-              name="Room Booking &amp; Reservations Report"
-              action="room_booking_detail_action"
-              parent="hotel_reporting_menu"
-              sequence="80"/>
-
-    <!-- 9. Sales & Booking Status Report (PDF / XLS) -->
+    <!--    Sale Order Report Menu-->
     <menuitem id="sale_order_detail_menu"
-              name="Booking Status &amp; Sales Report"
+              name="Sale Order"
               action="sale_order_detail_action"
               parent="hotel_reporting_menu"
-              sequence="90"/>
-
-    <!-- 10. Night Audit Pack (5-in-1 Consolidated PDF) -->
-    <menuitem id="menu_hotel_reporting_night_audit"
-              name="Daily Night Audit Pack (PDF)"
-              action="hotel_management_odoo.action_hotel_night_audit"
-              parent="hotel_reporting_menu"
-              sequence="100"/>
+              sequence="30"/>
 </odoo>

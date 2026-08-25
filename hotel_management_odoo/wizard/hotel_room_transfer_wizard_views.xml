@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Room Transfer Wizard Form View -->
+    <record id="hotel_room_transfer_wizard_view_form" model="ir.ui.view">
+        <field name="name">hotel.room.transfer.wizard.view.form</field>
+        <field name="model">hotel.room.transfer.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Transfer Room">
+                <sheet>
+                    <div class="oe_title mb-3">
+                        <h2>Transfer Guest Room</h2>
+                        <p class="text-muted">Move guest to a new available room and update room occupancy seamlessly.</p>
+                    </div>
+                    <group>
+                        <group string="Current Assignment">
+                            <field name="booking_id" options="{'no_open': True}"/>
+                            <field name="current_room_line_id" options="{'no_create': True, 'no_open': True}"/>
+                            <field name="current_room_id" options="{'no_open': True}"/>
+                        </group>
+                        <group string="New Assignment">
+                            <field name="new_room_id" options="{'no_create': True, 'no_open': True}"/>
+                            <field name="send_to_cleaning" widget="boolean_toggle"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="reason"/>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_confirm_transfer" string="Confirm Transfer" type="object" class="btn-primary" icon="fa-exchange"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Room Transfer Wizard Action -->
+    <record id="hotel_room_transfer_wizard_action" model="ir.actions.act_window">
+        <field name="name">Transfer Room</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">hotel.room.transfer.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

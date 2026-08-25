@@ -1,112 +1,128 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Hotel Night Audit List View -->
-    <record id="view_hotel_night_audit_tree" model="ir.ui.view">
-        <field name="name">hotel.night.audit.list</field>
-        <field name="model">hotel.night.audit</field>
-        <field name="arch" type="xml">
-            <list string="Night Audits" decoration-info="state == 'draft'" decoration-success="state == 'done'">
-                <field name="date" string="Audit Date"/>
-                <field name="name" string="Audit Reference"/>
-                <field name="company_id" groups="base.group_multi_company"/>
-                <field name="user_id" string="Audited / Printed By" widget="many2one_avatar_user"/>
-                <field name="total_checkin_count" string="Check-Ins"/>
-                <field name="total_checkout_count" string="Check-Outs"/>
-                <field name="inhouse_count" string="In-House"/>
-                <field name="daily_room_revenue" string="Room Rent" sum="Total Room Rent" widget="monetary"/>
-                <field name="daily_pos_revenue" string="POS / Rest" sum="Total POS" widget="monetary"/>
-                <field name="daily_total_revenue" string="Total Revenue" sum="Grand Total" widget="monetary"/>
-                <field name="currency_id" invisible="1"/>
-                <field name="state" string="Status" widget="badge" decoration-info="state == 'draft'" decoration-success="state == 'done'"/>
-            </list>
-        </field>
-    </record>
-
-    <!-- Hotel Night Audit Form View -->
-    <record id="view_hotel_night_audit_form" model="ir.ui.view">
-        <field name="name">hotel.night.audit.form</field>
+    <!-- Hotel Night Audit Form View (Matching Design) -->
+    <record id="hotel_night_audit_view_form" model="ir.ui.view">
+        <field name="name">hotel.night.audit.view.form</field>
         <field name="model">hotel.night.audit</field>
         <field name="arch" type="xml">
             <form string="Night Audit">
                 <header>
-                    <button name="action_generate_audit" string="Generate / Run Audit" type="object" class="btn-primary" invisible="state != 'draft'"/>
-                    <button name="action_print_report" string="Print Audit Pack (PDF)" type="object" class="btn-success" icon="fa-print"/>
-                    <button name="action_reset_draft" string="Re-Open / Edit" type="object" class="btn-secondary" invisible="state != 'done'"/>
-                    <field name="state" widget="statusbar" statusbar_visible="draft,done"/>
+                    <button name="action_print_pdf" string="Print Audit Pack (PDF)" type="object" class="btn-success" icon="fa-print"/>
+                    <button name="action_print_excel" string="Export Excel (XLSX)" type="object" class="btn-secondary" icon="fa-download"/>
+                    <button name="action_close_audit" string="Audit / Close" type="object" class="btn-primary" invisible="state == 'closed'"/>
+                    <button name="action_reopen" string="Re-Open / Edit" type="object" class="btn-secondary" invisible="state == 'draft'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,closed"/>
                 </header>
                 <sheet>
-                    <div class="oe_title">
-                        <label for="name" string="Audit Reference"/>
-                        <h1><field name="name" readonly="1"/></h1>
+                    <div class="oe_title mb-4">
+                        <span class="text-muted" style="font-size: 13px; text-transform: uppercase; letter-spacing: 1px;">Audit Reference</span>
+                        <h1 class="mt-1" style="font-weight: 800; color: #111;">
+                            <field name="name" readonly="1"/>
+                        </h1>
                     </div>
-                    <group>
-                        <group string="Audit Date &amp; Company">
-                            <field name="date" readonly="state == 'done'"/>
-                            <field name="company_id" groups="base.group_multi_company" readonly="state == 'done'"/>
-                        </group>
-                        <group string="Auditor &amp; System">
-                            <field name="user_id" readonly="1"/>
-                            <field name="currency_id" invisible="1"/>
-                            <field name="audit_type" invisible="1"/>
-                        </group>
-                    </group>
 
-                    <group string="24-Hour Key Performance Indicators (KPIs)">
-                        <group>
-                            <field name="total_checkin_count"/>
-                            <field name="total_checkout_count"/>
-                            <field name="inhouse_count"/>
-                        </group>
-                        <group>
-                            <field name="daily_room_revenue" widget="monetary"/>
-                            <field name="daily_pos_revenue" widget="monetary"/>
-                            <field name="daily_total_revenue" widget="monetary" class="oe_subtotal_footer_separator text-primary fw-bold fs-5"/>
-                        </group>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <group string="AUDIT DATE &amp; COMPANY">
+                                <field name="date" readonly="state == 'closed'"/>
+                                <field name="company_id" options="{'no_create': True, 'no_open': True}" readonly="state == 'closed'"/>
+                                <field name="currency_id" invisible="1"/>
+                            </group>
+                        </div>
+                        <div class="col-md-6">
+                            <group string="AUDITOR &amp; SYSTEM">
+                                <field name="user_id" options="{'no_create': True, 'no_open': True}" readonly="state == 'closed'"/>
+                            </group>
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <div style="border-bottom: 2px solid #ddd; padding-bottom: 5px; margin-bottom: 15px;">
+                            <h6 style="font-weight: 800; letter-spacing: 0.5px; color: #333; text-transform: uppercase;">24-HOUR KEY PERFORMANCE INDICATORS (KPIS)</h6>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <group>
+                                    <field name="check_ins_count" readonly="1"/>
+                                    <field name="check_outs_count" readonly="1"/>
+                                    <field name="in_house_guests_count" readonly="1"/>
+                                </group>
+                            </div>
+                            <div class="col-md-6">
+                                <group>
+                                    <field name="daily_room_rent" widget="monetary" readonly="1"/>
+                                    <field name="daily_pos_revenue" widget="monetary" readonly="1"/>
+                                    <field name="total_day_revenue" widget="monetary" readonly="1" decoration-bf="1" style="font-size: 15px; font-weight: bold; color: #198754;"/>
+                                </group>
+                            </div>
+                        </div>
+                    </div>
+
+                    <group string="AUDIT REMARKS / NOTES">
+                        <field name="notes" placeholder="Optional audit notes or shift handover remarks..." nolabel="1" readonly="state == 'closed'"/>
                     </group>
                 </sheet>
+                <chatter/>
             </form>
         </field>
     </record>
 
-    <!-- Hotel Night Audit Search View -->
-    <record id="view_hotel_night_audit_search" model="ir.ui.view">
-        <field name="name">hotel.night.audit.search</field>
+    <!-- Hotel Night Audit List View (Matching User Design) -->
+    <record id="hotel_night_audit_view_tree" model="ir.ui.view">
+        <field name="name">hotel.night.audit.view.tree</field>
         <field name="model">hotel.night.audit</field>
         <field name="arch" type="xml">
-            <search>
+            <list string="Night Audit">
+                <field name="date" string="Audit Date" decoration-success="1"/>
+                <field name="name" string="Audit Reference" decoration-success="1" decoration-bf="1"/>
+                <field name="company_id" string="Company"/>
+                <field name="user_id" string="Audited / Printed By" widget="many2one_avatar_user"/>
+                <field name="check_ins_count" string="Check-Ins" decoration-success="1"/>
+                <field name="check_outs_count" string="Check-Outs"/>
+                <field name="in_house_guests_count" string="In-House" decoration-success="1"/>
+                <field name="daily_room_rent" widget="monetary" string="Room Rent" sum="Total Room Rent" decoration-success="1"/>
+                <field name="daily_pos_revenue" widget="monetary" string="POS / Rest" sum="Total POS" decoration-success="1"/>
+                <field name="total_day_revenue" widget="monetary" string="Total Revenue" sum="Total Revenue" decoration-success="1" decoration-bf="1"/>
+                <field name="currency_id" string="Currency" column_invisible="1"/>
+                <field name="state" string="Status" widget="badge" decoration-info="state == 'draft'" decoration-success="state == 'closed'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Hotel Night Audit Search View -->
+    <record id="hotel_night_audit_view_search" model="ir.ui.view">
+        <field name="name">hotel.night.audit.view.search</field>
+        <field name="model">hotel.night.audit</field>
+        <field name="arch" type="xml">
+            <search string="Search Night Audits">
                 <field name="name"/>
                 <field name="date"/>
                 <field name="user_id"/>
-                <filter string="Closed" name="filter_done" domain="[('state', '=', 'done')]"/>
-                <separator/>
-                <group>
-                    <filter string="Date" name="group_by_date" context="{'group_by': 'date'}"/>
+                <filter string="Draft" name="draft" domain="[('state', '=', 'draft')]"/>
+                <filter string="Audited / Closed" name="closed" domain="[('state', '=', 'closed')]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Status" name="group_by_state" context="{'group_by': 'state'}"/>
                     <filter string="Audited By" name="group_by_user" context="{'group_by': 'user_id'}"/>
+                    <filter string="Audit Date" name="group_by_date" context="{'group_by': 'date'}"/>
                 </group>
             </search>
         </field>
     </record>
 
-    <!-- Night Audit Action -->
-    <record id="action_hotel_night_audit" model="ir.actions.act_window">
+    <!-- Hotel Night Audit Action -->
+    <record id="hotel_night_audit_action" model="ir.actions.act_window">
         <field name="name">Night Audit</field>
+        <field name="type">ir.actions.act_window</field>
         <field name="res_model">hotel.night.audit</field>
         <field name="view_mode">list,form</field>
-        <field name="context">{}</field>
+        <field name="search_view_id" ref="hotel_night_audit_view_search"/>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
-                Create a Daily Night Audit!
+                Create a new 24-Hour Night Audit!
             </p>
             <p>
-                Run daily night audits to generate 24-hour consolidated operations and financial reports (Check-ins, Check-outs, In-House Guests, Daily Rent, POS Restaurant Sales, and Guest Ledger).
+                Select the audit date to automatically calculate key performance indicators (check-ins, check-outs, room rent, POS sales), and print the consolidated 5-in-1 audit pack.
             </p>
         </field>
     </record>
-
-    <!-- Top-level Menu in Hotel Management -->
-    <menuitem id="menu_hotel_night_audit"
-              name="Night Audit"
-              parent="hotel_management_odoo.hotel_management_menu_root"
-              action="action_hotel_night_audit"
-              sequence="25"/>
 </odoo>

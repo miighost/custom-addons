@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Report Action for Check Out Report -->
+    <record id="action_report_checkout" model="ir.actions.report">
+        <field name="name">Check Out Report</field>
+        <field name="model">checkout.report.wizard</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">hotel_management_odoo.report_checkout</field>
+        <field name="report_file">hotel_management_odoo.report_checkout</field>
+        <field name="binding_type">report</field>
+    </record>
+
+    <!-- QWeb PDF Template for Check Out Report -->
+    <template id="report_checkout">
+        <t t-call="web.html_container">
+            <t t-call="web.external_layout">
+                <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 11px; color: #222;">
+                    
+                    <!-- Header Title -->
+                    <div class="row mt16 mb16">
+                        <div class="col-12 text-center">
+                            <h2 style="font-weight: bold; color: #111; margin-bottom: 4px;">Check Out Report</h2>
+                            <p style="font-size: 13px; color: #555; margin-bottom: 0;">Period: <span style="font-weight: bold; color: #000;" t-esc="period"/></p>
+                        </div>
+                    </div>
+
+                    <!-- Summary Info Box -->
+                    <div style="border: 1px solid #999; border-radius: 8px; padding: 10px 14px; margin-bottom: 18px; background-color: #fafafa;">
+                        <div class="row">
+                            <div class="col-6">
+                                <strong>Total Checked Out Records:</strong> <span t-esc="total_records"/>
+                            </div>
+                            <div class="col-6 text-right">
+                                <strong>Total Rate Amount:</strong> <span style="font-size: 14px; font-weight: bold; color: #000;" t-esc="total_rate"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Data Table -->
+                    <table class="table table-sm table-bordered" style="width: 100%; border-collapse: collapse; font-size: 10px;">
+                        <thead>
+                            <tr style="background-color: #f2f2f2; text-align: center; font-weight: bold; color: #111;">
+                                <th style="border: 1px solid #555; padding: 5px 3px; width: 4%;">S No</th>
+                                <th style="border: 1px solid #555; padding: 5px 4px; width: 14%;">Guest Name</th>
+                                <th style="border: 1px solid #555; padding: 5px 4px; width: 9%;">Room No</th>
+                                <th style="border: 1px solid #555; padding: 5px 3px; width: 4%;">Pax</th>
+                                <th style="border: 1px solid #555; padding: 5px 4px; width: 11%;">Invoice No</th>
+                                <th style="border: 1px solid #555; padding: 5px 4px; width: 14%;">Company</th>
+                                <th style="border: 1px solid #555; padding: 5px 4px; width: 10%; text-align: right;">Rate</th>
+                                <th style="border: 1px solid #555; padding: 5px 3px; width: 8%;">In Date</th>
+                                <th style="border: 1px solid #555; padding: 5px 3px; width: 7%;">In Time</th>
+                                <th style="border: 1px solid #555; padding: 5px 3px; width: 8%;">Out Date</th>
+                                <th style="border: 1px solid #555; padding: 5px 3px; width: 7%;">Out Time</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-foreach="lines" t-as="l">
+                                <tr>
+                                    <td class="text-center" style="border: 1px solid #666; padding: 4px 2px;"><t t-esc="l['s_no']"/></td>
+                                    <td style="border: 1px solid #666; padding: 4px;"><t t-esc="l['guest_name']"/></td>
+                                    <td class="text-center" style="border: 1px solid #666; padding: 4px;"><t t-esc="l['room_no']"/></td>
+                                    <td class="text-center" style="border: 1px solid #666; padding: 4px;"><t t-esc="l['pax']"/></td>
+                                    <td class="text-center" style="border: 1px solid #666; padding: 4px;"><t t-esc="l['invoice_no']"/></td>
+                                    <td style="border: 1px solid #666; padding: 4px;"><t t-esc="l['company']"/></td>
+                                    <td class="text-right" style="border: 1px solid #666; padding: 4px; font-weight: bold;"><t t-esc="l['rate']"/></td>
+                                    <td class="text-center" style="border: 1px solid #666; padding: 4px;"><t t-esc="l['in_date']"/></td>
+                                    <td class="text-center" style="border: 1px solid #666; padding: 4px;"><t t-esc="l['in_time']"/></td>
+                                    <td class="text-center" style="border: 1px solid #666; padding: 4px;"><t t-esc="l['out_date']"/></td>
+                                    <td class="text-center" style="border: 1px solid #666; padding: 4px;"><t t-esc="l['out_time']"/></td>
+                                </tr>
+                            </t>
+                        </tbody>
+                        <tfoot>
+                            <tr style="background-color: #eaeaea; font-weight: bold;">
+                                <td colspan="6" class="text-right" style="border: 1px solid #555; padding: 6px;">Total Rate:</td>
+                                <td class="text-right" style="border: 1px solid #555; padding: 6px; font-size: 11px;"><t t-esc="total_rate"/></td>
+                                <td colspan="4" style="border: 1px solid #555; padding: 6px;"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </t>
+        </t>
+    </template>
+</odoo>

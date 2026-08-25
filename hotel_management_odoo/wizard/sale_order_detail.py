@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 #############################################################################
 #
-#    MiiG Solution
+#    Cybrosys Technologies Pvt. Ltd.
 #
-#    Copyright (C) 2026-TODAY MiiG Solution(<https://www.miigsolution.so>)
-#    Author: MiiG Solution(<https://www.miigsolution.so>)
+#    Copyright (C) 2026-TODAY Cybrosys Technologies(<https://www.cybrosys.com>)
+#    Author: Cybrosys Techno Solutions(<https://www.cybrosys.com>)
 #
 #    You can modify it under the terms of the GNU LESSER
 #    GENERAL PUBLIC LICENSE (LGPL v3), Version 3.
@@ -22,7 +22,7 @@
 import io
 import json
 from datetime import datetime, timedelta
-from odoo import _, fields, models
+from odoo import fields, models
 from odoo.exceptions import ValidationError
 from odoo.tools import json_default
 
@@ -39,12 +39,6 @@ class SaleOrderWizard(models.TransientModel):
 
     checkin = fields.Date(help="Choose the Checkin Date", string="Check In")
     checkout = fields.Date(help="Choose the Checkout Date", string="Check Out")
-    state_draft = fields.Boolean(string="Draft")
-    state_reserved = fields.Boolean(string="Reserved")
-    state_check_in = fields.Boolean(string="Check In")
-    state_check_out = fields.Boolean(string="Check Out")
-    state_done = fields.Boolean(string="Done")
-    state_cancel = fields.Boolean(string="Cancelled")
 
     def action_sale_order_pdf(self):
         """Button action for creating Sale Order Pdf Report"""
@@ -76,23 +70,12 @@ class SaleOrderWizard(models.TransientModel):
         domain = []
         if self.checkin and self.checkout:
             if self.checkin > self.checkout:
-                raise ValidationError(
-                    _('Check-in date should be less than Check-out date'))
+                raise ValidationError((
+                    'Check-in date should be less than Check-out date'))
         if self.checkin:
             domain.append(('checkin_date', '>=', self.checkin), )
         if self.checkout:
             domain.append(('checkout_date', '<', self.checkout + timedelta(days=1)), )
-        state_map = {
-            'draft': self.state_draft,
-            'reserved': self.state_reserved,
-            'check_in': self.state_check_in,
-            'check_out': self.state_check_out,
-            'done': self.state_done,
-            'cancel': self.state_cancel,
-        }
-        selected_states = [state for state, checked in state_map.items() if checked]
-        if selected_states:
-            domain.append(('state', 'in', selected_states))
         room_booking = self.env['room.booking'].search_read(domain=domain,
                                                             fields=[
                                                                 'partner_id',
@@ -101,7 +84,7 @@ class SaleOrderWizard(models.TransientModel):
                                                                 'checkout_date',
                                                                 'amount_total'])
         for rec in room_booking:
-            rec['partner_id'] = rec['partner_id'][1] if rec['partner_id'] else ''
+            rec['partner_id'] = rec['partner_id'][1]
         return room_booking
 
     def _format_datetime(self, value):

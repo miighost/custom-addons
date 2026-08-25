@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Report Action for Reservation Acknowledgement -->
+    <record id="action_report_reservation_acknowledgement" model="ir.actions.report">
+        <field name="name">Reservation Acknowledgement</field>
+        <field name="model">room.booking</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">hotel_management_odoo.report_reservation_acknowledgement</field>
+        <field name="report_file">hotel_management_odoo.report_reservation_acknowledgement</field>
+        <field name="binding_model_id" ref="model_room_booking"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <!-- QWeb PDF Template for Reservation Acknowledgement -->
+    <template id="report_reservation_acknowledgement">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-call="web.external_layout">
+                    <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 13px; color: #222; padding-top: 10px; line-height: 1.4;">
+                        
+                        <!-- Document Header Title -->
+                        <div class="text-center mb-4">
+                            <h3 style="font-weight: 700; text-transform: uppercase; color: #111; letter-spacing: 1px; border-bottom: 2px solid #333; display: inline-block; padding-bottom: 6px; margin-bottom: 0;">
+                                RESERVATION ACKNOWLEDGEMENT
+                            </h3>
+                        </div>
+
+                        <!-- Salutation & Greetings -->
+                        <div style="margin-bottom: 18px;">
+                            <p style="margin-bottom: 4px; font-weight: 600;">Dear Sir,</p>
+                            <p style="margin-bottom: 4px;">Greetings from <strong style="text-transform: uppercase; color: #000;"><t t-esc="o.company_id.name or 'JAZEERA PALACE HOTEL'"/></strong>.</p>
+                            <p style="margin-bottom: 4px;">Please let us take this opportunity to thank you for choosing our hotel.</p>
+                            <p style="margin-bottom: 0;">In this regard, we would like to confirm your booking details as follows:</p>
+                        </div>
+
+                        <!-- Guest & Booking Summary Card -->
+                        <div style="border: 1px solid #666; border-radius: 6px; padding: 14px; margin-bottom: 20px; background-color: #fafafa;">
+                            <div class="row">
+                                <!-- Left Details Column -->
+                                <div class="col-6">
+                                    <table style="width: 100%; border-collapse: separate; border-spacing: 0 5px;">
+                                        <tr>
+                                            <td style="width: 125px; font-weight: 600; color: #444;">Guest Name</td>
+                                            <td style="width: 12px; font-weight: 600;">:</td>
+                                            <td style="font-weight: 700; color: #000;"><t t-esc="o.partner_id.name"/></td>
+                                        </tr>
+                                        <tr>
+                                            <td style="font-weight: 600; color: #444;">Nationality</td>
+                                            <td style="font-weight: 600;">:</td>
+                                            <td><t t-esc="o.partner_id.country_id.name or '-'"/></td>
+                                        </tr>
+                                        <tr>
+                                            <td style="font-weight: 600; color: #444;">Reservation No</td>
+                                            <td style="font-weight: 600;">:</td>
+                                            <td style="font-weight: 700; color: #111;"><t t-esc="o.name"/></td>
+                                        </tr>
+                                        <tr>
+                                            <td style="font-weight: 600; color: #444;">Reservation Date</td>
+                                            <td style="font-weight: 600;">:</td>
+                                            <td><t t-esc="o.date_order and o.date_order.strftime('%d-%B-%Y') or '-'"/></td>
+                                        </tr>
+                                        <tr>
+                                            <td style="font-weight: 600; color: #444;">City Ledger</td>
+                                            <td style="font-weight: 600;">:</td>
+                                            <td><t t-esc="o.partner_id.parent_id.name or '-'"/></td>
+                                        </tr>
+                                        <tr>
+                                            <td style="font-weight: 600; color: #444;">C/O</td>
+                                            <td style="font-weight: 600;">:</td>
+                                            <td><t t-esc="o.partner_id.company_name or '-'"/></td>
+                                        </tr>
+                                        <tr>
+                                            <td style="font-weight: 600; color: #444;">Pax</td>
+                                            <td style="font-weight: 600;">:</td>
+                                            <td><t t-esc="o.room_line_ids and o.room_line_ids[0].room_id.num_person or 1"/></td>
+                                        </tr>
+                                    </table>
+                                </div>
+
+                                <!-- Right Details Column -->
+                                <div class="col-6">
+                                    <table style="width: 100%; border-collapse: separate; border-spacing: 0 5px;">
+                                        <tr>
+                                            <td style="width: 125px; font-weight: 600; color: #444;">From Date</td>
+                                            <td style="width: 12px; font-weight: 600;">:</td>
+                                            <td style="font-weight: 700; color: #000;"><t t-esc="o.checkin_date and o.checkin_date.strftime('%d-%B-%Y') or '-'"/></td>
+                                        </tr>
+                                        <tr>
+                                            <td style="font-weight: 600; color: #444;">To Date</td>
+                                            <td style="font-weight: 600;">:</td>
+                                            <td style="font-weight: 700; color: #000;"><t t-esc="o.checkout_date and o.checkout_date.strftime('%d-%B-%Y') or '-'"/></td>
+                                        </tr>
+                                        <tr>
+                                            <td style="font-weight: 600; color: #444;">No of Days</td>
+                                            <td style="font-weight: 600;">:</td>
+                                            <td><t t-esc="o.duration or 1"/> Day(s)</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="font-weight: 600; color: #444;">Status</td>
+                                            <td style="font-weight: 600;">:</td>
+                                            <td><span style="font-weight: 700; color: #1e7e34;">Confirm</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td style="font-weight: 600; color: #444;">Payment Type</td>
+                                            <td style="font-weight: 600;">:</td>
+                                            <td><t t-esc="o.pricelist_id.name or '-'"/></td>
+                                        </tr>
+                                        <tr>
+                                            <td style="font-weight: 600; color: #444;">Adv. Amount</td>
+                                            <td style="font-weight: 600;">:</td>
+                                            <td>0.00</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="font-weight: 600; color: #444;">Plan</td>
+                                            <td style="font-weight: 600;">:</td>
+                                            <td style="font-weight: 700; color: #000;"><t t-esc="plan_labels.get(o.plan, o.plan or 'BB')"/></td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Room Details Table -->
+                        <div style="margin-bottom: 20px;">
+                            <table class="table table-bordered table-sm" style="width: 100%; border: 1px solid #555; border-collapse: collapse;">
+                                <thead>
+                                    <tr style="background-color: #e9ecef; text-align: center; font-weight: bold; color: #111;">
+                                        <th style="border: 1px solid #555; padding: 8px; text-align: left;">Room Type</th>
+                                        <th style="border: 1px solid #555; padding: 8px; width: 22%; text-align: center;">No of Rooms</th>
+                                        <th style="border: 1px solid #555; padding: 8px; width: 25%; text-align: right;">Room Rate</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="o.room_line_ids" t-as="r">
+                                        <t t-set="rt_dict" t-value="dict(r.room_id._fields['room_type'].selection) if r.room_id and r.room_id.room_type else {}"/>
+                                        <tr>
+                                            <td style="border: 1px solid #555; padding: 8px; text-align: left;">
+                                                <strong style="color: #000;"><t t-esc="rt_dict.get(r.room_id.room_type, r.room_id.name if r.room_id else 'STANDARD ROOM')"/></strong>
+                                                <t t-if="r.room_id and r.room_id.name"> (Room <t t-esc="r.room_id.name"/>)</t>
+                                            </td>
+                                            <td style="border: 1px solid #555; padding: 8px; text-align: center;">1</td>
+                                            <td style="border: 1px solid #555; padding: 8px; text-align: right; font-weight: bold;">
+                                                <t t-esc="'%.2f' % r.price_unit"/>
+                                            </td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Remarks Section (if provided) -->
+                        <t t-if="o.description">
+                            <div style="margin-bottom: 18px; padding: 10px 14px; border: 1px dashed #888; background-color: #fffde7; border-radius: 4px;">
+                                <strong>Remarks:</strong> <t t-esc="o.description"/>
+                            </div>
+                        </t>
+
+                        <!-- Cancellation Policy Box -->
+                        <div style="border: 1px solid #888; border-radius: 6px; padding: 12px 16px; margin-bottom: 35px; background-color: #f8f9fa; font-size: 11px; line-height: 1.5;">
+                            <div style="font-weight: 700; text-decoration: underline; margin-bottom: 6px; color: #111; font-size: 12px;">Cancellation Policy:</div>
+                            <ul style="margin: 0; padding-left: 18px; color: #333;">
+                                <li style="margin-bottom: 3px;">Non-Guaranteed reservation will be kept till 16:00 hrs on the day of arrival, unless informed about late arrival.</li>
+                                <li style="margin-bottom: 3px;">Guest check-in before morning 06:00am will be charged from the previous day.</li>
+                                <li style="margin-bottom: 3px;">The hotel check-in is 14:00 hrs and out time is 12:00 noon, early check-in and late checkout is available on request, subject to room availability and prior approval from the Front Office Manager.</li>
+                                <li style="margin-bottom: 0;">In case of no show one day will be charged and cancellation before 48 hrs there is no charge.</li>
+                            </ul>
+                        </div>
+
+                        <!-- Signatures Footer Section -->
+                        <div style="margin-top: 50px; page-break-inside: avoid;">
+                            <div class="row">
+                                <div class="col-6 text-center">
+                                    <div style="border-bottom: 1px solid #333; width: 75%; margin: 0 auto 8px auto;"></div>
+                                    <strong style="color: #111;">Guest Signatory</strong>
+                                </div>
+                                <div class="col-6 text-center">
+                                    <div style="border-bottom: 1px solid #333; width: 75%; margin: 0 auto 8px auto;"></div>
+                                    <strong style="color: #111;">Authorized Signatory</strong>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

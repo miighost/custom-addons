@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Mass Change Room Type Wizard Form View -->
+    <record id="change_room_type_wizard_view_form" model="ir.ui.view">
+        <field name="name">change.room.type.wizard.view.form</field>
+        <field name="model">change.room.type.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Change Room Type">
+                <group>
+                    <field name="room_type" string="Select New Room Type"/>
+                </group>
+                <footer>
+                    <button name="action_apply_room_type" string="Update Selected Rooms" type="object" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action bound to Hotel Room List View Action Menu -->
+    <record id="action_change_room_type_wizard" model="ir.actions.act_window">
+        <field name="name">Change Room Type</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">change.room.type.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="binding_model_id" ref="model_hotel_room"/>
+        <field name="binding_view_types">list</field>
+    </record>
+</odoo>

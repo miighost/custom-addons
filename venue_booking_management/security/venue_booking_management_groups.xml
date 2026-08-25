@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Venue Booking Management Category -->
+    <record id="module_category_venue_booking_management" model="ir.module.category">
+        <field name="name">Venue Booking Management</field>
+        <field name="description">Category for Venue Booking Management</field>
+        <field name="sequence">25</field>
+    </record>
+
+    <!-- Venue Privilege -->
+    <record id="privilege_venue_booking" model="res.groups.privilege">
+        <field name="name">Venue Management</field>
+        <field name="category_id" ref="module_category_venue_booking_management"/>
+    </record>
+
+    <!-- Group For User -->
+    <record id="venue_booking_management_group_venue_user" model="res.groups">
+        <field name="name">User</field>
+        <field name="privilege_id" ref="privilege_venue_booking"/>
+    </record>
+
+    <!-- Group For Manager -->
+    <record id="venue_booking_management_group_venue_manager" model="res.groups">
+        <field name="name">Manager</field>
+        <field name="privilege_id" ref="privilege_venue_booking"/>
+        <field name="implied_ids" eval="[Command.link(ref('venue_booking_management_group_venue_user'))]"/>
+        <field name="user_ids" eval="[Command.link(ref('base.user_root')), Command.link(ref('base.user_admin'))]"/>
+    </record>
+</odoo>

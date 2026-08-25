@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Report Action for In-House Guest List -->
+    <record id="action_report_in_house_guest" model="ir.actions.report">
+        <field name="name">In House Guest List</field>
+        <field name="model">room.booking</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">hotel_management_odoo.report_in_house_guest</field>
+        <field name="report_file">hotel_management_odoo.report_in_house_guest</field>
+        <field name="binding_model_id" ref="model_room_booking"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <!-- QWeb PDF Template for In-House Guest List -->
+    <template id="report_in_house_guest">
+        <t t-call="web.html_container">
+            <t t-call="web.external_layout">
+                <div class="page">
+                    <div class="row mt16 mb16">
+                        <div class="col-12 text-center">
+                            <h2 style="font-weight: bold; color: #111;">In-House Guest List</h2>
+                        </div>
+                    </div>
+                    <table class="table table-sm table-bordered mt16" style="width: 100%; font-size: 13px;">
+                        <thead>
+                            <tr style="background-color: #f2f2f2; text-align: center;">
+                                <th style="border: 1px solid #000; padding: 6px;">SN</th>
+                                <th style="border: 1px solid #000; padding: 6px;">Guest Name</th>
+                                <th style="border: 1px solid #000; padding: 6px;">Room No</th>
+                                <th style="border: 1px solid #000; padding: 6px;">Check in</th>
+                                <th style="border: 1px solid #000; padding: 6px;">Dep Date</th>
+                                <th style="border: 1px solid #000; padding: 6px;">Pricelist</th>
+                                <th style="border: 1px solid #000; padding: 6px;">Nationality</th>
+                                <th style="border: 1px solid #000; padding: 6px;">City Ledger</th>
+                                <th style="border: 1px solid #000; padding: 6px;" class="text-right">Room rate</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-set="i" t-value="0"/>
+                            <t t-foreach="docs" t-as="o">
+                                <t t-set="i" t-value="i+1"/>
+                                <tr>
+                                    <td class="text-center" style="border: 1px solid #000; padding: 6px;"><t t-esc="i"/></td>
+                                    <td style="border: 1px solid #000; padding: 6px;"><span t-field="o.partner_id.name"/></td>
+                                    <td style="border: 1px solid #000; padding: 6px;"><span t-esc="o.room_name or ', '.join(o.room_line_ids.mapped('room_id.name')) or '-'"/></td>
+                                    <td class="text-center" style="border: 1px solid #000; padding: 6px;"><span t-field="o.checkin_date" t-options='{"widget": "date"}'/></td>
+                                    <td class="text-center" style="border: 1px solid #000; padding: 6px;"><span t-field="o.checkout_date" t-options='{"widget": "date"}'/></td>
+                                    <td style="border: 1px solid #000; padding: 6px;"><span t-field="o.pricelist_id.name"/></td>
+                                    <td style="border: 1px solid #000; padding: 6px;"><span t-esc="o.partner_id.country_id.name or '-'"/></td>
+                                    <td style="border: 1px solid #000; padding: 6px;"><span t-esc="o.partner_id.parent_id.name or '-'"/></td>
+                                    <td class="text-right" style="border: 1px solid #000; padding: 6px;">
+                                        <t t-set="room_rate" t-value="sum(o.room_line_ids.mapped('price_total'))"/>
+                                        <span t-esc="room_rate" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                    </td>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+                </div>
+            </t>
+        </t>
+    </template>
+</odoo>

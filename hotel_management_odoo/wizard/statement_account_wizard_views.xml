@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Statement of Account Wizard Form View -->
+    <record id="statement_account_wizard_view_form" model="ir.ui.view">
+        <field name="name">statement.account.wizard.view.form</field>
+        <field name="model">statement.account.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Statement of Account">
+                <group>
+                    <group>
+                        <field name="partner_id" options="{'no_create': True, 'no_open': True}"/>
+                        <field name="booking_id" options="{'no_create': True, 'no_open': True}"/>
+                    </group>
+                    <group>
+                        <field name="date_from"/>
+                        <field name="date_to"/>
+                    </group>
+                </group>
+                <footer>
+                    <button name="action_print_pdf" string="Download PDF" type="object" class="btn-primary" icon="fa-download"/>
+                    <button name="action_print_excel" string="Download XLS" type="object" class="btn-primary" icon="fa-download"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Statement of Account Wizard Action -->
+    <record id="statement_account_wizard_action" model="ir.actions.act_window">
+        <field name="name">Statement of Account</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">statement.account.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

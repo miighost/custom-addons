@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Daily Cash Report Wizard Form View -->
+    <record id="daily_cash_report_wizard_view_form" model="ir.ui.view">
+        <field name="name">daily.cash.report.wizard.view.form</field>
+        <field name="model">daily.cash.report.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Daily Cash &amp; POS Report">
+                <group>
+                    <group>
+                        <field name="date_from"/>
+                        <field name="date_to"/>
+                    </group>
+                    <group>
+                        <field name="journal_id" options="{'no_create': True, 'no_open': True}"/>
+                    </group>
+                </group>
+                <footer>
+                    <button name="action_print_pdf" string="Download PDF" type="object" class="btn-primary" icon="fa-download"/>
+                    <button name="action_print_excel" string="Download XLS" type="object" class="btn-primary" icon="fa-download"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Daily Cash Report Wizard Action -->
+    <record id="daily_cash_report_wizard_action" model="ir.actions.act_window">
+        <field name="name">Daily Cash &amp; POS Collections</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">daily.cash.report.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

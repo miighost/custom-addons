@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 #############################################################################
 #
-#    MiiG Solution
+#    Cybrosys Technologies Pvt. Ltd.
 #
-#    Copyright (C) 2026-TODAY MiiG Solution(<https://www.miigsolution.so>)
-#    Author: MiiG Solution(<https://www.miigsolution.so>)
+#    Copyright (C) 2026-TODAY Cybrosys Technologies(<https://www.cybrosys.com>)
+#    Author: Cybrosys Techno Solutions(<https://www.cybrosys.com>)
 #
 #    You can modify it under the terms of the GNU LESSER
 #    GENERAL PUBLIC LICENSE (LGPL v3), Version 3.
@@ -27,6 +27,7 @@ class RoomBooking(models.Model):
 
     pos_order_line_ids = fields.One2many('hotel.pos.line', 'booking_id', string='POS Orders')
     amount_total_pos = fields.Monetary(string="Total POS Amount", compute='_compute_amount_total_pos', store=False)
+
 
     @api.depends('pos_order_line_ids')
     def _compute_has_pos_orders(self):
@@ -152,17 +153,3 @@ class RoomBooking(models.Model):
         else:
             action = {'type': 'ir.actions.act_window_close'}
         return action
-
-    @api.model
-    def get_details(self, *args, **kwargs):
-        """Returns dashboard counts, overriding food_order with hotel POS orders count."""
-        res = super().get_details(*args, **kwargs)
-        try:
-            hotel_pos_count = self.env['pos.order'].search_count([
-                ('booking_id', '!=', False),
-                ('state', '!=', 'cancel'),
-            ])
-            res['food_order'] = hotel_pos_count
-        except Exception:
-            pass
-        return res

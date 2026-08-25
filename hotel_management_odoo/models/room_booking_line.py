@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 #############################################################################
 #
-#    MiiG Solution
+#    Cybrosys Technologies Pvt. Ltd.
 #
-#    Copyright (C) 2026-TODAY MiiG Solution(<https://www.miigsolution.so>)
-#    Author: MiiG Solution(<https://www.miigsolution.so>)
+#    Copyright (C) 2026-TODAY Cybrosys Technologies(<https://www.cybrosys.com>)
+#    Author: Cybrosys Techno Solutions(<https://www.cybrosys.com>)
 #
 #    You can modify it under the terms of the GNU LESSER
 #    GENERAL PUBLIC LICENSE (LGPL v3), Version 3.
@@ -19,8 +19,6 @@
 #    If not, see <http://www.gnu.org/licenses/>.
 #
 #############################################################################
-from openpyxl.worksheet import related
-
 from odoo import api, fields, models, tools
 from odoo.exceptions import ValidationError
 
@@ -46,8 +44,7 @@ class RoomBookingLine(models.Model):
                                     help="You can choose the date,"
                                          " Otherwise sets to current Date",
                                     required=True)
-    room_id = fields.Many2one('product.template', string="Room",
-                              domain=[('status', '=', 'available')],
+    room_id = fields.Many2one('hotel.room', string="Room",
                               help="Indicates the Room",
                               required=True)
     uom_qty = fields.Float(string="Duration",
@@ -58,14 +55,13 @@ class RoomBookingLine(models.Model):
                              string="Unit of Measure",
                              help="This will set the unit of measure used",
                              readonly=True)
-    price_unit = fields.Float(string='Rent', digits='Product Price',
-                              compute='_compute_price_unit', store=True,
-                              readonly=False, precompute=True,
+    price_unit = fields.Float(related='room_id.list_price', string='Rent',
+                              digits='Product Price',
                               help="The rent price of the selected room.")
     tax_ids = fields.Many2many('account.tax',
                                'hotel_room_order_line_taxes_rel',
                                'room_id', 'tax_id',
-                               related='room_id.taxes_id',
+                               related='room_id.taxes_ids',
                                string='Taxes',
                                help="Default taxes used when selling the room."
                                , domain=[('type_tax_use', '=', 'sale')])
@@ -84,6 +80,11 @@ class RoomBookingLine(models.Model):
                                compute='_compute_price_subtotal',
                                help="Total Price including Tax",
                                store=True)
+    elapsed_days = fields.Float(string="Days Stayed", compute="_compute_today_accrued",
+                                help="Elapsed days from check-in up to today")
+    today_accrued_rent = fields.Monetary(string="Today's Balance", compute="_compute_today_accrued",
+                                         currency_field='currency_id',
+                                         help="Accrued room charge up to today")
     state = fields.Selection(related='booking_id.state',
                              string="Order Status",
                              help=" Status of the Order",
@@ -92,51 +93,29 @@ class RoomBookingLine(models.Model):
                                           string="Booking Line Visible",
                                           help="If True, then Booking Line "
                                                "will be visible")
-    days_stayed = fields.Float(string="Days Stayed", compute="_compute_todays_balance", store=False,
-                               help="The number of days/nights stayed up to today.")
-    todays_balance = fields.Float(string="Today's Balance", compute="_compute_todays_balance", store=False,
-                                  help="The accrued room charge for the days stayed so far.")
 
-    @api.depends('checkin_date', 'checkout_date', 'uom_qty', 'price_total', 'price_unit', 'booking_id.state')
-    def _compute_todays_balance(self):
-        """Compute the days elapsed to date and the corresponding accrued room balance."""
-        now_dt = fields.Datetime.now()
+    @api.depends('checkin_date', 'checkout_date', 'price_unit', 'price_subtotal', 'uom_qty')
+    def _compute_today_accrued(self):
+        """Compute accrued days and today's balance as of current date."""
+        now = fields.Datetime.now()
         for line in self:
-            if not line.checkin_date or line.booking_id.state in ['draft', 'cancel']:
-                line.days_stayed = 0.0
-                line.todays_balance = 0.0
+            if not line.checkin_date:
+                line.elapsed_days = 0.0
+                line.today_accrued_rent = 0.0
                 continue
-
-            effective_end = min(now_dt, line.checkout_date) if line.checkout_date else now_dt
-            if effective_end > line.checkin_date:
-                diff = effective_end - line.checkin_date
+            cin = line.checkin_date
+            cout = line.checkout_date or now
+            effective_out = min(now, cout)
+            if effective_out <= cin:
+                days = 1.0
+            else:
+                diff = effective_out - cin
                 days = diff.days
                 if diff.total_seconds() > 0:
                     days += 1
-                days_stayed = min(max(1.0, float(days)), line.uom_qty if line.uom_qty > 0 else float(days))
-            else:
-                days_stayed = 1.0
-
-            line.days_stayed = days_stayed
-            if line.uom_qty and line.uom_qty > 0:
-                line.todays_balance = round((line.price_total / line.uom_qty) * days_stayed, 2)
-            else:
-                line.todays_balance = round(line.price_unit * days_stayed, 2)
-
-    @api.depends('room_id', 'booking_id.pricelist_id', 'uom_qty')
-    def _compute_price_unit(self):
-        """Compute the rent using the booking's pricelist, falling back to
-        the room's list price when there is no pricelist."""
-        for line in self:
-            if not line.room_id or not line.room_id.exists():
-                line.price_unit = 0
-                continue
-            pricelist = line.booking_id.pricelist_id
-            if pricelist:
-                line.price_unit = pricelist._get_product_price(
-                    line.room_id, line.uom_qty or 1.0)
-            else:
-                line.price_unit = line.room_id.list_price
+            line.elapsed_days = max(1.0, float(min(days, line.uom_qty or days)))
+            daily_rate = line.price_unit or (line.price_subtotal / (line.uom_qty or 1.0) if line.uom_qty else 0.0)
+            line.today_accrued_rent = daily_rate * line.elapsed_days
 
     @api.onchange("checkin_date", "checkout_date")
     def _onchange_checkin_date(self):
@@ -186,4 +165,27 @@ class RoomBookingLine(models.Model):
                 'currency_id': self.currency_id or self.env.company.currency_id,
             },
         )
+
+    @api.constrains('room_id', 'checkin_date', 'checkout_date', 'state')
+    def _check_room_booking_overlap(self):
+        """Prevent double booking the same room for overlapping date ranges."""
+        for line in self:
+            if not line.room_id or not line.checkin_date or not line.checkout_date:
+                continue
+            if line.booking_id and line.booking_id.state in ['cancel']:
+                continue
+            domain = [
+                ('id', '!=', line.id),
+                ('room_id', '=', line.room_id.id),
+                ('booking_id.state', 'in', ['reserved', 'check_in']),
+                ('checkin_date', '<', line.checkout_date),
+                ('checkout_date', '>', line.checkin_date),
+            ]
+            overlapping = self.search(domain, limit=1)
+            if overlapping:
+                raise ValidationError(
+                    f"Room '{line.room_id.name}' is already booked for the date range "
+                    f"{overlapping.checkin_date.strftime('%d/%m/%Y')} to {overlapping.checkout_date.strftime('%d/%m/%Y')} "
+                    f"(Booking Ref: {overlapping.booking_id.name}). Please select a different room or date range."
+                )
 

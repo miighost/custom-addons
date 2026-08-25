@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Report Action for Daily Cash & POS Report -->
+    <record id="action_report_daily_cash" model="ir.actions.report">
+        <field name="name">Daily Cash &amp; POS Report</field>
+        <field name="model">daily.cash.report.wizard</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">hotel_management_odoo.report_daily_cash</field>
+        <field name="report_file">hotel_management_odoo.report_daily_cash</field>
+        <field name="binding_type">report</field>
+    </record>
+
+    <!-- QWeb PDF Template for Daily Cash & POS Report -->
+    <template id="report_daily_cash">
+        <t t-call="web.html_container">
+            <t t-call="web.external_layout">
+                <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 11px; color: #222;">
+                    
+                    <!-- Header Title -->
+                    <div class="row mt16 mb16">
+                        <div class="col-12 text-center">
+                            <h2 style="font-weight: bold; color: #111; margin-bottom: 4px;">Cash Report / Daily Collections &amp; POS Transactions</h2>
+                            <p style="font-size: 13px; color: #555; margin-bottom: 0;">Period: <span style="font-weight: bold; color: #000;" t-esc="period"/></p>
+                        </div>
+                    </div>
+
+                    <!-- Payment Method Collections Breakdown Box -->
+                    <t t-if="method_summary">
+                        <div style="border: 1px solid #999; border-radius: 6px; padding: 10px 14px; margin-bottom: 16px; background-color: #fafafa;">
+                            <div style="font-weight: bold; margin-bottom: 6px; color: #333;">COLLECTIONS SUMMARY BY PAYMENT METHOD:</div>
+                            <div class="row">
+                                <t t-foreach="method_summary" t-as="m">
+                                    <div class="col-3" style="margin-bottom: 4px;">
+                                        <strong style="color: #555;"><t t-esc="m['method']"/>:</strong> <span style="font-weight: bold; color: #000;" t-esc="m['total']"/>
+                                    </div>
+                                </t>
+                            </div>
+                        </div>
+                    </t>
+
+                    <!-- Transaction Data Table -->
+                    <table class="table table-sm table-bordered" style="width: 100%; border-collapse: collapse; font-size: 10px;">
+                        <thead>
+                            <tr style="background-color: #f2f2f2; text-align: center; font-weight: bold; color: #111;">
+                                <th style="border: 1px solid #555; padding: 5px 2px; width: 4%;">S.No</th>
+                                <th style="border: 1px solid #555; padding: 5px 3px; width: 13%;">Date</th>
+                                <th style="border: 1px solid #555; padding: 5px 2px; width: 6%;">CAS</th>
+                                <th style="border: 1px solid #555; padding: 5px 3px; width: 14%;">Name</th>
+                                <th style="border: 1px solid #555; padding: 5px 3px; width: 12%;">Voucher No</th>
+                                <th style="border: 1px solid #555; padding: 5px 3px; width: 15%;">Remarks</th>
+                                <th style="border: 1px solid #555; padding: 5px 2px; width: 8%;">CardNo</th>
+                                <th style="border: 1px solid #555; padding: 5px 2px; width: 6%;">RoomNo</th>
+                                <th style="border: 1px solid #555; padding: 5px 3px; width: 7%; text-align: right;">Debit</th>
+                                <th style="border: 1px solid #555; padding: 5px 3px; width: 7%; text-align: right;">Credit</th>
+                                <th style="border: 1px solid #555; padding: 5px 3px; width: 8%; text-align: right;">Balance</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-if="lines">
+                                <t t-foreach="lines" t-as="l">
+                                    <tr>
+                                        <td class="text-center" style="border: 1px solid #666; padding: 4px 2px;"><t t-esc="l['s_no']"/></td>
+                                        <td class="text-center" style="border: 1px solid #666; padding: 4px 2px;"><t t-esc="l['date']"/></td>
+                                        <td class="text-center" style="border: 1px solid #666; padding: 4px 2px; font-weight: bold;"><t t-esc="l['cas']"/></td>
+                                        <td style="border: 1px solid #666; padding: 4px;"><t t-esc="l['name']"/></td>
+                                        <td class="text-center" style="border: 1px solid #666; padding: 4px;"><t t-esc="l['voucher_no']"/></td>
+                                        <td style="border: 1px solid #666; padding: 4px;"><t t-esc="l['remarks']"/></td>
+                                        <td class="text-center" style="border: 1px solid #666; padding: 4px;"><t t-esc="l['card_no']"/></td>
+                                        <td class="text-center" style="border: 1px solid #666; padding: 4px;"><t t-esc="l['room_no']"/></td>
+                                        <td class="text-right" style="border: 1px solid #666; padding: 4px;"><t t-esc="l['debit']"/></td>
+                                        <td class="text-right" style="border: 1px solid #666; padding: 4px; font-weight: bold; color: #198754;"><t t-esc="l['credit']"/></td>
+                                        <td class="text-right" style="border: 1px solid #666; padding: 4px; font-weight: bold;"><t t-esc="l['balance']"/></td>
+                                    </tr>
+                                </t>
+                            </t>
+                            <t t-else="">
+                                <tr>
+                                    <td colspan="11" class="text-center" style="border: 1px solid #666; padding: 10px; color: #777;">No cash or POS transactions recorded in this period.</td>
+                                </tr>
+                            </t>
+                        </tbody>
+                        <tfoot>
+                            <tr style="background-color: #eaeaea; font-weight: bold;">
+                                <td colspan="8" class="text-right" style="border: 1px solid #555; padding: 6px;">Total / Closing Balance:</td>
+                                <td class="text-right" style="border: 1px solid #555; padding: 6px;"><t t-esc="total_debit"/></td>
+                                <td class="text-right" style="border: 1px solid #555; padding: 6px; color: #198754;"><t t-esc="total_credit"/></td>
+                                <td class="text-right" style="border: 1px solid #555; padding: 6px; font-size: 11px;"><t t-esc="closing_balance"/></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </t>
+        </t>
+    </template>
+</odoo>

@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Report Action for Room Status Report -->
+    <record id="action_report_room_status" model="ir.actions.report">
+        <field name="name">Room Status Report</field>
+        <field name="model">room.booking</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">hotel_management_odoo.report_room_status</field>
+        <field name="report_file">hotel_management_odoo.report_room_status</field>
+        <field name="binding_model_id" ref="model_room_booking"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <!-- QWeb PDF Template for Room Status Report -->
+    <template id="report_room_status">
+        <t t-call="web.html_container">
+            <t t-call="web.external_layout">
+                <div class="page">
+                    <div class="row mt16 mb16">
+                        <div class="col-12 text-center">
+                            <h2 style="font-weight: bold; color: #111;">Room Status Report</h2>
+                        </div>
+                    </div>
+                    <table class="table table-sm table-bordered mt16" style="width: 100%; font-size: 13px;">
+                        <thead>
+                            <tr style="background-color: #f2f2f2; text-align: center;">
+                                <th style="border: 1px solid #000; padding: 6px;">SN</th>
+                                <th style="border: 1px solid #000; padding: 6px;">Guest Name</th>
+                                <th style="border: 1px solid #000; padding: 6px;">Room No</th>
+                                <th style="border: 1px solid #000; padding: 6px;">Date &amp; Time</th>
+                                <th style="border: 1px solid #000; padding: 6px;" class="text-right">Amount</th>
+                                <th style="border: 1px solid #000; padding: 6px;" class="text-right">Balance</th>
+                                <th style="border: 1px solid #000; padding: 6px;">Booking No</th>
+                                <th style="border: 1px solid #000; padding: 6px;">Nationality</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-set="i" t-value="0"/>
+                            <t t-foreach="docs" t-as="o">
+                                <t t-set="i" t-value="i+1"/>
+                                <tr>
+                                    <td class="text-center" style="border: 1px solid #000; padding: 6px;"><t t-esc="i"/></td>
+                                    <td style="border: 1px solid #000; padding: 6px;"><span t-field="o.partner_id.name"/></td>
+                                    <td style="border: 1px solid #000; padding: 6px;"><span t-esc="o.room_name or ', '.join(o.room_line_ids.mapped('room_id.name')) or '-'"/></td>
+                                    <td class="text-center" style="border: 1px solid #000; padding: 6px;"><span t-field="o.date_order" t-options='{"widget": "datetime"}'/></td>
+                                    <td class="text-right" style="border: 1px solid #000; padding: 6px;">
+                                        <span t-field="o.amount_total" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                    </td>
+                                    <td class="text-right" style="border: 1px solid #000; padding: 6px;">
+                                        <t t-set="bal" t-value="o.hotel_invoice_id.amount_residual if o.hotel_invoice_id else o.amount_total"/>
+                                        <span t-esc="bal" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                    </td>
+                                    <td style="border: 1px solid #000; padding: 6px;"><span t-field="o.name"/></td>
+                                    <td style="border: 1px solid #000; padding: 6px;"><span t-esc="o.partner_id.country_id.name or '-'"/></td>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+                </div>
+            </t>
+        </t>
+    </template>
+</odoo>

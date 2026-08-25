@@ -2,7 +2,7 @@
 <odoo>
     <!--    Room booking report action-->
     <record id="action_report_room_booking" model="ir.actions.report">
-        <field name="name">Reservation Confirmation</field>
+        <field name="name">Room Booking Order</field>
         <field name="model">room.booking</field>
         <field name="report_type">qweb-pdf</field>
         <field name="report_name">hotel_management_odoo.report_room_booking</field>
@@ -10,125 +10,49 @@
         <field name="binding_model_id" ref="model_room_booking"/>
         <field name="binding_type">report</field>
     </record>
-
-    <!--    Reservation Confirmation Report Template-->
+    <!--    Room booking template-->
     <template id="report_room_booking">
         <t t-call="web.html_container">
             <t t-call="web.external_layout">
                 <div class="page">
-                    <style>
-                        .res-header { text-align: center; font-weight: bold; font-size: 20px; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 1px; }
-                        .res-table { width: 100%; margin-bottom: 20px; border-collapse: collapse; }
-                        .res-table td { padding: 8px 10px; font-size: 13px; border: 1px solid #dee2e6; }
-                        .res-table .lbl { font-weight: bold; background-color: #f8f9fa; width: 22%; }
-                        .res-table .val { width: 28%; }
-                        .policy-title { font-weight: bold; font-size: 13px; margin-top: 25px; margin-bottom: 8px; text-decoration: underline; }
-                        .policy-list { font-size: 11px; line-height: 1.6; color: #333; padding-left: 20px; }
-                        .policy-list li { margin-bottom: 4px; }
-                    </style>
-
-                    <h2 class="res-header">Reservation Confirmation</h2>
-
-                    <!-- Single Record Form View Print (docs) -->
-                    <t t-if="docs">
-                        <t t-foreach="docs" t-as="doc">
-                            <t t-set="board_dict" t-value="{'ro': 'RO (Room Only)', 'bb': 'BB (Bed &amp; Breakfast)', 'hb': 'HB (Half Board)', 'fb': 'FB (Full Board)'}"/>
-                            <t t-set="state_dict" t-value="{'draft': 'Draft', 'reserved': 'Confirm', 'check_in': 'Check In', 'check_out': 'Check Out', 'cancel': 'Cancelled', 'done': 'Done'}"/>
-                            <t t-set="policy_dict" t-value="{'prepaid': 'On Booking', 'manual': 'On Check In', 'picking': 'On Checkout'}"/>
-                            <t t-set="p_comp" t-value="doc.partner_id.parent_id.name or doc.partner_id.company_name if doc.partner_id else False"/>
-
-                            <table class="res-table">
-                                <tr>
-                                    <td class="lbl">Reservation No:</td>
-                                    <td class="val"><strong><t t-esc="doc.name"/></strong></td>
-                                    <td class="lbl">From Date:</td>
-                                    <td class="val"><t t-esc="doc.checkin_date" t-options='{"widget": "datetime", "format": "dd-MM-yyyy"}'/></td>
-                                </tr>
-                                <tr>
-                                    <td class="lbl">Reservation Date:</td>
-                                    <td class="val"><t t-esc="doc.date_order" t-options='{"widget": "datetime", "format": "dd-MM-yyyy"}'/></td>
-                                    <td class="lbl">To Date:</td>
-                                    <td class="val"><t t-esc="doc.checkout_date" t-options='{"widget": "datetime", "format": "dd-MM-yyyy"}'/></td>
-                                </tr>
-                                <tr>
-                                    <td class="lbl">Guest Name:</td>
-                                    <td class="val"><t t-esc="doc.partner_id.name if doc.partner_id else ''"/></td>
-                                    <td class="lbl">No of Days:</td>
-                                    <td class="val"><t t-esc="doc.duration"/></td>
-                                </tr>
-                                <tr>
-                                    <td class="lbl">City Ledger / Company:</td>
-                                    <td class="val"><t t-esc="p_comp or 'None'"/></td>
-                                    <td class="lbl">Status:</td>
-                                    <td class="val"><strong style="color: #198754;"><t t-esc="state_dict.get(doc.state, doc.state or 'Confirm')"/></strong></td>
-                                </tr>
-                                <tr>
-                                    <td class="lbl">Pax:</td>
-                                    <td class="val">1</td>
-                                    <td class="lbl">Payment Type:</td>
-                                    <td class="val"><t t-esc="policy_dict.get(doc.hotel_policy, 'On Check In')"/></td>
-                                </tr>
-                                <tr>
-                                    <td class="lbl">Plan:</td>
-                                    <td class="val"><t t-esc="board_dict.get(doc.board_type, 'BB')"/></td>
-                                    <td class="lbl">Adv. Amount:</td>
-                                    <td class="val">0.00</td>
-                                </tr>
-                                <tr>
-                                    <td class="lbl">Room No:</td>
-                                    <td class="val" colspan="3"><t t-esc="doc.room_number or 'Unassigned'"/></td>
-                                </tr>
-                            </table>
-
-                            <div class="policy-title">Cancellation Policy &amp; Terms:</div>
-                            <ol class="policy-list">
-                                <li>Non-Guaranteed reservation will be kept till 16:00 hrs on the day of arrival, unless informed about late arrival.</li>
-                                <li>Guest check-in before morning 06:00am will be charged from the previous day.</li>
-                                <li>The hotel check-in is 14:00 hrs and out time is 12:00 noon, early check-in and late checkout is available on request, subject to room availability and prior approval from the Front Office Manager.</li>
-                                <li>In case of no show one day will be charged and cancellation before 48 hrs there is no charge.</li>
-                            </ol>
+                    <h2>Room Booking</h2>
+                    <br/>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Sl No.</th>
+                                <th>Guest Name</th>
+                                <th>Room No.</th>
+                                <th>Check-In</th>
+                                <th>Check-Out</th>
+                                <th>Reference No.</th>
+                            </tr>
+                        </thead>
+                        <t t-set="i" t-value="0"/>
+                        <t t-foreach="booking" t-as="line">
+                            <t t-set="i" t-value="i+1"/>
+                            <tr>
+                                <td>
+                                    <t t-esc="i"/>
+                                </td>
+                                <td>
+                                    <t t-esc="line['partner_id']"/>
+                                </td>
+                                <td>
+                                    <t t-esc="line['room']"/>
+                                </td>
+                                <td>
+                                    <t t-esc="line['checkin_date']"/>
+                                </td>
+                                <td>
+                                    <t t-esc="line['checkout_date']"/>
+                                </td>
+                                <td>
+                                    <t t-esc="line['name']"/>
+                                </td>
+                            </tr>
                         </t>
-                    </t>
-
-                    <!-- Reporting Menu Wizard (booking data list) -->
-                    <t t-elif="booking">
-                        <table class="table table-bordered table-sm" style="font-size: 12px;">
-                            <thead>
-                                <tr style="background-color: #f8f9fa;">
-                                    <th>Sl No.</th>
-                                    <th>Guest Name</th>
-                                    <th>Room No</th>
-                                    <th>Check-In</th>
-                                    <th>Check-Out</th>
-                                    <th>Reference No.</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <t t-set="i" t-value="0"/>
-                                <t t-foreach="booking" t-as="line">
-                                    <t t-set="i" t-value="i+1"/>
-                                    <tr>
-                                        <td><t t-esc="i"/></td>
-                                        <td><t t-esc="line['partner_id']"/></td>
-                                        <td><t t-esc="line['room']"/></td>
-                                        <td><t t-esc="line['checkin_date']"/></td>
-                                        <td><t t-esc="line['checkout_date']"/></td>
-                                        <td><t t-esc="line['name']"/></td>
-                                        <td><t t-esc="line['state']"/></td>
-                                    </tr>
-                                </t>
-                            </tbody>
-                        </table>
-
-                        <div class="policy-title">Cancellation Policy &amp; Terms:</div>
-                        <ol class="policy-list">
-                            <li>Non-Guaranteed reservation will be kept till 16:00 hrs on the day of arrival, unless informed about late arrival.</li>
-                            <li>Guest check-in before morning 06:00am will be charged from the previous day.</li>
-                            <li>The hotel check-in is 14:00 hrs and out time is 12:00 noon, early check-in and late checkout is available on request, subject to room availability and prior approval from the Front Office Manager.</li>
-                            <li>In case of no show one day will be charged and cancellation before 48 hrs there is no charge.</li>
-                        </ol>
-                    </t>
+                    </table>
                 </div>
             </t>
         </t>
