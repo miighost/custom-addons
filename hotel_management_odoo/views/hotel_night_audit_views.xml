@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Hotel Night Audit Form View (Matching Design) -->
+    <!-- Hotel Night Audit Form View -->
     <record id="hotel_night_audit_view_form" model="ir.ui.view">
         <field name="name">hotel.night.audit.view.form</field>
         <field name="model">hotel.night.audit</field>
@@ -67,7 +67,7 @@
         </field>
     </record>
 
-    <!-- Hotel Night Audit List View (Matching User Design) -->
+    <!-- Hotel Night Audit List View -->
     <record id="hotel_night_audit_view_tree" model="ir.ui.view">
         <field name="name">hotel.night.audit.view.tree</field>
         <field name="model">hotel.night.audit</field>
@@ -83,30 +83,8 @@
                 <field name="daily_room_rent" widget="monetary" string="Room Rent" sum="Total Room Rent" decoration-success="1"/>
                 <field name="daily_pos_revenue" widget="monetary" string="POS / Rest" sum="Total POS" decoration-success="1"/>
                 <field name="total_day_revenue" widget="monetary" string="Total Revenue" sum="Total Revenue" decoration-success="1" decoration-bf="1"/>
-                <field name="currency_id" string="Currency" column_invisible="True"/>
                 <field name="state" string="Status" widget="badge" decoration-info="state == 'draft'" decoration-success="state == 'closed'"/>
             </list>
-        </field>
-    </record>
-
-    <!-- Hotel Night Audit Search View -->
-    <record id="hotel_night_audit_view_search" model="ir.ui.view">
-        <field name="name">hotel.night.audit.view.search</field>
-        <field name="model">hotel.night.audit</field>
-        <field name="arch" type="xml">
-            <search string="Search Night Audits">
-                <field name="name"/>
-                <field name="date"/>
-                <field name="user_id"/>
-                <filter string="Draft" name="draft" domain="[('state', '=', 'draft')]"/>
-                <filter string="Audited / Closed" name="closed" domain="[('state', '=', 'closed')]"/>
-                <separator/>
-                <group expand="0" string="Group By">
-                    <filter string="Status" name="group_by_state" context="{'group_by': 'state'}"/>
-                    <filter string="Auditor" name="group_by_user" context="{'group_by': 'user_id'}"/>
-                    <filter string="Audit Date" name="group_by_date" context="{'group_by': 'date:day'}"/>
-                </group>
-            </search>
         </field>
     </record>
 
@@ -116,7 +94,6 @@
         <field name="type">ir.actions.act_window</field>
         <field name="res_model">hotel.night.audit</field>
         <field name="view_mode">list,form</field>
-        <field name="search_view_id" ref="hotel_night_audit_view_search"/>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
                 Create a new 24-Hour Night Audit!
