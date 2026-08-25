@@ -37,11 +37,9 @@
         <field name="inherit_id" ref="point_of_sale.view_pos_order_search"/>
         <field name="arch" type="xml">
             <xpath expr="//search" position="inside">
+                <field name="booking_id" string="Room / Folio"/>
                 <separator/>
                 <filter string="Hotel Guest Orders" name="hotel_orders" domain="[('booking_id', '!=', False)]"/>
-                <group expand="0" string="Group By">
-                    <filter string="Hotel Booking" name="group_by_booking" context="{'group_by': 'booking_id'}"/>
-                </group>
             </xpath>
         </field>
     </record>

@@ -800,6 +800,7 @@ class RoomBooking(models.Model):
                 pending_events += 1
             if fields.Date.to_date(fields.Datetime.context_timestamp(self, pending.date_end)) == today_date:
                 today_events += 1
+        food_items = self.env['lunch.product'].search_count([]) if 'lunch.product' in self.env else 0
         if 'pos.order' in self.env and 'booking_id' in self.env['pos.order']._fields:
             food_order = self.env['pos.order'].search_count([('booking_id', '!=', False)])
         elif 'hotel.pos.line' in self.env:
