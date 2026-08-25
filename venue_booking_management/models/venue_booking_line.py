@@ -29,6 +29,7 @@ class VenueBookingLine(models.Model):
 
     venue_booking_id = fields.Many2one('venue.booking',
                                        string="Venue Booking",
+                                       ondelete="cascade",
                                        help='The relation added for the venue '
                                             'Booking ')
     state = fields.Selection([('done', 'Done'), ('pending', 'Pending')],

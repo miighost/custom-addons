@@ -28,6 +28,7 @@ class VenueLines(models.Model):
     _description = 'Venue Lines'
 
     venue_id = fields.Many2one('venue', string='Venue Lines',
+                               ondelete="cascade",
                                help='The relational field for the venue model')
     amenities_id = fields.Many2one('amenities', string='Amenities',
                                    help='The field used to link the '

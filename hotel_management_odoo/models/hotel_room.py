@@ -117,12 +117,15 @@ class HotelRoom(models.Model):
             self.num_person = 4
 
     def unlink(self):
-        """Automatically clean up referencing folio lines and cleaning requests so rooms can be deleted without constraint errors"""
+        """Prevent deleting rooms with active bookings and protect user data"""
         for room in self:
-            booking_lines = self.env['room.booking.line'].sudo().search([('room_id', '=', room.id)])
-            if booking_lines:
-                booking_lines.unlink()
-            cleaning_requests = self.env['cleaning.request'].sudo().search([('room_id', '=', room.id)])
-            if cleaning_requests:
-                cleaning_requests.unlink()
+            active_lines = self.env['room.booking.line'].search([
+                ('room_id', '=', room.id),
+                ('booking_id.state', 'in', ['reserved', 'check_in'])
+            ])
+            if active_lines:
+                raise ValidationError(
+                    _(f"You cannot delete Room '{room.name}' because it has active/in-house bookings. "
+                      f"Please check out the guest or archive the room instead.")
+                )
         return super(HotelRoom, self).unlink()
