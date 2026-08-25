@@ -46,7 +46,7 @@ class RoomBookingLine(models.Model):
                                     required=True)
     room_id = fields.Many2one('hotel.room', string="Room",
                               help="Indicates the Room",
-                              required=True, ondelete="cascade")
+                              required=False, ondelete="set null")
     uom_qty = fields.Float(string="Duration",
                            help="The quantity converted into the UoM used by "
                                 "the product", readonly=True)
@@ -60,12 +60,10 @@ class RoomBookingLine(models.Model):
                               digits='Product Price',
                               help="The rent price of the selected room.")
     tax_ids = fields.Many2many('account.tax',
-                               'hotel_room_order_line_taxes_rel',
-                               'room_id', 'tax_id',
                                related='room_id.taxes_ids',
                                string='Taxes',
-                               help="Default taxes used when selling the room."
-                               , domain=[('type_tax_use', '=', 'sale')])
+                               help="Default taxes used when selling the room.",
+                               domain=[('type_tax_use', '=', 'sale')])
     currency_id = fields.Many2one(string='Currency',
                                   related='booking_id.pricelist_id.currency_id'
                                   , help='The currency used')

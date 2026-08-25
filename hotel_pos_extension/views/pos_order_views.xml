@@ -36,12 +36,12 @@
         <field name="model">pos.order</field>
         <field name="inherit_id" ref="point_of_sale.view_pos_order_search"/>
         <field name="arch" type="xml">
-            <xpath expr="//filter[@name='posted']" position="after">
+            <xpath expr="//search" position="inside">
                 <separator/>
                 <filter string="Hotel Guest Orders" name="hotel_orders" domain="[('booking_id', '!=', False)]"/>
-            </xpath>
-            <xpath expr="//group" position="inside">
-                <filter string="Hotel Booking" name="group_by_booking" context="{'group_by': 'booking_id'}"/>
+                <group expand="0" string="Group By">
+                    <filter string="Hotel Booking" name="group_by_booking" context="{'group_by': 'booking_id'}"/>
+                </group>
             </xpath>
         </field>
     </record>

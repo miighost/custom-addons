@@ -117,15 +117,22 @@ class HotelRoom(models.Model):
             self.num_person = 4
 
     def unlink(self):
-        """Prevent deleting rooms with active bookings and protect user data"""
+        """Allow unlinking safely during upgrades and normal operation"""
         for room in self:
-            active_lines = self.env['room.booking.line'].search([
+            active_lines = self.env['room.booking.line'].sudo().search([
                 ('room_id', '=', room.id),
                 ('booking_id.state', 'in', ['reserved', 'check_in'])
             ])
             if active_lines:
-                raise ValidationError(
-                    _(f"You cannot delete Room '{room.name}' because it has active/in-house bookings. "
-                      f"Please check out the guest or archive the room instead.")
-                )
+                if self.env.context.get('install_mode') or self.env.context.get('module'):
+                    active_lines.write({'room_id': False})
+                else:
+                    raise ValidationError(
+                        _(f"You cannot delete Room '{room.name}' because it has active/in-house bookings. "
+                          f"Please check out the guest or archive the room instead.")
+                    )
+            else:
+                other_lines = self.env['room.booking.line'].sudo().search([('room_id', '=', room.id)])
+                if other_lines:
+                    other_lines.write({'room_id': False})
         return super(HotelRoom, self).unlink()
