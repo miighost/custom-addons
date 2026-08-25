@@ -83,7 +83,7 @@
                 <field name="daily_room_rent" widget="monetary" string="Room Rent" sum="Total Room Rent" decoration-success="1"/>
                 <field name="daily_pos_revenue" widget="monetary" string="POS / Rest" sum="Total POS" decoration-success="1"/>
                 <field name="total_day_revenue" widget="monetary" string="Total Revenue" sum="Total Revenue" decoration-success="1" decoration-bf="1"/>
-                <field name="currency_id" string="Currency" column_invisible="1"/>
+                <field name="currency_id" string="Currency" column_invisible="True"/>
                 <field name="state" string="Status" widget="badge" decoration-info="state == 'draft'" decoration-success="state == 'closed'"/>
             </list>
         </field>
@@ -100,10 +100,11 @@
                 <field name="user_id"/>
                 <filter string="Draft" name="draft" domain="[('state', '=', 'draft')]"/>
                 <filter string="Audited / Closed" name="closed" domain="[('state', '=', 'closed')]"/>
+                <separator/>
                 <group expand="0" string="Group By">
                     <filter string="Status" name="group_by_state" context="{'group_by': 'state'}"/>
-                    <filter string="Audited By" name="group_by_user" context="{'group_by': 'user_id'}"/>
-                    <filter string="Audit Date" name="group_by_date" context="{'group_by': 'date'}"/>
+                    <filter string="Auditor" name="group_by_user" context="{'group_by': 'user_id'}"/>
+                    <filter string="Audit Date" name="group_by_date" context="{'group_by': 'date:day'}"/>
                 </group>
             </search>
         </field>
