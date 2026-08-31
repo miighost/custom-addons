@@ -124,10 +124,12 @@ class DailyCashReportWizard(models.TransientModel):
                 dt = datetime.combine(pay.date, time.min) if pay.date else False
 
                 # Check linked booking
-                booking = self.env["room.booking"].search([
-                    "|", ("hotel_invoice_id.payment_ids", "in", [pay.id]),
-                    ("partner_id", "=", pay.partner_id.id)
-                ], limit=1)
+                booking = False
+                if pay.partner_id:
+                    booking = self.env["room.booking"].search([
+                        ("partner_id", "=", pay.partner_id.id),
+                        ("state", "in", ["check_in", "reserved", "check_out", "done"])
+                    ], limit=1, order="id desc")
 
                 card_no = booking.name if booking else "-"
                 room_no = booking.room_name if booking else "-"
@@ -138,6 +140,8 @@ class DailyCashReportWizard(models.TransientModel):
 
                 method_totals[j_name] = method_totals.get(j_name, 0.0) + credit
 
+                pay_remarks = getattr(pay, 'memo', None) or getattr(pay, 'payment_reference', None) or getattr(pay, 'ref', None) or "Hotel Collection / Bill Payment"
+
                 raw_records.append({
                     "dt": dt or datetime.min,
                     "date": pay.date.strftime("%d/%m/%Y") if pay.date else "-",
@@ -145,7 +149,7 @@ class DailyCashReportWizard(models.TransientModel):
                     "method": j_name,
                     "name": pay.partner_id.name or "-",
                     "voucher_no": pay.name or "-",
-                    "remarks": pay.ref or "Hotel Collection / Bill Payment",
+                    "remarks": pay_remarks,
                     "card_no": card_no,
                     "room_no": room_no,
                     "debit": debit,

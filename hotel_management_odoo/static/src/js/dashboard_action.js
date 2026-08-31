@@ -279,53 +279,53 @@ export class CustomDashBoard extends Component {
             target: 'current'
         }, options)
     }
-    //    Total Revenue
-    fetch_total_revenue(e) {
-        var self = this;
+    //    Total Revenue (Strictly Hotel Guests)
+    async fetch_total_revenue(e) {
         e.stopPropagation();
         e.preventDefault();
         var options = { on_reverse_breadcrum: this.on_reverse_breadcrum, };
+        const ids = await this.orm.call('room.booking', 'get_hotel_revenue_invoice_ids', ['total']);
         this.action.doAction({
-            name: _t("Paid Invoices (Total Revenue)"),
+            name: _t("Hotel Guest Paid Invoices (Total Revenue)"),
             type: 'ir.actions.act_window',
             res_model: 'account.move',
             view_mode: 'list,form',
             views: [[false, 'list'], [false, 'form']],
-            domain: [['payment_state', '=', 'paid'], ['move_type', 'in', ['out_invoice', 'out_refund']]],
+            domain: [['id', 'in', ids]],
             context: {'default_move_type': 'out_invoice'},
             target: 'current'
         }, options)
     }
-    //    Today's Revenue
-    fetch_today_revenue(e) {
-        var self = this;
+    //    Today's Revenue (Strictly Hotel Guests)
+    async fetch_today_revenue(e) {
         e.stopPropagation();
         e.preventDefault();
         var options = { on_reverse_breadcrum: this.on_reverse_breadcrum, };
+        const ids = await this.orm.call('room.booking', 'get_hotel_revenue_invoice_ids', ['today']);
         this.action.doAction({
-            name: _t("Today's Paid Invoices"),
+            name: _t("Today's Hotel Guest Paid Invoices"),
             type: 'ir.actions.act_window',
             res_model: 'account.move',
             view_mode: 'list,form',
             views: [[false, 'list'], [false, 'form']],
-            domain: [['payment_state', '=', 'paid'], ['date', '=', formattedDate], ['move_type', 'in', ['out_invoice', 'out_refund']]],
+            domain: [['id', 'in', ids]],
             context: {'default_move_type': 'out_invoice'},
             target: 'current'
         }, options)
     }
-    //    Pending Payment
-    fetch_pending_payment(e) {
-        var self = this;
+    //    Pending Payment (Strictly Hotel Guests)
+    async fetch_pending_payment(e) {
         e.stopPropagation();
         e.preventDefault();
         var options = { on_reverse_breadcrum: this.on_reverse_breadcrum, };
+        const ids = await this.orm.call('room.booking', 'get_hotel_revenue_invoice_ids', ['pending']);
         this.action.doAction({
-            name: _t("Pending / Unpaid Invoices"),
+            name: _t("Hotel Guest Pending Invoices"),
             type: 'ir.actions.act_window',
             res_model: 'account.move',
             view_mode: 'list,form',
             views: [[false, 'list'], [false, 'form']],
-            domain: [['payment_state', '=', 'not_paid'], ['state', '=', 'posted'], ['move_type', 'in', ['out_invoice', 'out_refund']]],
+            domain: [['id', 'in', ids]],
             context: {'default_move_type': 'out_invoice'},
             target: 'current'
         }, options)

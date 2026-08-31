@@ -805,27 +805,48 @@ class RoomBooking(models.Model):
             food_order = self.env['pos.order'].search_count([('booking_id', '!=', False)])
         elif 'hotel.pos.line' in self.env:
             food_order = self.env['hotel.pos.line'].search_count([])
-        elif 'pos.order' in self.env:
-            food_order = self.env['pos.order'].search_count([])
         else:
-            food_order = len(self.env['food.booking.line'].search([]).filtered(
-                lambda r: r.booking_id.state not in ['check_out', 'cancel', 'done']))
-        """total Revenue"""
-        total_revenue = 0
-        today_revenue = 0
-        pending_payment = 0
-        for rec in self.env['account.move'].search(
-                [('payment_state', '=', 'paid')]):
-            if rec.ref:
-                if 'BOOKING' in rec.ref:
-                    total_revenue += rec.amount_total
-                    if rec.date == fields.Date.today():
-                        today_revenue += rec.amount_total
-        for rec in self.env['account.move'].search(
-                [('payment_state', '=', 'not_paid')]):
-            if rec.ref:
-                if 'BOOKING' in rec.ref:
-                    pending_payment += rec.amount_total
+            food_order = 0
+
+        """Hotel Guest Revenue, Today's Revenue, and Pending Payments (Strictly Hotel Guests)"""
+        hotel_bookings = self.search([])
+        hotel_inv_ids = set(hotel_bookings.mapped('hotel_invoice_id.id'))
+        hotel_inv_ids.update(self.env['account.move'].search([
+            '|', ('hotel_booking_id', '!=', False),
+            ('ref', 'in', hotel_bookings.mapped('name'))
+        ]).ids)
+        hotel_inv_ids.discard(False)
+
+        if hotel_inv_ids:
+            hotel_moves = self.env['account.move'].browse(list(hotel_inv_ids))
+            paid_moves = hotel_moves.filtered(
+                lambda m: m.payment_state in ['paid', 'in_payment'] and m.move_type in ['out_invoice', 'out_refund']
+            )
+            total_revenue = sum(
+                m.amount_total if m.move_type == 'out_invoice' else -m.amount_total
+                for m in paid_moves
+            )
+
+            today_paid_moves = paid_moves.filtered(
+                lambda m: (m.invoice_date == today_date) or (m.date == today_date)
+            )
+            today_revenue = sum(
+                m.amount_total if m.move_type == 'out_invoice' else -m.amount_total
+                for m in today_paid_moves
+            )
+
+            pending_moves = hotel_moves.filtered(
+                lambda m: m.payment_state in ['not_paid', 'partial'] and m.state == 'posted' and m.move_type in ['out_invoice', 'out_refund']
+            )
+            pending_payment = sum(
+                m.amount_residual if m.move_type == 'out_invoice' else -m.amount_residual
+                for m in pending_moves
+            )
+        else:
+            total_revenue = sum(b.amount_total for b in hotel_bookings.filtered(lambda b: b.state in ['check_out', 'done']))
+            today_revenue = sum(b.amount_total for b in hotel_bookings.filtered(lambda b: b.checkout_date and b.checkout_date.date() == today_date and b.state in ['check_out', 'done']))
+            pending_payment = sum(b.amount_total for b in hotel_bookings.filtered(lambda b: b.state in ['reserved', 'check_in']))
+
         return {
             'total_room': total_room,
             'available_room': len(available_room),
@@ -847,6 +868,38 @@ class RoomBooking(models.Model):
             'currency_symbol': self.env.user.company_id.currency_id.symbol,
             'currency_position': self.env.user.company_id.currency_id.position
         }
+
+    @api.model
+    def get_hotel_revenue_invoice_ids(self, filter_type='total'):
+        """Return account.move IDs strictly belonging to Hotel Guest Bookings."""
+        hotel_bookings = self.search([])
+        inv_ids = set(hotel_bookings.mapped('hotel_invoice_id.id'))
+        inv_ids.update(self.env['account.move'].search([
+            '|', ('hotel_booking_id', '!=', False),
+            ('ref', 'in', hotel_bookings.mapped('name'))
+        ]).ids)
+        inv_ids.discard(False)
+
+        if not inv_ids:
+            return []
+
+        moves = self.env['account.move'].browse(list(inv_ids))
+        today_date = fields.Date.today()
+
+        if filter_type == 'total':
+            return moves.filtered(
+                lambda m: m.payment_state in ['paid', 'in_payment'] and m.move_type in ['out_invoice', 'out_refund']
+            ).ids
+        elif filter_type == 'today':
+            return moves.filtered(
+                lambda m: m.payment_state in ['paid', 'in_payment'] and m.move_type in ['out_invoice', 'out_refund'] and
+                          ((m.invoice_date == today_date) or (m.date == today_date))
+            ).ids
+        elif filter_type == 'pending':
+            return moves.filtered(
+                lambda m: m.payment_state in ['not_paid', 'partial'] and m.state == 'posted' and m.move_type in ['out_invoice', 'out_refund']
+            ).ids
+        return list(inv_ids)
 
     def action_compute_bill(self):
         """Open the Compute Bill wizard"""
