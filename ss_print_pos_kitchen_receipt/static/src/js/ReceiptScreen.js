@@ -44,6 +44,7 @@ patch(ReceiptScreen.prototype, {
         if (!this.currentOrder) {
             return;
         }
+        this.currentOrder.kot_print_count = (this.currentOrder.kot_print_count || 0) + 1;
         const kitchenData = exportForKitchenPrinting(this.pos, this.currentOrder);
         if (this.pos?.printer && typeof this.pos.printer.print === "function") {
             try {

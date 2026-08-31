@@ -2,96 +2,106 @@
 <templates id="template" xml:space="preserve">
 
     <t t-name="ss_print_pos_kitchen_receipt.KitchenReceipt">
-        <div class="pos-receipt-print-wrapper">
+        <div class="pos-receipt-print-wrapper" style="text-align: left !important; direction: ltr !important; width: 100% !important; margin: 0 !important;">
             <t t-set="ticketList" t-value="props.tickets || (props.data ? [ { title: props.data.category_title || 'KITCHEN', data: props.data } ] : [])"/>
             <t t-foreach="ticketList" t-as="ticketItem" t-key="ticketItem_index">
                 <t t-set="data" t-value="ticketItem.data || ticketItem"/>
-                <div class="pos-receipt p-1" style="font-family: monospace; max-width: 300px; margin: 0 auto; color: #000; page-break-after: always; break-after: page;">
+                <div class="pos-receipt p-1" style="font-family: monospace; width: 100% !important; max-width: 80mm !important; margin: 0 !important; text-align: left !important; direction: ltr !important; color: #000; page-break-after: always; break-after: page;">
                     <!-- Header -->
-                    <div class="pos-receipt-header text-center">
-                        <div style="font-size: 220%; font-weight: 900; letter-spacing: 2px; margin-bottom: 2px; text-transform: uppercase;">
+                    <div class="pos-receipt-header text-center" style="text-align: center !important;">
+                        <div style="font-size: 220%; font-weight: 900; letter-spacing: 2px; margin-bottom: 2px; text-transform: uppercase; text-align: center !important;">
                             <t t-esc="ticketItem.title || data.category_title || 'KITCHEN'"/>
                         </div>
                         <div t-if="data.is_addition" style="font-size: 100%; font-weight: bold; background-color: #000; color: #fff; padding: 2px 6px; margin-bottom: 4px; display: inline-block;">
                             *** NEW ADDITION ***
                         </div>
 
-                        <div t-if="data.table_name" style="font-size: 160%; font-weight: 900; margin: 4px 0; border-bottom: 2px solid #000; padding-bottom: 3px;">
+                        <div t-if="data.table_name" style="font-size: 160%; font-weight: 900; margin: 4px 0; border-bottom: 2px solid #000; padding-bottom: 3px; text-align: center !important;">
                             T<span t-esc="data.table_name"/><t t-if="data.floor_name"> (<t t-esc="data.floor_name"/>)</t>
                         </div>
 
-                        <div class="d-flex justify-content-between align-items-center" style="font-size: 85%; margin-top: 4px; font-weight: bold;">
-                            <span>Order: <t t-esc="data.name"/></span>
-                            <span><t t-esc="data.date"/></span>
-                        </div>
-                        <div t-if="data.cashier" class="text-start" style="font-size: 85%; font-weight: bold; margin-top: 2px;">
-                            Server: <span t-esc="data.cashier"/>
+                        <div style="font-size: 88%; font-weight: bold; margin-top: 4px; text-align: left !important;">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span>Order: <strong t-esc="data.name"/></span>
+                                <span><t t-esc="data.date"/></span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center" style="margin-top: 2px;">
+                                <span><t t-if="data.cashier">Server: <strong t-esc="data.cashier"/></t></span>
+                                <span style="font-size: 105%; font-weight: 900; background-color: #000; color: #fff; padding: 1px 6px; border-radius: 3px;">
+                                    <t t-esc="data.time"/>
+                                </span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center" style="margin-top: 3px; padding-top: 2px; border-top: 1px dotted #888;">
+                                <span>Print: <strong style="text-transform: uppercase;" t-esc="data.print_count_str + ' PRINT'"/></span>
+                                <span t-if="data.print_count == 1" style="font-size: 80%; font-weight: bold; color: #444;">(Original Order)</span>
+                                <span t-else="" style="font-size: 85%; font-weight: 900; background-color: #000; color: #fff; padding: 0 5px; border-radius: 2px;">*** RE-ORDER / CHANGE ***</span>
+                            </div>
                         </div>
                     </div>
 
                     <hr style="border: none; border-top: 2px dashed #000; margin: 6px 0;"/>
 
                     <!-- NEW ITEMS SECTION -->
-                    <div t-if="data.new_lines &amp;&amp; data.new_lines.length > 0" class="pos-receipt-body mb-2">
-                        <div style="font-weight: 900; font-size: 125%; margin-bottom: 4px; background-color: #000; color: #fff; text-align: center; padding: 2px 0;">
+                    <div t-if="data.new_lines &amp;&amp; data.new_lines.length > 0" class="pos-receipt-body mb-2" style="text-align: left !important;">
+                        <div style="font-weight: 900; font-size: 125%; margin-bottom: 4px; background-color: #000; color: #fff; text-align: center !important; padding: 2px 0;">
                             🔥 NEW ITEMS
                         </div>
-                        <div t-foreach="data.new_lines" t-as="line" t-key="line_index" style="font-size: 120%; margin: 6px 0; padding-bottom: 4px; border-bottom: 1px dotted #000;">
-                            <div class="d-flex align-items-baseline">
+                        <div t-foreach="data.new_lines" t-as="line" t-key="line_index" style="font-size: 120%; margin: 6px 0; padding-bottom: 4px; border-bottom: 1px dotted #000; text-align: left !important;">
+                            <div class="d-flex align-items-baseline" style="text-align: left !important;">
                                 <strong class="me-2" style="font-size: 140%; font-weight: 900; min-width: 38px;" t-esc="line.qty + 'x'"/>
                                 <strong style="font-size: 130%; font-weight: 900;" t-esc="line.product_name"/>
                                 <span style="font-size: 80%; font-weight: 900; background-color: #000; color: #fff; padding: 1px 5px; border-radius: 3px; margin-left: 6px;">
                                     NEW
                                 </span>
                             </div>
-                            <div t-if="line.attribute_values" style="font-size: 90%; font-weight: bold; margin-left: 38px; color: #000;">
+                            <div t-if="line.attribute_values" style="font-size: 90%; font-weight: bold; margin-left: 38px; color: #000; text-align: left !important;">
                                 <t t-esc="line.attribute_values"/>
                             </div>
-                            <div t-if="line.note" style="font-size: 95%; margin-left: 38px; font-weight: 900; color: #000; margin-top: 2px;">
+                            <div t-if="line.note" style="font-size: 95%; margin-left: 38px; font-weight: 900; color: #000; margin-top: 2px; text-align: left !important;">
                                 📌 Note: <t t-esc="line.note"/>
                             </div>
                         </div>
                     </div>
 
                     <!-- CANCELLED / REMOVED SECTION -->
-                    <div t-if="data.cancelled_lines &amp;&amp; data.cancelled_lines.length > 0" class="pos-receipt-body mb-2">
-                        <div style="font-weight: 900; font-size: 125%; margin-bottom: 4px; border: 2px solid #000; color: #000; text-align: center; padding: 2px 0;">
+                    <div t-if="data.cancelled_lines &amp;&amp; data.cancelled_lines.length > 0" class="pos-receipt-body mb-2" style="text-align: left !important;">
+                        <div style="font-weight: 900; font-size: 125%; margin-bottom: 4px; border: 2px solid #000; color: #000; text-align: center !important; padding: 2px 0;">
                             🚫 CANCELLED / REMOVED
                         </div>
-                        <div t-foreach="data.cancelled_lines" t-as="line" t-key="line_index" style="font-size: 120%; margin: 6px 0; padding-bottom: 4px; border-bottom: 1px dotted #000;">
-                            <div class="d-flex align-items-baseline">
+                        <div t-foreach="data.cancelled_lines" t-as="line" t-key="line_index" style="font-size: 120%; margin: 6px 0; padding-bottom: 4px; border-bottom: 1px dotted #000; text-align: left !important;">
+                            <div class="d-flex align-items-baseline" style="text-align: left !important;">
                                 <strong class="me-2" style="font-size: 140%; font-weight: 900; min-width: 38px; text-decoration: line-through;" t-esc="line.qty + 'x'"/>
                                 <strong style="font-size: 130%; font-weight: 900; text-decoration: line-through;" t-esc="line.product_name"/>
                                 <span style="font-size: 80%; font-weight: 900; background-color: #000; color: #fff; padding: 1px 5px; border-radius: 3px; margin-left: 6px;">
                                     CANCELLED
                                 </span>
                             </div>
-                            <div t-if="line.attribute_values" style="font-size: 90%; font-weight: bold; margin-left: 38px; color: #000;">
+                            <div t-if="line.attribute_values" style="font-size: 90%; font-weight: bold; margin-left: 38px; color: #000; text-align: left !important;">
                                 <t t-esc="line.attribute_values"/>
                             </div>
-                            <div t-if="line.note" style="font-size: 95%; margin-left: 38px; font-weight: 900; color: #000; margin-top: 2px;">
+                            <div t-if="line.note" style="font-size: 95%; margin-left: 38px; font-weight: 900; color: #000; margin-top: 2px; text-align: left !important;">
                                 📌 Note: <t t-esc="line.note"/>
                             </div>
                         </div>
                     </div>
 
                     <!-- PREVIOUSLY SENT SECTION -->
-                    <div t-if="data.sent_lines &amp;&amp; data.sent_lines.length > 0" class="pos-receipt-body mt-2">
-                        <div style="font-weight: bold; font-size: 100%; margin-bottom: 4px; border-bottom: 1px solid #666; color: #555; text-align: center;">
+                    <div t-if="data.sent_lines &amp;&amp; data.sent_lines.length > 0" class="pos-receipt-body mt-2" style="text-align: left !important;">
+                        <div style="font-weight: bold; font-size: 100%; margin-bottom: 4px; border-bottom: 1px solid #666; color: #555; text-align: center !important;">
                             --- PREVIOUSLY SENT ---
                         </div>
-                        <div t-foreach="data.sent_lines" t-as="line" t-key="line_index" style="font-size: 95%; margin: 4px 0; color: #555;">
-                            <div class="d-flex align-items-baseline">
+                        <div t-foreach="data.sent_lines" t-as="line" t-key="line_index" style="font-size: 95%; margin: 4px 0; color: #555; text-align: left !important;">
+                            <div class="d-flex align-items-baseline" style="text-align: left !important;">
                                 <span class="me-2" style="min-width: 35px;" t-esc="line.qty + 'x'"/>
                                 <span t-esc="line.product_name"/>
                                 <span style="font-size: 75%; font-style: italic; color: #777; margin-left: 6px;">
                                     (Sent)
                                 </span>
                             </div>
-                            <div t-if="line.attribute_values" style="font-size: 80%; margin-left: 35px; color: #666;">
+                            <div t-if="line.attribute_values" style="font-size: 80%; margin-left: 35px; color: #666; text-align: left !important;">
                                 <t t-esc="line.attribute_values"/>
                             </div>
-                            <div t-if="line.note" style="font-size: 85%; margin-left: 35px; font-style: italic; color: #555;">
+                            <div t-if="line.note" style="font-size: 85%; margin-left: 35px; font-style: italic; color: #555; text-align: left !important;">
                                 Note: <t t-esc="line.note"/>
                             </div>
                         </div>
@@ -100,14 +110,14 @@
                     <hr style="border: none; border-top: 2px dashed #000; margin: 6px 0;"/>
 
                     <!-- General Order Note -->
-                    <div t-if="data.general_note" class="pos-receipt-footer" style="font-size: 100%; margin-top: 4px;">
+                    <div t-if="data.general_note" class="pos-receipt-footer" style="font-size: 100%; margin-top: 4px; text-align: left !important;">
                         <div style="font-weight: bold;">ORDER NOTE:</div>
                         <div t-esc="data.general_note" style="font-weight: bold; font-style: italic;"/>
                         <hr style="border: none; border-top: 2px dashed #000; margin: 6px 0;"/>
                     </div>
 
                     <!-- Footer -->
-                    <div class="pos-receipt-footer text-center" style="font-size: 80%; font-weight: bold; margin-top: 4px;">
+                    <div class="pos-receipt-footer text-center" style="font-size: 80%; font-weight: bold; margin-top: 4px; text-align: center !important;">
                         *** END OF KOT ***
                     </div>
                 </div>

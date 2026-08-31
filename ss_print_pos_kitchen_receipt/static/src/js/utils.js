@@ -220,7 +220,10 @@ export function exportForKitchenPrinting(pos, order, targetCategoryGroup = null)
 
     const isAddition = Boolean(order.was_kot_printed && (hasNewItems || hasCancelledItems));
 
-    const printCount = order.kot_print_count || 1;
+    let printCount = order.kot_print_count;
+    if (typeof printCount !== "number" || printCount < 1) {
+        printCount = order.was_kot_printed ? 2 : 1;
+    }
     function getOrdinal(n) {
         const s = ["th", "st", "nd", "rd"];
         const v = n % 100;

@@ -36,18 +36,18 @@ async function doPrintKitchenReceipt(posStore, currentOrder) {
 
     const categoriesToPrint = [];
     const foodData = exportForKitchenPrinting(pos, order, "Food");
-    if (foodData && (foodData.has_new_items || !order.was_kot_printed) && foodData.orderlines.length > 0) {
+    if (foodData && foodData.orderlines.length > 0 && (foodData.has_new_items || !order.was_kot_printed || order.kot_print_count > 1)) {
         categoriesToPrint.push({ title: "KITCHEN", data: foodData });
     }
 
     const drinksData = exportForKitchenPrinting(pos, order, "Drinks");
-    if (drinksData && (drinksData.has_new_items || !order.was_kot_printed) && drinksData.orderlines.length > 0) {
+    if (drinksData && drinksData.orderlines.length > 0 && (drinksData.has_new_items || !order.was_kot_printed || order.kot_print_count > 1)) {
         categoriesToPrint.push({ title: "BAR", data: drinksData });
     }
 
     if (categoriesToPrint.length === 0) {
         const fullData = exportForKitchenPrinting(pos, order);
-        if (fullData && (fullData.has_new_items || !order.was_kot_printed) && fullData.orderlines.length > 0) {
+        if (fullData && fullData.orderlines.length > 0) {
             categoriesToPrint.push({ title: "KITCHEN", data: fullData });
         }
     }
@@ -103,6 +103,9 @@ async function doForceBrowserPrintDialog(posStore, currentOrder) {
     if (!pos) return;
     const order = currentOrder || (pos.get_order ? pos.get_order() : false) || pos.selectedOrder;
     if (!order) return;
+
+    // Increment KOT print counter on manual print
+    order.kot_print_count = (order.kot_print_count || 0) + 1;
 
     const categoriesToPrint = [];
     const foodData = exportForKitchenPrinting(pos, order, "Food");
