@@ -188,16 +188,22 @@ export function exportForKitchenPrinting(pos, order, targetCategoryGroup = null)
     });
 
 
-    let dateStr = "";
-    try {
-        if (order.date_order) {
-            dateStr = typeof order.date_order === "string" ? order.date_order : order.date_order.toLocaleString();
-        } else {
-            dateStr = new Date().toLocaleString();
-        }
-    } catch (_e) {
-        dateStr = new Date().toLocaleString();
-    }
+    let dateFormatted = "";
+    let timeFormatted = "";
+    const now = new Date();
+
+    const d = String(now.getDate()).padStart(2, '0');
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const y = now.getFullYear();
+    dateFormatted = `${d}/${m}/${y}`;
+
+    let hours = now.getHours();
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    const hours12 = hours % 12 || 12;
+    const hoursStr = String(hours12).padStart(2, '0');
+    timeFormatted = `${hoursStr}:${minutes} ${ampm}`;
+    const fullDateTime = `${dateFormatted} ${timeFormatted}`;
 
     const tableName =
         order.table_id && order.table_id.table_number
@@ -214,9 +220,23 @@ export function exportForKitchenPrinting(pos, order, targetCategoryGroup = null)
 
     const isAddition = Boolean(order.was_kot_printed && (hasNewItems || hasCancelledItems));
 
+    const printCount = order.kot_print_count || 1;
+    function getOrdinal(n) {
+        const s = ["th", "st", "nd", "rd"];
+        const v = n % 100;
+        return n + (s[(v - 20) % 10] || s[v] || s[0]);
+    }
+    const printCountStr = getOrdinal(printCount);
+    const printLabel = printCount === 1 ? "1st Print (Original)" : `${printCountStr} Print (Re-Order / Change)`;
+
     return {
         name: order.name || order.pos_reference || "N/A",
-        date: dateStr,
+        date: dateFormatted,
+        time: timeFormatted,
+        datetime: fullDateTime,
+        print_count: printCount,
+        print_count_str: printCountStr,
+        print_label: printLabel,
         table_name: tableName,
         floor_name: floorName,
         cashier: cashierName,

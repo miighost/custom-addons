@@ -24,6 +24,9 @@ async function doPrintKitchenReceipt(posStore, currentOrder) {
     const lines = getOrderLines(order);
     if (lines.length === 0 && !order.was_kot_printed) return;
 
+    // Increment KOT print counter on order
+    order.kot_print_count = (order.kot_print_count || 0) + 1;
+
     // 1. Notify & send order to native preparation printers (jiko, Baar, Bar2)
     if (pos.sendOrderInPreparation) {
         try {
