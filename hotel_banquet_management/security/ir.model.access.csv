@@ -2,4 +2,5 @@ id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_banquet_event_type_user,access.banquet.event.type.user,model_banquet_event_type,base.group_user,1,1,1,1
 access_banquet_venue_user,access.banquet.venue.user,model_banquet_venue,base.group_user,1,1,1,1
 access_banquet_customer_statement_wizard_user,access.banquet.customer.statement.wizard.user,model_banquet_customer_statement_wizard,base.group_user,1,1,1,1
+access_banquet_partner_ledger_wizard_user,access.banquet.partner.ledger.wizard.user,model_banquet_partner_ledger_wizard,base.group_user,1,1,1,1
 

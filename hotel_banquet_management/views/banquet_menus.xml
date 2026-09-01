@@ -42,11 +42,17 @@
               action="action_banquet_customer_statement"
               sequence="10"/>
 
+    <menuitem id="menu_banquet_partner_ledger"
+              name="Customer / Partner Ledger"
+              parent="menu_banquet_reporting_root"
+              action="action_banquet_partner_ledger"
+              sequence="20"/>
+
     <menuitem id="menu_banquet_sales_analysis"
               name="Banquet Sales Analysis"
               parent="menu_banquet_reporting_root"
               action="action_banquet_sales_analysis"
-              sequence="20"/>
+              sequence="30"/>
 
     <!-- ================= 4. CONFIGURATION ================= -->
     <menuitem id="menu_banquet_config_root"

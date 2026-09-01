@@ -4,3 +4,4 @@ from . import banquet_venue
 from . import banquet_order
 from . import account_move
 from . import banquet_customer_statement
+from . import banquet_partner_ledger

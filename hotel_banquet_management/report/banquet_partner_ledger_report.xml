@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Partner Ledger Report Action -->
+    <record id="action_report_banquet_partner_ledger" model="ir.actions.report">
+        <field name="name">Customer Partner Ledger</field>
+        <field name="model">banquet.partner.ledger.wizard</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">hotel_banquet_management.report_banquet_partner_ledger_template</field>
+        <field name="report_file">hotel_banquet_management.report_banquet_partner_ledger_template</field>
+        <field name="binding_type">report</field>
+    </record>
+
+    <!-- Partner Ledger Report Template -->
+    <template id="report_banquet_partner_ledger_template">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="web.external_layout">
+                    <t t-set="data" t-value="doc.get_ledger_data()"/>
+                    <t t-set="partner" t-value="data['partner']"/>
+                    <t t-set="currency" t-value="doc.company_id.currency_id"/>
+
+                    <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 11px; color: #212529;">
+                        <style>
+                            .ledger-banner { border: 1px solid #1a252f; padding: 10px 14px; margin-bottom: 15px; background-color: #f8f9fa; }
+                            .ledger-title { font-size: 20px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; margin: 0; color: #1a252f; }
+                            .ledger-badge { float: right; border: 2px solid #1a252f; padding: 4px 12px; font-weight: bold; font-size: 11px; background: #fff; }
+                            .ledger-table { width: 100%; border-collapse: collapse; margin-top: 15px; margin-bottom: 15px; font-size: 11px; }
+                            .ledger-table th { background-color: #1a252f; color: #ffffff; font-weight: bold; border: 1px solid #1a252f; padding: 6px 8px; }
+                            .ledger-table td { border: 1px solid #dee2e6; padding: 6px 8px; }
+                            .ledger-table tr.init-row td { background-color: #f1f3f5; font-style: italic; font-weight: bold; }
+                            .ledger-table tr.total-row td { font-weight: bold; background-color: #f8f9fa; border-top: 2px solid #1a252f; }
+                            .text-right { text-align: right; }
+                            .text-center { text-align: center; }
+                        </style>
+
+                        <!-- Banner -->
+                        <div class="ledger-banner">
+                            <div class="ledger-badge">
+                                Period: <t t-esc="data['date_from']"/> – <t t-esc="data['date_to']"/>
+                            </div>
+                            <h2 class="ledger-title">CUSTOMER / PARTNER LEDGER</h2>
+                        </div>
+
+                        <!-- Customer Info & Summary Box -->
+                        <table style="width: 100%; margin-bottom: 15px;">
+                            <tr>
+                                <td style="width: 55%; vertical-align: top;">
+                                    <strong style="font-size: 12px; color: #1a252f;">PARTNER / COMPANY DETAILS:</strong>
+                                    <div style="font-size: 13px; font-weight: bold; margin-top: 4px;"><t t-esc="partner.name"/></div>
+                                    <div t-if="partner.parent_id"><t t-esc="partner.parent_id.name"/></div>
+                                    <div t-if="partner.street"><t t-esc="partner.street"/></div>
+                                    <div t-if="partner.city or partner.country_id">
+                                        <t t-esc="partner.city"/>, <t t-esc="partner.country_id.name"/>
+                                    </div>
+                                    <div t-if="partner.phone">
+                                        <strong>Phone:</strong> <t t-esc="partner.phone"/>
+                                    </div>
+                                    <div t-if="partner.email">
+                                        <strong>Email:</strong> <t t-esc="partner.email"/>
+                                    </div>
+                                </td>
+                                <td style="width: 45%; vertical-align: top;">
+                                    <table style="width: 100%; border: 1px solid #dee2e6; background: #fafafa; font-size: 11px;">
+                                        <tr style="background: #e9ecef; font-weight: bold;">
+                                            <td colspan="2" style="padding: 5px 8px;">LEDGER FINANCIAL SUMMARY</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 4px 8px;">Opening Balance:</td>
+                                            <td class="text-right" style="padding: 4px 8px;">
+                                                <t t-esc="data['initial_balance']" t-options='{"widget": "monetary", "display_currency": currency}'/>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 4px 8px;">Total Debit (Billed):</td>
+                                            <td class="text-right" style="padding: 4px 8px;">
+                                                <t t-esc="data['total_debit']" t-options='{"widget": "monetary", "display_currency": currency}'/>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 4px 8px;">Total Credit (Paid / Received):</td>
+                                            <td class="text-right" style="padding: 4px 8px; color: #198754;">
+                                                <t t-esc="data['total_credit']" t-options='{"widget": "monetary", "display_currency": currency}'/>
+                                            </td>
+                                        </tr>
+                                        <tr style="background: #f8d7da; font-weight: bold;">
+                                            <td style="padding: 5px 8px; color: #842029;">Ending Balance Due:</td>
+                                            <td class="text-right" style="padding: 5px 8px; color: #842029;">
+                                                <t t-esc="data['ending_balance']" t-options='{"widget": "monetary", "display_currency": currency}'/>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <!-- Ledger Transactions Table -->
+                        <table class="ledger-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 10%;">Date</th>
+                                    <th class="text-center" style="width: 8%;">JRNL</th>
+                                    <th style="width: 18%;">Entry / Ref</th>
+                                    <th style="width: 28%;">Description</th>
+                                    <th class="text-right" style="width: 12%;">Debit</th>
+                                    <th class="text-right" style="width: 12%;">Credit</th>
+                                    <th class="text-right" style="width: 12%;">Balance</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Opening Balance Row -->
+                                <tr class="init-row">
+                                    <td colspan="4"><strong>Opening / Initial Balance</strong></td>
+                                    <td class="text-right">-</td>
+                                    <td class="text-right">-</td>
+                                    <td class="text-right"><strong><t t-esc="data['initial_balance']" t-options='{"widget": "monetary", "display_currency": currency}'/></strong></td>
+                                </tr>
+
+                                <!-- Period Transactions -->
+                                <t t-if="data['lines']">
+                                    <t t-foreach="data['lines']" t-as="l">
+                                        <tr>
+                                            <td><t t-esc="l['date']"/></td>
+                                            <td class="text-center"><t t-esc="l['journal']"/></td>
+                                            <td><strong><t t-esc="l['ref']"/></strong></td>
+                                            <td><t t-esc="l['desc']"/></td>
+                                            <td class="text-right">
+                                                <t t-if="l['debit'] != 0.0">
+                                                    <t t-esc="l['debit']" t-options='{"widget": "monetary", "display_currency": currency}'/>
+                                                </t>
+                                                <t t-else="">-</t>
+                                            </td>
+                                            <td class="text-right" style="color: #198754;">
+                                                <t t-if="l['credit'] != 0.0">
+                                                    <t t-esc="l['credit']" t-options='{"widget": "monetary", "display_currency": currency}'/>
+                                                </t>
+                                                <t t-else="">-</t>
+                                            </td>
+                                            <td class="text-right" style="font-weight: bold;">
+                                                <t t-esc="l['balance']" t-options='{"widget": "monetary", "display_currency": currency}'/>
+                                            </td>
+                                        </tr>
+                                    </t>
+                                </t>
+
+                                <!-- Total Summary Row -->
+                                <tr class="total-row">
+                                    <td colspan="4"><strong>Period Total &amp; Ending Balance</strong></td>
+                                    <td class="text-right"><strong><t t-esc="data['total_debit']" t-options='{"widget": "monetary", "display_currency": currency}'/></strong></td>
+                                    <td class="text-right" style="color: #198754;"><strong><t t-esc="data['total_credit']" t-options='{"widget": "monetary", "display_currency": currency}'/></strong></td>
+                                    <td class="text-right" style="color: #842029; font-size: 12px;"><strong><t t-esc="data['ending_balance']" t-options='{"widget": "monetary", "display_currency": currency}'/></strong></td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <div style="margin-top: 30px; font-size: 10px; color: #666; border-top: 1px solid #ddd; padding-top: 8px;">
+                            Customer Partner Ledger report generated for accounting verification. All amounts are displayed in company currency (<t t-esc="currency.name"/>).
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>
