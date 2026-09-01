@@ -51,8 +51,8 @@
                                     <div t-if="partner.city or partner.country_id">
                                         <t t-esc="partner.city"/>, <t t-esc="partner.country_id.name"/>
                                     </div>
-                                    <div t-if="partner.phone or partner.mobile">
-                                        <strong>Phone:</strong> <t t-esc="partner.phone or partner.mobile"/>
+                                    <div t-if="partner.phone">
+                                        <strong>Phone:</strong> <t t-esc="partner.phone"/>
                                     </div>
                                     <div t-if="partner.email">
                                         <strong>Email:</strong> <t t-esc="partner.email"/>

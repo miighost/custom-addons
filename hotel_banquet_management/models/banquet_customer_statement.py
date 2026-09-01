@@ -96,7 +96,7 @@ class BanquetCustomerStatementWizard(models.TransientModel):
                 'invoiced': invoiced_amt,
                 'paid': paid_amt,
                 'balance': due_amt,
-                'status': dict(inv._fields['payment_state'].selection).get(inv.payment_state, 'Not Paid')
+                'status': dict(self.env['account.move']._fields['payment_state']._description_selection(self.env)).get(inv.payment_state, inv.payment_state or 'Not Paid')
             })
 
         return {

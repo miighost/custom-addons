@@ -13,7 +13,7 @@
 from odoo import _, api, fields, models
 
 
-def _default_banquet_terms():
+def _default_banquet_terms(self=None):
     return """
 <div style="font-family: inherit; font-size: 13px; color: #333;">
     <h4 style="font-weight: bold; margin-bottom: 6px;">Banquet &amp; Event Terms and Conditions:</h4>
