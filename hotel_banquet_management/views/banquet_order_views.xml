@@ -106,12 +106,10 @@
                                         <create name="add_note_control" string="Add a Note" context="{'default_display_type': 'line_note'}"/>
                                     </control>
                                     <field name="display_type" column_invisible="True"/>
-                                    <field name="product_uom_category_id" column_invisible="True"/>
                                     <field name="product_id" string="Product / Service" domain="[('sale_ok', '=', True)]" required="not display_type"/>
                                     <field name="name" string="Description" widget="section_and_note_text" optional="show"/>
                                     <field name="product_uom_qty" string="Qty" decoration-bf="1"/>
                                     <field name="number_of_days" string="No of Days" decoration-bf="1"/>
-                                    <field name="product_uom" string="UoM" groups="uom.group_uom" optional="hide"/>
                                     <field name="price_unit" string="Unit Price" widget="monetary"/>
                                     <field name="tax_ids" string="Taxes" widget="many2many_tags" options="{'no_create': True}" optional="show"/>
                                     <field name="discount" string="Disc.%" groups="product.group_discount_per_so_line" optional="hide"/>
