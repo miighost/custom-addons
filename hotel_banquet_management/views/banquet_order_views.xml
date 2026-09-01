@@ -1,32 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- Banquet Search View -->
+    <!-- Inherit Sale Order Search View for Banquets -->
     <record id="view_banquet_order_search" model="ir.ui.view">
-        <field name="name">banquet.sale.order.search</field>
+        <field name="name">banquet.sale.order.search.inherit</field>
         <field name="model">sale.order</field>
-        <field name="priority">25</field>
+        <field name="inherit_id" ref="sale.view_sales_order_filter"/>
         <field name="arch" type="xml">
-            <search string="Search Banquets">
-                <field name="name" string="Order / Reference"/>
-                <field name="partner_id" string="Customer / Company"/>
+            <xpath expr="//field[@name='partner_id']" position="after">
                 <field name="event_name" string="Event / Function"/>
                 <field name="event_type_id" string="Event Type"/>
                 <field name="banquet_venue_id" string="Venue / Hall"/>
-                <filter string="My Banquets" name="my_banquets" domain="[('user_id', '=', uid)]"/>
+            </xpath>
+            <xpath expr="//filter[@name='my_sale_orders_filter']" position="before">
+                <filter string="Banquets" name="banquet_orders" domain="[('is_banquet', '=', True)]"/>
                 <separator/>
-                <filter string="Quotations" name="draft_quotations" domain="[('state', 'in', ['draft', 'sent'])]"/>
-                <filter string="Confirmed Orders" name="confirmed_orders" domain="[('state', 'in', ['sale', 'done'])]"/>
-                <separator/>
-                <filter string="Event Scheduled" name="event_scheduled" domain="[('event_start_date', '!=', False)]"/>
-                <group expand="0" string="Group By">
-                    <filter string="Customer" name="customer" domain="[]" context="{'group_by': 'partner_id'}"/>
-                    <filter string="Event Type" name="event_type" domain="[]" context="{'group_by': 'event_type_id'}"/>
-                    <filter string="Venue / Hall" name="venue" domain="[]" context="{'group_by': 'banquet_venue_id'}"/>
-                    <filter string="Status" name="status" domain="[]" context="{'group_by': 'state'}"/>
-                    <filter string="Event Date" name="event_date" domain="[]" context="{'group_by': 'event_start_date'}"/>
-                </group>
-            </search>
+            </xpath>
         </field>
     </record>
 
@@ -171,7 +160,7 @@
         <field name="res_model">sale.order</field>
         <field name="view_mode">list,form,search</field>
         <field name="domain">[('is_banquet', '=', True), ('state', 'in', ['draft', 'sent', 'cancel'])]</field>
-        <field name="context">{'default_is_banquet': 1, 'search_default_draft_quotations': 1}</field>
+        <field name="context">{'default_is_banquet': 1, 'search_default_banquet_orders': 1}</field>
         <field name="search_view_id" ref="view_banquet_order_search"/>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
@@ -203,7 +192,7 @@
         <field name="res_model">sale.order</field>
         <field name="view_mode">list,form,search</field>
         <field name="domain">[('is_banquet', '=', True), ('state', 'in', ['sale', 'done'])]</field>
-        <field name="context">{'default_is_banquet': 1, 'search_default_confirmed_orders': 1}</field>
+        <field name="context">{'default_is_banquet': 1, 'search_default_banquet_orders': 1}</field>
         <field name="search_view_id" ref="view_banquet_order_search"/>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
