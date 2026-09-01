@@ -28,6 +28,7 @@ class HotelRoom(models.Model):
     _name = 'hotel.room'
     _description = 'Rooms'
     _inherit = ['mail.thread', 'mail.activity.mixin']
+    _order = 'name asc, id asc'
 
     def _get_default_uom_id(self):
         """Method for getting the default uom id"""
