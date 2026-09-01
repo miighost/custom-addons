@@ -9,7 +9,7 @@
         <field name="arch" type="xml">
             <search string="Search Banquets">
                 <field name="name" string="Order / Reference"/>
-                <field name="partner_id" operator="child_of" string="Customer / Company"/>
+                <field name="partner_id" string="Customer / Company"/>
                 <field name="event_name" string="Event / Function"/>
                 <field name="event_type_id" string="Event Type"/>
                 <field name="banquet_venue_id" string="Venue / Hall"/>
@@ -18,13 +18,13 @@
                 <filter string="Quotations" name="draft_quotations" domain="[('state', 'in', ['draft', 'sent'])]"/>
                 <filter string="Confirmed Orders" name="confirmed_orders" domain="[('state', 'in', ['sale', 'done'])]"/>
                 <separator/>
-                <filter string="Event Start Date" name="start_date" date="event_start_date"/>
+                <filter string="Event Scheduled" name="event_scheduled" domain="[('event_start_date', '!=', False)]"/>
                 <group expand="0" string="Group By">
                     <filter string="Customer" name="customer" domain="[]" context="{'group_by': 'partner_id'}"/>
                     <filter string="Event Type" name="event_type" domain="[]" context="{'group_by': 'event_type_id'}"/>
                     <filter string="Venue / Hall" name="venue" domain="[]" context="{'group_by': 'banquet_venue_id'}"/>
                     <filter string="Status" name="status" domain="[]" context="{'group_by': 'state'}"/>
-                    <filter string="Start Month" name="event_month" domain="[]" context="{'group_by': 'event_start_date:month'}"/>
+                    <filter string="Event Date" name="event_date" domain="[]" context="{'group_by': 'event_start_date'}"/>
                 </group>
             </search>
         </field>

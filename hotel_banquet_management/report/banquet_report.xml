@@ -166,7 +166,7 @@
 
                         <!-- Terms and Conditions Section -->
                         <div t-if="doc.terms_and_conditions" class="terms-box">
-                            <div t-raw="doc.terms_and_conditions"/>
+                            <div t-out="doc.terms_and_conditions"/>
                         </div>
 
                         <!-- Signatures Box -->
