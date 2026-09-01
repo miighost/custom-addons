@@ -99,11 +99,9 @@ class HotelRoom(models.Model):
                               translate=True)
     income_account_id = fields.Many2one('account.account',
                                         string="Income Account",
-                                        domain=[('deprecated', '=', False)],
                                         help="Income account used when invoicing this room's accommodation rent. If not set, company default is used.")
     expense_account_id = fields.Many2one('account.account',
                                          string="Expense Account",
-                                         domain=[('deprecated', '=', False)],
                                          help="Expense account used for room upkeep, repairs, and maintenance.")
     categ_id = fields.Many2one('product.category',
                                string="Room Category",
