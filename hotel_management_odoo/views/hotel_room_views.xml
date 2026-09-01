@@ -11,6 +11,7 @@
                 <field name="floor_id" string="Floor"/>
                 <field name="num_person" string="Capacity (Pax)"/>
                 <field name="list_price" string="Rent / Day" widget="monetary"/>
+                <field name="income_account_id" string="Income Account" optional="hide"/>
                 <field name="status" widget="badge"
                        decoration-success="status == 'available'"
                        decoration-warning="status == 'reserved'"
@@ -72,6 +73,24 @@
                         <page string="Descriptions">
                             <separator string="Description"/>
                             <field name="description" colspan="4" nolabel="1"/>
+                        </page>
+                        <page string="Accounting" name="accounting">
+                            <group>
+                                <group string="Receivables &amp; Revenue">
+                                    <field name="income_account_id"
+                                           options="{'no_create': True}"/>
+                                    <field name="taxes_ids"
+                                           widget="many2many_tags"
+                                           string="Customer Taxes"/>
+                                </group>
+                                <group string="Expenses &amp; Classification">
+                                    <field name="expense_account_id"
+                                           options="{'no_create': True}"/>
+                                    <field name="categ_id"
+                                           options="{'no_create_edit': True}"
+                                           string="Room Category"/>
+                                </group>
+                            </group>
                         </page>
                     </notebook>
                 </sheet>

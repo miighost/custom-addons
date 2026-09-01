@@ -124,7 +124,7 @@
                                     <field name="number_of_days" string="No of Days" decoration-bf="1"/>
                                     <field name="product_uom" string="UoM" groups="uom.group_uom" optional="hide"/>
                                     <field name="price_unit" string="Unit Price" widget="monetary"/>
-                                    <field name="tax_id" string="Taxes" widget="many2many_tags" options="{'no_create': True}" optional="show"/>
+                                    <field name="tax_ids" string="Taxes" widget="many2many_tags" options="{'no_create': True}" optional="show"/>
                                     <field name="discount" string="Disc.%" groups="product.group_discount_per_so_line" optional="hide"/>
                                     <field name="price_subtotal" string="Subtotal" widget="monetary" decoration-bf="1"/>
                                     <field name="currency_id" column_invisible="True"/>

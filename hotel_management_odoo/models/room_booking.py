@@ -374,8 +374,17 @@ class RoomBooking(models.Model):
             for room in record.room_line_ids:
                 delta = get_delta(room.room_id.name, room.uom_qty, room.price_unit, 'room')
                 if delta > 0:
-                    booking_list.append({'name': room.room_id.name, 'quantity': delta, 'price_unit': room.price_unit,
-                                         'product_type': 'room'})
+                    room_data = {
+                        'name': room.room_id.name,
+                        'quantity': delta,
+                        'price_unit': room.price_unit,
+                        'product_type': 'room'
+                    }
+                    if room.room_id.income_account_id:
+                        room_data['account_id'] = room.room_id.income_account_id.id
+                    if room.taxes_ids:
+                        room_data['tax_ids'] = [(6, 0, room.taxes_ids.ids)]
+                    booking_list.append(room_data)
                 if flag:
                     room.booking_line_visible = True
 
@@ -697,14 +706,19 @@ class RoomBooking(models.Model):
             'ref': self.name,
         }])
         for rec in booking_list:
-            self.env['account.move.line'].create([{
+            move_line_vals = {
                 'name': rec['name'],
                 'quantity': rec['quantity'],
                 'price_unit': rec['price_unit'],
                 'move_id': account_move.id,
                 'price_subtotal': rec['quantity'] * rec['price_unit'],
                 'product_type': rec['product_type'],
-            }])
+            }
+            if rec.get('account_id'):
+                move_line_vals['account_id'] = rec['account_id']
+            if rec.get('tax_ids'):
+                move_line_vals['tax_ids'] = rec['tax_ids']
+            self.env['account.move.line'].create([move_line_vals])
         self.write({'invoice_status': "invoiced"})
         self.invoice_button_visible = True
         return {

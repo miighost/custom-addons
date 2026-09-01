@@ -125,7 +125,7 @@ class BanquetSaleOrderLine(models.Model):
         help="Number of days or sessions for this service."
     )
 
-    @api.depends('product_uom_qty', 'number_of_days', 'discount', 'price_unit', 'tax_id')
+    @api.depends('product_uom_qty', 'number_of_days', 'discount', 'price_unit', 'tax_ids')
     def _compute_amount(self):
         """Calculate line amounts including Number of Days: Qty * No of Days * Unit Price"""
         super()._compute_amount()
@@ -134,18 +134,27 @@ class BanquetSaleOrderLine(models.Model):
                 days = line.number_of_days if line.number_of_days > 0 else 1.0
                 effective_qty = line.product_uom_qty * days
                 price = line.price_unit * (1 - (line.discount or 0.0) / 100.0)
-                taxes = line.tax_id.compute_all(
-                    price,
-                    line.order_id.currency_id,
-                    effective_qty,
-                    product=line.product_id,
-                    partner=line.order_id.partner_shipping_id
-                )
-                line.update({
-                    'price_tax': sum(t.get('amount', 0.0) for t in taxes.get('taxes', [])),
-                    'price_total': taxes['total_included'],
-                    'price_subtotal': taxes['total_excluded'],
-                })
+                taxes_field = getattr(line, 'tax_ids', False) or getattr(line, 'tax_id', False)
+                if taxes_field:
+                    taxes = taxes_field.compute_all(
+                        price,
+                        line.order_id.currency_id,
+                        effective_qty,
+                        product=line.product_id,
+                        partner=line.order_id.partner_shipping_id
+                    )
+                    line.update({
+                        'price_tax': sum(t.get('amount', 0.0) for t in taxes.get('taxes', [])),
+                        'price_total': taxes['total_included'],
+                        'price_subtotal': taxes['total_excluded'],
+                    })
+                else:
+                    subtotal = price * effective_qty
+                    line.update({
+                        'price_tax': 0.0,
+                        'price_total': subtotal,
+                        'price_subtotal': subtotal,
+                    })
 
     def _prepare_invoice_line(self, **optional_values):
         """Propagate number_of_days and adjust quantity so standard Odoo invoices calculate accurately."""
