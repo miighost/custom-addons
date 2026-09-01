@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Banquet Venue List View -->
+    <record id="view_banquet_venue_tree" model="ir.ui.view">
+        <field name="name">banquet.venue.list</field>
+        <field name="model">banquet.venue</field>
+        <field name="arch" type="xml">
+            <list string="Venues &amp; Halls">
+                <field name="name"/>
+                <field name="code"/>
+                <field name="capacity_min"/>
+                <field name="capacity_max"/>
+                <field name="location"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Banquet Venue Form View -->
+    <record id="view_banquet_venue_form" model="ir.ui.view">
+        <field name="name">banquet.venue.form</field>
+        <field name="model">banquet.venue</field>
+        <field name="arch" type="xml">
+            <form string="Banquet Venue / Hall">
+                <sheet>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
+                    <group>
+                        <group string="Hall / Space Details">
+                            <field name="name"/>
+                            <field name="code"/>
+                            <field name="location"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                        <group string="Capacity (Pax)">
+                            <field name="capacity_min"/>
+                            <field name="capacity_max"/>
+                            <field name="active" invisible="1"/>
+                        </group>
+                    </group>
+                    <group string="Description &amp; Amenities">
+                        <field name="description" placeholder="Sound system, projector, stage, lighting details..."/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action for Banquet Venues -->
+    <record id="action_banquet_venue" model="ir.actions.act_window">
+        <field name="name">Venues &amp; Halls</field>
+        <field name="res_model">banquet.venue</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create a new Banquet Venue or Event Hall!
+            </p>
+        </field>
+    </record>
+</odoo>

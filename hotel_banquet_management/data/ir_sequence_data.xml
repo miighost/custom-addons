@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Sequence for Banquet Quotations (QUOT/...) -->
+        <record id="seq_banquet_quotation" model="ir.sequence">
+            <field name="name">Banquet Quotation</field>
+            <field name="code">banquet.quotation</field>
+            <field name="prefix">QUOT/%(year)s/</field>
+            <field name="padding">5</field>
+            <field name="company_id" eval="False"/>
+        </record>
+
+        <!-- Sequence for Confirmed Banquet Orders (BO/...) -->
+        <record id="seq_banquet_order" model="ir.sequence">
+            <field name="name">Banquet Order</field>
+            <field name="code">banquet.order</field>
+            <field name="prefix">BO/%(year)s/</field>
+            <field name="padding">5</field>
+            <field name="company_id" eval="False"/>
+        </record>
+    </data>
+</odoo>

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Banquet Customer Statement Form View -->
+    <record id="view_banquet_customer_statement_form" model="ir.ui.view">
+        <field name="name">banquet.customer.statement.form</field>
+        <field name="model">banquet.customer.statement.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Print Customer / Company Statement">
+                <sheet>
+                    <group>
+                        <group string="Client Selection">
+                            <field name="partner_id" string="Customer / Company" options="{'no_create': True}"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                        <group string="Period">
+                            <field name="date_from"/>
+                            <field name="date_to"/>
+                        </group>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_print_statement" string="Print Statement (PDF)" type="object" class="btn-primary" icon="fa-file-pdf-o"/>
+                    <button special="cancel" string="Cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action for Customer Statement Wizard -->
+    <record id="action_banquet_customer_statement" model="ir.actions.act_window">
+        <field name="name">Customer / Company Statement</field>
+        <field name="res_model">banquet.customer.statement.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <!-- Action for Banquet Sales Analysis (Pivot & Graph) -->
+    <record id="action_banquet_sales_analysis" model="ir.actions.act_window">
+        <field name="name">Banquet Sales Analysis</field>
+        <field name="res_model">sale.order</field>
+        <field name="view_mode">pivot,graph,list</field>
+        <field name="domain">[('is_banquet', '=', True), ('state', 'in', ['sale', 'done'])]</field>
+        <field name="context">{'default_is_banquet': 1}</field>
+    </record>
+</odoo>

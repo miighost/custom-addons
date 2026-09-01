@@ -1,0 +1,243 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Banquet Search View -->
+    <record id="view_banquet_order_search" model="ir.ui.view">
+        <field name="name">banquet.sale.order.search</field>
+        <field name="model">sale.order</field>
+        <field name="priority">25</field>
+        <field name="arch" type="xml">
+            <search string="Search Banquets">
+                <field name="name" string="Order / Reference"/>
+                <field name="partner_id" operator="child_of" string="Customer / Company"/>
+                <field name="event_name" string="Event / Function"/>
+                <field name="event_type_id" string="Event Type"/>
+                <field name="banquet_venue_id" string="Venue / Hall"/>
+                <filter string="My Banquets" name="my_banquets" domain="[('user_id', '=', uid)]"/>
+                <separator/>
+                <filter string="Quotations" name="draft_quotations" domain="[('state', 'in', ['draft', 'sent'])]"/>
+                <filter string="Confirmed Orders" name="confirmed_orders" domain="[('state', 'in', ['sale', 'done'])]"/>
+                <separator/>
+                <filter string="Event Start Date" name="start_date" date="event_start_date"/>
+                <group expand="0" string="Group By">
+                    <filter string="Customer" name="customer" domain="[]" context="{'group_by': 'partner_id'}"/>
+                    <filter string="Event Type" name="event_type" domain="[]" context="{'group_by': 'event_type_id'}"/>
+                    <filter string="Venue / Hall" name="venue" domain="[]" context="{'group_by': 'banquet_venue_id'}"/>
+                    <filter string="Status" name="status" domain="[]" context="{'group_by': 'state'}"/>
+                    <filter string="Start Month" name="event_month" domain="[]" context="{'group_by': 'event_start_date:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Banquet List View -->
+    <record id="view_banquet_order_tree" model="ir.ui.view">
+        <field name="name">banquet.sale.order.list</field>
+        <field name="model">sale.order</field>
+        <field name="priority">25</field>
+        <field name="arch" type="xml">
+            <list string="Banquet Orders &amp; Quotations" decoration-info="state in ('draft', 'sent')" decoration-success="state == 'sale'" decoration-muted="state == 'cancel'">
+                <field name="name" string="Number" decoration-bf="1"/>
+                <field name="partner_id" string="Customer / Company"/>
+                <field name="event_name" string="Event Name"/>
+                <field name="event_type_id" string="Event Type"/>
+                <field name="banquet_venue_id" string="Venue / Hall"/>
+                <field name="event_start_date" string="Start Date &amp; Time"/>
+                <field name="event_end_date" string="End Date &amp; Time" optional="hide"/>
+                <field name="guest_count" string="Pax" sum="Total Guests"/>
+                <field name="user_id" string="Salesperson" optional="show" widget="many2one_avatar_user"/>
+                <field name="amount_total" string="Total Amount" sum="Total" decoration-bf="1" widget="monetary"/>
+                <field name="currency_id" column_invisible="True"/>
+                <field name="state" string="Status" widget="badge" decoration-info="state in ('draft', 'sent')" decoration-success="state == 'sale'" decoration-danger="state == 'cancel'"/>
+                <field name="invoice_status" string="Invoice Status" widget="badge" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Banquet Form View -->
+    <record id="view_banquet_order_form" model="ir.ui.view">
+        <field name="name">banquet.sale.order.form</field>
+        <field name="model">sale.order</field>
+        <field name="priority">25</field>
+        <field name="arch" type="xml">
+            <form string="Banquet &amp; Event Booking" class="o_sale_order">
+                <header>
+                    <button name="action_confirm" string="Confirm Banquet Order" type="object" class="btn-primary" invisible="state not in ['draft', 'sent']" icon="fa-check"/>
+                    <button name="%(sale.action_view_sale_advance_payment_inv)d" string="Create Invoice" type="action" class="btn-primary" invisible="state != 'sale' or invoice_status != 'to invoice'" icon="fa-file-text-o"/>
+                    <button name="action_quotation_send" string="Send by Email" type="object" class="btn-secondary" invisible="state not in ['draft', 'sent']" icon="fa-envelope"/>
+                    <button name="action_print_banquet_quotation" string="Print Quotation (QUOT/...)" type="object" class="btn-secondary" icon="fa-print"/>
+                    <button name="action_print_banquet_proforma" string="Print Proforma Invoice" type="object" class="btn-secondary" icon="fa-file-pdf-o"/>
+                    <button name="action_print_banquet_order" string="Print Contract (BO/...)" type="object" class="btn-secondary" invisible="state not in ['sale', 'done']" icon="fa-file-text"/>
+                    <button name="action_cancel" string="Cancel" type="object" invisible="state not in ['draft', 'sent', 'sale']"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,sent,sale"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_invoice" type="object" class="oe_stat_button" icon="fa-pencil-square-o" invisible="invoice_count == 0">
+                            <field name="invoice_count" widget="statinfo" string="Invoices"/>
+                        </button>
+                    </div>
+
+                    <div class="oe_title">
+                        <span class="o_form_label" invisible="state not in ['draft', 'sent']">Banquet Quotation</span>
+                        <span class="o_form_label" invisible="state in ['draft', 'sent']">Banquet Order</span>
+                        <h1 class="d-flex">
+                            <field name="name" readonly="1"/>
+                        </h1>
+                    </div>
+
+                    <group>
+                        <group string="Client &amp; Event Info">
+                            <field name="partner_id" string="Customer / Company" widget="res_partner_many2one" context="{'res_partner_search_mode': 'customer', 'show_address': 1}" options='{"always_reload": True}' required="1"/>
+                            <field name="event_name" string="Event / Function Name" placeholder="e.g. Annual Corporate Dinner / Wedding Party" required="1"/>
+                            <field name="event_type_id" string="Event Type" options="{'no_create_edit': True}" required="1"/>
+                            <field name="banquet_venue_id" string="Venue / Hall" options="{'no_create_edit': True}"/>
+                        </group>
+                        <group string="Date, Pax &amp; Document Setup">
+                            <field name="event_start_date" string="Start Date &amp; Time" required="1"/>
+                            <field name="event_end_date" string="End Date &amp; Time"/>
+                            <field name="guest_count" string="Guests / Pax"/>
+                            <field name="doc_print_mode" string="Document Title / Mode"/>
+                            <field name="payment_term_id" string="Payment Terms" options="{'no_open': True, 'no_create': True}"/>
+                            <field name="is_banquet" invisible="1"/>
+                            <field name="company_id" groups="base.group_multi_company" invisible="1"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="pricelist_id" invisible="1"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <!-- Tab 1: Services & Order Lines -->
+                        <page string="Services &amp; Order Lines" name="order_lines">
+                            <field name="order_line" widget="section_and_note_one2many" mode="list,kanban" readonly="state in ['done', 'cancel']">
+                                <list string="Banquet Services" editable="bottom">
+                                    <control>
+                                        <create name="add_product_control" string="Add a Product / Service"/>
+                                        <create name="add_section_control" string="Add a Section" context="{'default_display_type': 'line_section'}"/>
+                                        <create name="add_note_control" string="Add a Note" context="{'default_display_type': 'line_note'}"/>
+                                    </control>
+                                    <field name="display_type" column_invisible="True"/>
+                                    <field name="product_uom_category_id" column_invisible="True"/>
+                                    <field name="product_id" string="Product / Service" domain="[('sale_ok', '=', True)]" required="not display_type"/>
+                                    <field name="name" string="Description" widget="section_and_note_text" optional="show"/>
+                                    <field name="product_uom_qty" string="Qty" decoration-bf="1"/>
+                                    <field name="number_of_days" string="No of Days" decoration-bf="1"/>
+                                    <field name="product_uom" string="UoM" groups="uom.group_uom" optional="hide"/>
+                                    <field name="price_unit" string="Unit Price" widget="monetary"/>
+                                    <field name="tax_id" string="Taxes" widget="many2many_tags" options="{'no_create': True}" optional="show"/>
+                                    <field name="discount" string="Disc.%" groups="product.group_discount_per_so_line" optional="hide"/>
+                                    <field name="price_subtotal" string="Subtotal" widget="monetary" decoration-bf="1"/>
+                                    <field name="currency_id" column_invisible="True"/>
+                                </list>
+                            </field>
+                            <group name="note_group" col="6" class="mt-2 mt-md-0">
+                                <group colspan="4">
+                                    <field name="note" string="Customer Notes" placeholder="Special requirements, setup instructions, catering notes..."/>
+                                </group>
+                                <group class="oe_subtotal_footer oe_right" colspan="2" name="sale_total">
+                                    <field name="tax_totals" widget="account-tax-totals-field" nolabel="1" colspan="2" readonly="1"/>
+                                </group>
+                                <div class="clearfix"/>
+                            </group>
+                        </page>
+
+                        <!-- Tab 2: Terms and Conditions -->
+                        <page string="Terms &amp; Conditions" name="terms_and_conditions">
+                            <field name="terms_and_conditions" placeholder="Type or customize your banquet terms, cancellation policy, deposit requirements..."/>
+                        </page>
+
+                        <!-- Tab 3: Other Info -->
+                        <page string="Other Info" name="other_information">
+                            <group>
+                                <group string="Sales &amp; Accounting">
+                                    <field name="user_id" widget="many2one_avatar_user"/>
+                                    <field name="team_id"/>
+                                    <field name="fiscal_position_id" options="{'no_create': True}"/>
+                                </group>
+                                <group string="Company">
+                                    <field name="company_id" groups="base.group_multi_company"/>
+                                </group>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action 1: Banquet Quotations -->
+    <record id="action_banquet_quotations" model="ir.actions.act_window">
+        <field name="name">Banquet Quotations</field>
+        <field name="res_model">sale.order</field>
+        <field name="view_mode">list,form,search</field>
+        <field name="domain">[('is_banquet', '=', True), ('state', 'in', ['draft', 'sent', 'cancel'])]</field>
+        <field name="context">{'default_is_banquet': 1, 'search_default_draft_quotations': 1}</field>
+        <field name="search_view_id" ref="view_banquet_order_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create a new Banquet Quotation!
+            </p>
+            <p>
+                Select Customer, Event Details, Dates, Hall, and add Services with (Qty x No of Days x Unit Price).
+            </p>
+        </field>
+    </record>
+
+    <record id="action_banquet_quotations_tree" model="ir.actions.act_window.view">
+        <field name="sequence" eval="1"/>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="view_banquet_order_tree"/>
+        <field name="act_window_id" ref="action_banquet_quotations"/>
+    </record>
+
+    <record id="action_banquet_quotations_form" model="ir.actions.act_window.view">
+        <field name="sequence" eval="2"/>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_banquet_order_form"/>
+        <field name="act_window_id" ref="action_banquet_quotations"/>
+    </record>
+
+    <!-- Action 2: Confirmed Banquet Orders -->
+    <record id="action_banquet_orders" model="ir.actions.act_window">
+        <field name="name">Banquet Orders</field>
+        <field name="res_model">sale.order</field>
+        <field name="view_mode">list,form,search</field>
+        <field name="domain">[('is_banquet', '=', True), ('state', 'in', ['sale', 'done'])]</field>
+        <field name="context">{'default_is_banquet': 1, 'search_default_confirmed_orders': 1}</field>
+        <field name="search_view_id" ref="view_banquet_order_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Confirmed Banquet Orders will appear here!
+            </p>
+        </field>
+    </record>
+
+    <record id="action_banquet_orders_tree" model="ir.actions.act_window.view">
+        <field name="sequence" eval="1"/>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="view_banquet_order_tree"/>
+        <field name="act_window_id" ref="action_banquet_orders"/>
+    </record>
+
+    <record id="action_banquet_orders_form" model="ir.actions.act_window.view">
+        <field name="sequence" eval="2"/>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_banquet_order_form"/>
+        <field name="act_window_id" ref="action_banquet_orders"/>
+    </record>
+
+    <!-- Action 3: Banquet Invoices -->
+    <record id="action_banquet_invoices" model="ir.actions.act_window">
+        <field name="name">Banquet Invoices</field>
+        <field name="res_model">account.move</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('move_type', '=', 'out_invoice'), ('line_ids.sale_line_ids.order_id.is_banquet', '=', True)]</field>
+        <field name="context">{'default_move_type': 'out_invoice'}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Invoices generated from Banquet Orders appear here!
+            </p>
+        </field>
+    </record>
+
+</odoo>

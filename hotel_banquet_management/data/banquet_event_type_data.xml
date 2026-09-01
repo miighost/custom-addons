@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="event_type_wedding" model="banquet.event.type">
+            <field name="name">Wedding Reception</field>
+            <field name="code">WED</field>
+            <field name="description">Wedding celebrations, ceremonies, and banquets.</field>
+        </record>
+
+        <record id="event_type_conference" model="banquet.event.type">
+            <field name="name">Corporate Conference</field>
+            <field name="code">CONF</field>
+            <field name="description">Business conferences, seminars, and summit meetings.</field>
+        </record>
+
+        <record id="event_type_birthday" model="banquet.event.type">
+            <field name="name">Birthday Party / Anniversary</field>
+            <field name="code">BDAY</field>
+            <field name="description">Private birthday parties and anniversary celebrations.</field>
+        </record>
+
+        <record id="event_type_dinner" model="banquet.event.type">
+            <field name="name">Gala Dinner / Banquet</field>
+            <field name="code">GALA</field>
+            <field name="description">Formal dinners, award ceremonies, and corporate galas.</field>
+        </record>
+
+        <record id="event_type_meeting" model="banquet.event.type">
+            <field name="name">Business Meeting / Workshop</field>
+            <field name="code">MEET</field>
+            <field name="description">Workshops, training sessions, board meetings.</field>
+        </record>
+    </data>
+</odoo>

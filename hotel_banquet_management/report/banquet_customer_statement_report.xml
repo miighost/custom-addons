@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Customer Statement Report Action -->
+    <record id="action_report_banquet_customer_statement" model="ir.actions.report">
+        <field name="name">Customer Statement</field>
+        <field name="model">banquet.customer.statement.wizard</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">hotel_banquet_management.report_banquet_customer_statement_template</field>
+        <field name="report_file">hotel_banquet_management.report_banquet_customer_statement_template</field>
+        <field name="binding_type">report</field>
+    </record>
+
+    <!-- Customer Statement Template -->
+    <template id="report_banquet_customer_statement_template">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="web.external_layout">
+                    <t t-set="data" t-value="doc.get_statement_data()"/>
+                    <t t-set="partner" t-value="data['partner']"/>
+                    <t t-set="currency" t-value="doc.company_id.currency_id"/>
+
+                    <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 11px; color: #212529;">
+                        <style>
+                            .stmt-banner { border: 1px solid #1a252f; padding: 10px 14px; margin-bottom: 15px; background-color: #f8f9fa; }
+                            .stmt-title { font-size: 20px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; margin: 0; color: #1a252f; }
+                            .stmt-badge { float: right; border: 2px solid #1a252f; padding: 4px 12px; font-weight: bold; font-size: 11px; background: #fff; }
+                            .stmt-table { width: 100%; border-collapse: collapse; margin-top: 15px; margin-bottom: 15px; font-size: 11px; }
+                            .stmt-table th { background-color: #1a252f; color: #ffffff; font-weight: bold; border: 1px solid #1a252f; padding: 6px 8px; }
+                            .stmt-table td { border: 1px solid #dee2e6; padding: 6px 8px; }
+                            .stmt-table tr.total-row td { font-weight: bold; background-color: #f8f9fa; border-top: 2px solid #1a252f; }
+                            .text-right { text-align: right; }
+                            .text-center { text-align: center; }
+                        </style>
+
+                        <!-- Banner -->
+                        <div class="stmt-banner">
+                            <div class="stmt-badge">
+                                Period: <t t-esc="data['date_from']"/> – <t t-esc="data['date_to']"/>
+                            </div>
+                            <h2 class="stmt-title">STATEMENT OF ACCOUNT</h2>
+                        </div>
+
+                        <!-- Customer Info & Summary Box -->
+                        <table style="width: 100%; margin-bottom: 15px;">
+                            <tr>
+                                <td style="width: 55%; vertical-align: top;">
+                                    <strong style="font-size: 12px; color: #1a252f;">STATEMENT FOR:</strong>
+                                    <div style="font-size: 13px; font-weight: bold; margin-top: 4px;"><t t-esc="partner.name"/></div>
+                                    <div t-if="partner.parent_id"><t t-esc="partner.parent_id.name"/></div>
+                                    <div t-if="partner.street"><t t-esc="partner.street"/></div>
+                                    <div t-if="partner.city or partner.country_id">
+                                        <t t-esc="partner.city"/>, <t t-esc="partner.country_id.name"/>
+                                    </div>
+                                    <div t-if="partner.phone or partner.mobile">
+                                        <strong>Phone:</strong> <t t-esc="partner.phone or partner.mobile"/>
+                                    </div>
+                                    <div t-if="partner.email">
+                                        <strong>Email:</strong> <t t-esc="partner.email"/>
+                                    </div>
+                                </td>
+                                <td style="width: 45%; vertical-align: top;">
+                                    <table style="width: 100%; border: 1px solid #dee2e6; background: #fafafa; font-size: 11px;">
+                                        <tr style="background: #e9ecef; font-weight: bold;">
+                                            <td colspan="2" style="padding: 5px 8px;">ACCOUNT SUMMARY</td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 4px 8px;">Total Invoiced:</td>
+                                            <td class="text-right" style="padding: 4px 8px;">
+                                                <t t-esc="data['total_invoiced']" t-options='{"widget": "monetary", "display_currency": currency}'/>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: 4px 8px;">Total Paid / Received:</td>
+                                            <td class="text-right" style="padding: 4px 8px; color: #198754;">
+                                                <t t-esc="data['total_paid']" t-options='{"widget": "monetary", "display_currency": currency}'/>
+                                            </td>
+                                        </tr>
+                                        <tr style="background: #f8d7da; font-weight: bold;">
+                                            <td style="padding: 5px 8px; color: #842029;">Balance Due:</td>
+                                            <td class="text-right" style="padding: 5px 8px; color: #842029;">
+                                                <t t-esc="data['total_due']" t-options='{"widget": "monetary", "display_currency": currency}'/>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <!-- Statement Lines Table -->
+                        <table class="stmt-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 12%;">Date</th>
+                                    <th style="width: 18%;">Invoice #</th>
+                                    <th style="width: 26%;">Description</th>
+                                    <th class="text-center" style="width: 12%;">Due Date</th>
+                                    <th class="text-right" style="width: 11%;">Invoiced</th>
+                                    <th class="text-right" style="width: 10%;">Paid</th>
+                                    <th class="text-right" style="width: 11%;">Balance</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-if="data['lines']">
+                                    <t t-foreach="data['lines']" t-as="l">
+                                        <tr>
+                                            <td><t t-esc="l['date']"/></td>
+                                            <td><strong><t t-esc="l['ref']"/></strong></td>
+                                            <td><t t-esc="l['desc']"/></td>
+                                            <td class="text-center"><t t-esc="l['due_date']"/></td>
+                                            <td class="text-right"><t t-esc="l['invoiced']" t-options='{"widget": "monetary", "display_currency": currency}'/></td>
+                                            <td class="text-right" style="color: #198754;"><t t-esc="l['paid']" t-options='{"widget": "monetary", "display_currency": currency}'/></td>
+                                            <td class="text-right" style="font-weight: bold;"><t t-esc="l['balance']" t-options='{"widget": "monetary", "display_currency": currency}'/></td>
+                                        </tr>
+                                    </t>
+                                    <tr class="total-row">
+                                        <td colspan="4"><strong>Total</strong></td>
+                                        <td class="text-right"><strong><t t-esc="data['total_invoiced']" t-options='{"widget": "monetary", "display_currency": currency}'/></strong></td>
+                                        <td class="text-right" style="color: #198754;"><strong><t t-esc="data['total_paid']" t-options='{"widget": "monetary", "display_currency": currency}'/></strong></td>
+                                        <td class="text-right" style="color: #842029; font-size: 12px;"><strong><t t-esc="data['total_due']" t-options='{"widget": "monetary", "display_currency": currency}'/></strong></td>
+                                    </tr>
+                                </t>
+                                <t t-else="">
+                                    <tr>
+                                        <td colspan="7" class="text-center" style="padding: 15px; color: #777;">
+                                            No posted invoices or transaction records found for this period.
+                                        </td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+
+                        <!-- Remittance Note -->
+                        <div style="margin-top: 30px; font-size: 10px; color: #666; border-top: 1px solid #ddd; padding-top: 8px;">
+                            Please review your statement. If you have any inquiries regarding this statement of account, please contact our accounts department.
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Top-Level Root App: Banquets -->
+    <menuitem id="menu_banquet_root"
+              name="Banquets"
+              sequence="28"/>
+
+    <!-- ================= 1. QUOTATIONS & ORDERS ================= -->
+    <menuitem id="menu_banquet_orders_root"
+              name="Quotations &amp; Orders"
+              parent="menu_banquet_root"
+              sequence="10"/>
+
+    <menuitem id="menu_banquet_quotations"
+              name="Quotations"
+              parent="menu_banquet_orders_root"
+              action="action_banquet_quotations"
+              sequence="10"/>
+
+    <menuitem id="menu_banquet_orders"
+              name="Banquet Orders"
+              parent="menu_banquet_orders_root"
+              action="action_banquet_orders"
+              sequence="20"/>
+
+    <!-- ================= 2. INVOICES ================= -->
+    <menuitem id="menu_banquet_invoices_root"
+              name="Invoices"
+              parent="menu_banquet_root"
+              action="action_banquet_invoices"
+              sequence="20"/>
+
+    <!-- ================= 3. REPORTING ================= -->
+    <menuitem id="menu_banquet_reporting_root"
+              name="Reporting"
+              parent="menu_banquet_root"
+              sequence="30"/>
+
+    <menuitem id="menu_banquet_customer_statement"
+              name="Customer / Company Statement"
+              parent="menu_banquet_reporting_root"
+              action="action_banquet_customer_statement"
+              sequence="10"/>
+
+    <menuitem id="menu_banquet_sales_analysis"
+              name="Banquet Sales Analysis"
+              parent="menu_banquet_reporting_root"
+              action="action_banquet_sales_analysis"
+              sequence="20"/>
+
+    <!-- ================= 4. CONFIGURATION ================= -->
+    <menuitem id="menu_banquet_config_root"
+              name="Configuration"
+              parent="menu_banquet_root"
+              sequence="40"/>
+
+    <menuitem id="menu_banquet_event_type"
+              name="Event Types"
+              parent="menu_banquet_config_root"
+              action="action_banquet_event_type"
+              sequence="10"/>
+
+    <menuitem id="menu_banquet_venue"
+              name="Venues &amp; Halls"
+              parent="menu_banquet_config_root"
+              action="action_banquet_venue"
+              sequence="20"/>
+</odoo>
