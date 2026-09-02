@@ -29,3 +29,5 @@ access_daily_cash_report_wizard_user,access.daily.cash.report.wizard.user,model_
 access_hotel_room_transfer_wizard_user,access.hotel.room.transfer.wizard.user,model_hotel_room_transfer_wizard,base.group_user,1,1,1,1
 access_night_audit_wizard_user,access.night.audit.wizard.user,model_night_audit_wizard,base.group_user,1,1,1,1
 access_hotel_night_audit_user,access.hotel.night.audit.user,model_hotel_night_audit,base.group_user,1,1,1,1
+access_hotel_partner_ledger_wizard_user,access.hotel.partner.ledger.wizard.user,model_hotel_partner_ledger_wizard,base.group_user,1,1,1,1
+access_hotel_partner_statement_line_user,access.hotel.partner.statement.line.user,model_hotel_partner_statement_line,base.group_user,1,1,1,1

@@ -30,3 +30,4 @@ from . import room_analysis_wizard
 from . import daily_cash_report_wizard
 from . import hotel_room_transfer_wizard
 from . import night_audit_wizard
+from . import partner_ledger_wizard

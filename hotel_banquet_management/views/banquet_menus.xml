@@ -23,48 +23,76 @@
               action="action_banquet_orders"
               sequence="20"/>
 
-    <menuitem id="menu_banquet_customers"
-              name="Customers"
+    <menuitem id="menu_banquet_calendar"
+              name="Event Calendar"
               parent="menu_banquet_orders_root"
-              action="action_banquet_customers"
+              action="action_banquet_calendar"
               sequence="30"/>
 
-    <!-- ================= 2. INVOICES ================= -->
+    <!-- ================= 2. CUSTOMERS (Direct Top Menu) ================= -->
+    <menuitem id="menu_banquet_customers"
+              name="Customers"
+              parent="menu_banquet_root"
+              action="action_banquet_customers"
+              sequence="20"/>
+
+    <!-- ================= 3. FLAAD Q (Simulation Quotes - No DB/Ledger Effect) ================= -->
+    <menuitem id="menu_banquet_flaad_quotation"
+              name="Flaad Q"
+              parent="menu_banquet_root"
+              action="action_banquet_flaad_quotations"
+              sequence="25"/>
+
+    <!-- ================= 4. INVOICES ================= -->
     <menuitem id="menu_banquet_invoices_root"
               name="Invoices"
               parent="menu_banquet_root"
               action="action_banquet_invoices"
-              sequence="20"/>
+              sequence="30"/>
 
-    <!-- ================= 3. REPORTING ================= -->
+    <!-- ================= 5. REPORTING ================= -->
     <menuitem id="menu_banquet_reporting_root"
               name="Reporting"
               parent="menu_banquet_root"
-              sequence="30"/>
+              sequence="40"/>
 
-    <menuitem id="menu_banquet_customer_statement"
-              name="Customer / Company Statement"
+    <!-- Live On-Screen List Views -->
+    <menuitem id="menu_banquet_view_customer_statement"
+              name="View Customer / Company Statement"
               parent="menu_banquet_reporting_root"
-              action="action_banquet_customer_statement"
+              action="action_banquet_view_customer_statement"
               sequence="10"/>
 
-    <menuitem id="menu_banquet_partner_ledger"
-              name="Customer / Partner Ledger"
+    <menuitem id="menu_banquet_view_partner_ledger"
+              name="View Partner Ledger"
               parent="menu_banquet_reporting_root"
-              action="action_banquet_partner_ledger"
+              action="action_banquet_view_partner_ledger"
               sequence="20"/>
+
+    <!-- PDF Print Wizards -->
+    <menuitem id="menu_banquet_customer_statement"
+              name="Print Customer Statement (PDF)"
+              parent="menu_banquet_reporting_root"
+              action="action_banquet_customer_statement_wizard"
+              sequence="30"/>
+
+    <menuitem id="menu_banquet_partner_ledger"
+              name="Print Partner Ledger (PDF)"
+              parent="menu_banquet_reporting_root"
+              action="action_banquet_partner_ledger_wizard"
+              sequence="40"/>
 
     <menuitem id="menu_banquet_sales_analysis"
               name="Banquet Sales Analysis"
               parent="menu_banquet_reporting_root"
               action="action_banquet_sales_analysis"
-              sequence="30"/>
+              sequence="50"/>
 
-    <!-- ================= 4. CONFIGURATION ================= -->
+    <!-- ================= 5. CONFIGURATION ================= -->
     <menuitem id="menu_banquet_config_root"
               name="Configuration"
               parent="menu_banquet_root"
-              sequence="40"/>
+              sequence="50"/>
 
     <menuitem id="menu_banquet_event_type"
               name="Event Types"

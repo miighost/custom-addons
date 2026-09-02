@@ -15,6 +15,9 @@
         <t t-call="web.html_container">
             <t t-call="web.external_layout">
                 <div class="page" style="font-family: Arial, sans-serif; font-size: 12px; color: #333;">
+                    <t t-set="hdr" t-value="header or (stmt and stmt.get('header', {})) or {}"/>
+                    <t t-set="sum_data" t-value="summary or (stmt and stmt.get('summary', {})) or {}"/>
+                    <t t-set="stmt_lines" t-value="lines or (stmt and stmt.get('lines', [])) or []"/>
                     
                     <!-- Top Right Printed Date -->
                     <div class="row" style="margin-bottom: 8px;">
@@ -40,27 +43,27 @@
                                     <tr>
                                         <td style="width: 110px; font-weight: bold; color: #444;">Card No</td>
                                         <td style="width: 15px;">:</td>
-                                        <td><t t-esc="header.get('card_no', '-')"/></td>
+                                        <td><t t-esc="hdr.get('card_no', '-')"/></td>
                                     </tr>
                                     <tr>
                                         <td style="font-weight: bold; color: #444;">Guest No</td>
                                         <td>:</td>
-                                        <td><t t-esc="header.get('guest_no', '-')"/></td>
+                                        <td><t t-esc="hdr.get('guest_no', '-')"/></td>
                                     </tr>
                                     <tr>
                                         <td style="font-weight: bold; color: #444;">Name</td>
                                         <td>:</td>
-                                        <td style="font-weight: bold;"><t t-esc="header.get('name', '-')"/></td>
+                                        <td style="font-weight: bold;"><t t-esc="hdr.get('name', '-')"/></td>
                                     </tr>
                                     <tr>
                                         <td style="font-weight: bold; color: #444;">Nationality</td>
                                         <td>:</td>
-                                        <td><t t-esc="header.get('nationality', '-')"/></td>
+                                        <td><t t-esc="hdr.get('nationality', '-')"/></td>
                                     </tr>
                                     <tr>
                                         <td style="font-weight: bold; color: #444;">Company</td>
                                         <td>:</td>
-                                        <td><t t-esc="header.get('company', '-')"/></td>
+                                        <td><t t-esc="hdr.get('company', '-')"/></td>
                                     </tr>
                                 </table>
                             </div>
@@ -71,27 +74,27 @@
                                     <tr>
                                         <td style="width: 130px; font-weight: bold; color: #444;">Room No</td>
                                         <td style="width: 15px;">:</td>
-                                        <td><t t-esc="header.get('room_no', '-')"/></td>
+                                        <td><t t-esc="hdr.get('room_no', '-')"/></td>
                                     </tr>
                                     <tr>
                                         <td style="font-weight: bold; color: #444;">No of Pax</td>
                                         <td>:</td>
-                                        <td><t t-esc="header.get('pax', '1')"/></td>
+                                        <td><t t-esc="hdr.get('pax', '1')"/></td>
                                     </tr>
                                     <tr>
                                         <td style="font-weight: bold; color: #444;">Arrival Date</td>
                                         <td>:</td>
-                                        <td><t t-esc="header.get('arrival_date', '-')"/></td>
+                                        <td><t t-esc="hdr.get('arrival_date', '-')"/></td>
                                     </tr>
                                     <tr>
                                         <td style="font-weight: bold; color: #444;">Arrival Time</td>
                                         <td>:</td>
-                                        <td><t t-esc="header.get('arrival_time', '-')"/></td>
+                                        <td><t t-esc="hdr.get('arrival_time', '-')"/></td>
                                     </tr>
                                     <tr>
                                         <td style="font-weight: bold; color: #111;">Balance Amount</td>
                                         <td>:</td>
-                                        <td style="font-weight: bold; font-size: 14px; color: #000;"><t t-esc="header.get('balance_amount', '0.00')"/></td>
+                                        <td style="font-weight: bold; font-size: 14px; color: #000;"><t t-esc="hdr.get('balance_amount', '0.00')"/></td>
                                     </tr>
                                 </table>
                             </div>
@@ -112,7 +115,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <t t-foreach="lines" t-as="l">
+                            <t t-foreach="stmt_lines" t-as="l">
                                 <tr style="border-bottom: 1px solid #e0e0e0; font-size: 11px;">
                                     <td style="text-align: center; padding: 5px 4px; border-left: 1px solid #ddd; border-right: 1px solid #ddd;"><t t-esc="l['s_no']"/></td>
                                     <td style="text-align: center; padding: 5px 4px; border-right: 1px solid #ddd;"><t t-esc="l['date']"/></td>
@@ -137,24 +140,24 @@
                                 <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
                                     <tr style="border-bottom: 1px solid #eee;">
                                         <td style="padding: 4px 10px; font-weight: 600;">Total Room Accommodation</td>
-                                        <td style="padding: 4px 10px; text-align: right; font-weight: bold;"><t t-esc="summary.get('total_room', '0.00')"/></td>
+                                        <td style="padding: 4px 10px; text-align: right; font-weight: bold;"><t t-esc="sum_data.get('total_room', '0.00')"/></td>
                                     </tr>
                                     <tr style="border-bottom: 1px solid #eee;">
                                         <td style="padding: 4px 10px; font-weight: 600;">Total Taxes &amp; VAT</td>
-                                        <td style="padding: 4px 10px; text-align: right;"><t t-esc="summary.get('total_tax', '0.00')"/></td>
+                                        <td style="padding: 4px 10px; text-align: right;"><t t-esc="sum_data.get('total_tax', '0.00')"/></td>
                                     </tr>
                                     <tr style="border-bottom: 1px solid #eee;">
                                         <td style="padding: 4px 10px; font-weight: 600;">Total Restaurant &amp; POS Orders</td>
-                                        <td style="padding: 4px 10px; text-align: right;"><t t-esc="summary.get('total_restaurant', '0.00')"/></td>
+                                        <td style="padding: 4px 10px; text-align: right;"><t t-esc="sum_data.get('total_restaurant', '0.00')"/></td>
                                     </tr>
                                     <tr style="border-bottom: 1px solid #eee;">
                                         <td style="padding: 4px 10px; font-weight: 600;">Total Hotel Services &amp; Laundry</td>
-                                        <td style="padding: 4px 10px; text-align: right;"><t t-esc="summary.get('total_service', '0.00')"/></td>
+                                        <td style="padding: 4px 10px; text-align: right;"><t t-esc="sum_data.get('total_service', '0.00')"/></td>
                                     </tr>
                                     <tr>
                                         <td style="padding: 4px 10px; font-weight: 600;">Total Vehicles &amp; Events</td>
                                         <td style="padding: 4px 10px; text-align: right;">
-                                            <t t-set="other_chgs" t-value="float(summary.get('total_fleet', '0').replace(',', '')) + float(summary.get('total_event', '0').replace(',', ''))"/>
+                                            <t t-set="other_chgs" t-value="float(sum_data.get('total_fleet', '0').replace(',', '')) + float(sum_data.get('total_event', '0').replace(',', ''))"/>
                                             <t t-esc="f'{other_chgs:,.2f}'"/>
                                         </td>
                                     </tr>
@@ -171,15 +174,15 @@
                                 <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
                                     <tr style="border-bottom: 1px solid #eee;">
                                         <td style="padding: 5px 10px; font-weight: 600;">Total Charges (Debit)</td>
-                                        <td style="padding: 5px 10px; text-align: right; font-weight: bold;"><t t-esc="summary.get('total_debit', '0.00')"/></td>
+                                        <td style="padding: 5px 10px; text-align: right; font-weight: bold;"><t t-esc="sum_data.get('total_debit', '0.00')"/></td>
                                     </tr>
                                     <tr style="border-bottom: 1px solid #eee;">
                                         <td style="padding: 5px 10px; font-weight: 600;">Total Payments (Credit)</td>
-                                        <td style="padding: 5px 10px; text-align: right; font-weight: bold; color: #2e7d32;"><t t-esc="summary.get('total_payments', '0.00')"/></td>
+                                        <td style="padding: 5px 10px; text-align: right; font-weight: bold; color: #2e7d32;"><t t-esc="sum_data.get('total_payments', '0.00')"/></td>
                                     </tr>
                                     <tr style="background-color: #f8f9fa;">
                                         <td style="padding: 6px 10px; font-weight: bold; font-size: 12px; color: #000;">NET BALANCE DUE</td>
-                                        <td style="padding: 6px 10px; text-align: right; font-weight: bold; font-size: 13px; color: #c62828;"><t t-esc="summary.get('net_balance', '0.00')"/></td>
+                                        <td style="padding: 6px 10px; text-align: right; font-weight: bold; font-size: 13px; color: #c62828;"><t t-esc="sum_data.get('net_balance', '0.00')"/></td>
                                     </tr>
                                 </table>
                             </div>

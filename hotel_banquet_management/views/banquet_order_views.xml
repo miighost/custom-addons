@@ -19,7 +19,7 @@
         </field>
     </record>
 
-    <!-- Banquet List View -->
+    <!-- 1. Banquet List View -->
     <record id="view_banquet_order_tree" model="ir.ui.view">
         <field name="name">banquet.sale.order.list</field>
         <field name="model">sale.order</field>
@@ -43,7 +43,84 @@
         </field>
     </record>
 
-    <!-- Banquet Form View -->
+    <!-- 2. Banquet Kanban View -->
+    <record id="view_banquet_order_kanban" model="ir.ui.view">
+        <field name="name">banquet.sale.order.kanban</field>
+        <field name="model">sale.order</field>
+        <field name="priority">25</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="state" sample="1">
+                <field name="state"/>
+                <field name="currency_id"/>
+                <templates>
+                    <t t-name="card">
+                        <div class="d-flex justify-content-between mb-1">
+                            <strong class="o_kanban_record_title"><field name="name"/></strong>
+                            <field name="amount_total" widget="monetary" class="fw-bold text-primary"/>
+                        </div>
+                        <div class="text-muted fw-bold"><field name="partner_id"/></div>
+                        <div class="text-truncate text-dark fw-bold mt-1"><i class="fa fa-glass me-1"/> <field name="event_name"/></div>
+                        <div class="d-flex justify-content-between align-items-center mt-2 pt-1 border-top">
+                            <span class="badge text-bg-light border"><field name="banquet_venue_id"/></span>
+                            <span class="text-muted small"><field name="event_start_date"/></span>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- 3. Banquet Calendar View -->
+    <record id="view_banquet_order_calendar" model="ir.ui.view">
+        <field name="name">banquet.sale.order.calendar</field>
+        <field name="model">sale.order</field>
+        <field name="priority">25</field>
+        <field name="arch" type="xml">
+            <calendar string="Banquet Event Calendar"
+                      date_start="event_start_date"
+                      date_stop="event_end_date"
+                      color="banquet_venue_id"
+                      mode="month"
+                      quick_create="0"
+                      event_limit="5">
+                <field name="partner_id" avatar_field="avatar_128"/>
+                <field name="event_name"/>
+                <field name="banquet_venue_id" filters="1"/>
+                <field name="guest_count"/>
+                <field name="amount_total" widget="monetary"/>
+            </calendar>
+        </field>
+    </record>
+
+    <!-- 4. Banquet Pivot View -->
+    <record id="view_banquet_order_pivot" model="ir.ui.view">
+        <field name="name">banquet.sale.order.pivot</field>
+        <field name="model">sale.order</field>
+        <field name="priority">25</field>
+        <field name="arch" type="xml">
+            <pivot string="Banquet Sales Matrix" sample="1">
+                <field name="event_type_id" type="row"/>
+                <field name="banquet_venue_id" type="col"/>
+                <field name="amount_total" type="measure"/>
+                <field name="guest_count" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <!-- 5. Banquet Graph View -->
+    <record id="view_banquet_order_graph" model="ir.ui.view">
+        <field name="name">banquet.sale.order.graph</field>
+        <field name="model">sale.order</field>
+        <field name="priority">25</field>
+        <field name="arch" type="xml">
+            <graph string="Banquet Revenue" type="bar" sample="1">
+                <field name="banquet_venue_id"/>
+                <field name="amount_total" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- 6. Banquet Form View -->
     <record id="view_banquet_order_form" model="ir.ui.view">
         <field name="name">banquet.sale.order.form</field>
         <field name="model">sale.order</field>
@@ -54,9 +131,8 @@
                     <button name="action_confirm" string="Confirm Banquet Order" type="object" class="btn-primary" invisible="state not in ['draft', 'sent']" icon="fa-check"/>
                     <button name="%(sale.action_view_sale_advance_payment_inv)d" string="Create Invoice" type="action" class="btn-primary" invisible="state != 'sale' or invoice_status != 'to invoice'" icon="fa-file-text-o"/>
                     <button name="action_quotation_send" string="Send by Email" type="object" class="btn-secondary" invisible="state not in ['draft', 'sent']" icon="fa-envelope"/>
-                    <button name="action_print_banquet_quotation" string="Print Quotation (QUOT/...)" type="object" class="btn-secondary" icon="fa-print"/>
-                    <button name="action_print_banquet_proforma" string="Print Proforma Invoice" type="object" class="btn-secondary" icon="fa-file-pdf-o"/>
-                    <button name="action_print_banquet_order" string="Print Contract (BO/...)" type="object" class="btn-secondary" invisible="state not in ['sale', 'done']" icon="fa-file-text"/>
+                    <button name="action_print_banquet_quotation" string="Print Quotation" type="object" class="btn-secondary" invisible="state not in ['draft', 'sent']" icon="fa-print"/>
+                    <button name="action_print_banquet_order" string="Print Order" type="object" class="btn-secondary" invisible="state not in ['sale', 'done']" icon="fa-print"/>
                     <button name="action_cancel" string="Cancel" type="object" invisible="state not in ['draft', 'sent', 'sale']"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,sent,sale"/>
                 </header>
@@ -82,11 +158,10 @@
                             <field name="event_type_id" string="Event Type" options="{'no_create_edit': True}" required="1"/>
                             <field name="banquet_venue_id" string="Venue / Hall" options="{'no_create_edit': True}"/>
                         </group>
-                        <group string="Date, Pax &amp; Document Setup">
+                        <group string="Date &amp; Pricing Setup">
                             <field name="event_start_date" string="Start Date &amp; Time" required="1"/>
                             <field name="event_end_date" string="End Date &amp; Time"/>
                             <field name="guest_count" string="Guests / Pax"/>
-                            <field name="doc_print_mode" string="Document Title / Mode"/>
                             <field name="payment_term_id" string="Payment Terms" options="{'no_open': True, 'no_create': True}"/>
                             <field name="is_banquet" invisible="1"/>
                             <field name="company_id" groups="base.group_multi_company" invisible="1"/>
@@ -156,7 +231,7 @@
     <record id="action_banquet_quotations" model="ir.actions.act_window">
         <field name="name">Banquet Quotations</field>
         <field name="res_model">sale.order</field>
-        <field name="view_mode">list,form,search</field>
+        <field name="view_mode">list,kanban,calendar,pivot,graph,form</field>
         <field name="domain">[('is_banquet', '=', True), ('state', 'in', ['draft', 'sent', 'cancel'])]</field>
         <field name="context">{'default_is_banquet': 1, 'search_default_banquet_orders': 1}</field>
         <field name="search_view_id" ref="view_banquet_order_search"/>
@@ -177,8 +252,22 @@
         <field name="act_window_id" ref="action_banquet_quotations"/>
     </record>
 
-    <record id="action_banquet_quotations_form" model="ir.actions.act_window.view">
+    <record id="action_banquet_quotations_kanban" model="ir.actions.act_window.view">
         <field name="sequence" eval="2"/>
+        <field name="view_mode">kanban</field>
+        <field name="view_id" ref="view_banquet_order_kanban"/>
+        <field name="act_window_id" ref="action_banquet_quotations"/>
+    </record>
+
+    <record id="action_banquet_quotations_calendar" model="ir.actions.act_window.view">
+        <field name="sequence" eval="3"/>
+        <field name="view_mode">calendar</field>
+        <field name="view_id" ref="view_banquet_order_calendar"/>
+        <field name="act_window_id" ref="action_banquet_quotations"/>
+    </record>
+
+    <record id="action_banquet_quotations_form" model="ir.actions.act_window.view">
+        <field name="sequence" eval="4"/>
         <field name="view_mode">form</field>
         <field name="view_id" ref="view_banquet_order_form"/>
         <field name="act_window_id" ref="action_banquet_quotations"/>
@@ -188,7 +277,7 @@
     <record id="action_banquet_orders" model="ir.actions.act_window">
         <field name="name">Banquet Orders</field>
         <field name="res_model">sale.order</field>
-        <field name="view_mode">list,form,search</field>
+        <field name="view_mode">list,kanban,calendar,pivot,graph,form</field>
         <field name="domain">[('is_banquet', '=', True), ('state', 'in', ['sale', 'done'])]</field>
         <field name="context">{'default_is_banquet': 1, 'search_default_banquet_orders': 1}</field>
         <field name="search_view_id" ref="view_banquet_order_search"/>
@@ -206,14 +295,38 @@
         <field name="act_window_id" ref="action_banquet_orders"/>
     </record>
 
-    <record id="action_banquet_orders_form" model="ir.actions.act_window.view">
+    <record id="action_banquet_orders_kanban" model="ir.actions.act_window.view">
         <field name="sequence" eval="2"/>
+        <field name="view_mode">kanban</field>
+        <field name="view_id" ref="view_banquet_order_kanban"/>
+        <field name="act_window_id" ref="action_banquet_orders"/>
+    </record>
+
+    <record id="action_banquet_orders_calendar" model="ir.actions.act_window.view">
+        <field name="sequence" eval="3"/>
+        <field name="view_mode">calendar</field>
+        <field name="view_id" ref="view_banquet_order_calendar"/>
+        <field name="act_window_id" ref="action_banquet_orders"/>
+    </record>
+
+    <record id="action_banquet_orders_form" model="ir.actions.act_window.view">
+        <field name="sequence" eval="4"/>
         <field name="view_mode">form</field>
         <field name="view_id" ref="view_banquet_order_form"/>
         <field name="act_window_id" ref="action_banquet_orders"/>
     </record>
 
-    <!-- Action 3: Banquet Invoices -->
+    <!-- Action 3: Banquet Event Calendar (Dedicated) -->
+    <record id="action_banquet_calendar" model="ir.actions.act_window">
+        <field name="name">Banquet Event Calendar</field>
+        <field name="res_model">sale.order</field>
+        <field name="view_mode">calendar,list,form</field>
+        <field name="domain">[('is_banquet', '=', True)]</field>
+        <field name="context">{'default_is_banquet': 1}</field>
+        <field name="view_id" ref="view_banquet_order_calendar"/>
+    </record>
+
+    <!-- Action 4: Banquet Invoices -->
     <record id="action_banquet_invoices" model="ir.actions.act_window">
         <field name="name">Banquet Invoices</field>
         <field name="res_model">account.move</field>

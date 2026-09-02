@@ -11,3 +11,4 @@ from . import daily_room_charges_report
 from . import room_analysis_report
 from . import daily_cash_report
 from . import night_audit_report
+from . import partner_ledger_report

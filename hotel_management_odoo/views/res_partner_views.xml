@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Inherit Partner Form View to Add Customer Account Statement Smart Button -->
+    <record id="view_partner_form_inherit_partner_ledger" model="ir.ui.view">
+        <field name="name">res.partner.form.inherit.partner.ledger</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <div name="button_box" position="inside">
+                <!-- Smart Button to Open Interactive Customer Account Statement -->
+                <button name="action_open_partner_ledger_wizard"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-list-alt">
+                    <div class="o_stat_info">
+                        <span class="o_stat_text">Account Statement</span>
+                    </div>
+                </button>
+            </div>
+        </field>
+    </record>
+</odoo>

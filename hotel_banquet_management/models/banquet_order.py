@@ -71,11 +71,6 @@ class BanquetSaleOrder(models.Model):
         default=_default_banquet_terms,
         copy=True
     )
-    doc_print_mode = fields.Selection([
-        ('quotation', 'Quotation (QUOT/...)'),
-        ('proforma', 'Proforma Invoice (PRO-INV/...)'),
-        ('order', 'Banquet Order (BO/...)')
-    ], string='Print Document Mode', default='quotation', copy=False)
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -94,24 +89,15 @@ class BanquetSaleOrder(models.Model):
                 if order.name and ('QUOT/' in order.name or order.name.startswith('QUOT')):
                     new_seq = self.env['ir.sequence'].next_by_code('banquet.order')
                     if new_seq:
-                        order.write({'name': new_seq, 'doc_print_mode': 'order'})
-                else:
-                    order.write({'doc_print_mode': 'order'})
+                        order.write({'name': new_seq})
         return res
 
     def action_print_banquet_quotation(self):
         self.ensure_one()
-        self.doc_print_mode = 'quotation'
-        return self.env.ref('hotel_banquet_management.action_report_banquet_order').report_action(self)
-
-    def action_print_banquet_proforma(self):
-        self.ensure_one()
-        self.doc_print_mode = 'proforma'
         return self.env.ref('hotel_banquet_management.action_report_banquet_order').report_action(self)
 
     def action_print_banquet_order(self):
         self.ensure_one()
-        self.doc_print_mode = 'order'
         return self.env.ref('hotel_banquet_management.action_report_banquet_order').report_action(self)
 
 

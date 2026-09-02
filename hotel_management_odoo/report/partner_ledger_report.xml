@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Report Action for Customer Account Statement -->
+    <record id="action_report_partner_ledger" model="ir.actions.report">
+        <field name="name">Customer Account Statement</field>
+        <field name="model">hotel.partner.ledger.wizard</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">hotel_management_odoo.report_partner_ledger</field>
+        <field name="report_file">hotel_management_odoo.report_partner_ledger</field>
+        <field name="binding_type">report</field>
+    </record>
+
+    <!-- QWeb PDF Template for Customer Account Statement -->
+    <template id="report_partner_ledger">
+        <t t-call="web.html_container">
+            <t t-call="web.external_layout">
+                <div class="page" style="font-family: Arial, Helvetica, sans-serif; font-size: 13px; color: #000; padding: 10px 0;">
+                    <t t-set="curr" t-value="currency or env.company.currency_id"/>
+                    
+                    <!-- Title -->
+                    <div class="row" style="margin-bottom: 25px;">
+                        <div class="col-12 text-center">
+                            <h2 style="font-weight: bold; color: #000; font-size: 24px; margin-bottom: 0;">Customer Account Statement</h2>
+                        </div>
+                    </div>
+
+                    <!-- Header Information (Exact Match to User Sample) -->
+                    <div class="row" style="margin-bottom: 25px; font-size: 14px; line-height: 1.8;">
+                        <div class="col-6">
+                            <table style="width: 100%;">
+                                <tr>
+                                    <td style="font-weight: bold; width: 110px;">Ref Number</td>
+                                    <td style="font-weight: bold;"><t t-esc="partner.get('ref', '-')"/></td>
+                                </tr>
+                                <tr>
+                                    <td style="font-weight: bold;">Customer</td>
+                                    <td style="font-weight: bold;"><t t-esc="partner.get('name', '-')"/></td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-6">
+                            <table style="width: 100%;">
+                                <tr>
+                                    <td style="font-weight: bold; text-align: right; width: 65%;">Statement Date</td>
+                                    <td style="font-weight: bold; text-align: right; width: 35%;"><t t-esc="partner.get('statement_date', '-')"/></td>
+                                </tr>
+                                <tr>
+                                    <td style="text-align: right;">Opening Balance</td>
+                                    <td style="text-align: right;"><t t-esc="f'{ledger.get(\'opening_balance\', 0.0):,.2f}'"/></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Transaction Table (Exact Match to User Sample) -->
+                    <table class="table table-borderless" style="width: 100%; font-size: 13px; border-collapse: collapse; margin-top: 15px;">
+                        <thead>
+                            <tr style="border-bottom: 1px solid #000;">
+                                <th style="text-align: left; padding: 6px 0; text-decoration: underline; font-weight: bold; width: 42%;">Description</th>
+                                <th style="text-align: center; padding: 6px 0; text-decoration: underline; font-weight: bold; width: 16%;">Trans_Date</th>
+                                <th style="text-align: right; padding: 6px 0; text-decoration: underline; font-weight: bold; width: 14%;">Debit</th>
+                                <th style="text-align: right; padding: 6px 0; text-decoration: underline; font-weight: bold; width: 14%;">Credit</th>
+                                <th style="text-align: right; padding: 6px 0; text-decoration: underline; font-weight: bold; width: 14%;">RTotal1</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-foreach="lines" t-as="l">
+                                <tr style="line-height: 1.6;">
+                                    <td style="text-align: left; padding: 4px 0;"><t t-esc="l['description']"/></td>
+                                    <td style="text-align: center; padding: 4px 0;"><t t-esc="l['trans_date']"/></td>
+                                    <td style="text-align: right; padding: 4px 0;"><t t-esc="f'{l[\'debit\']:,.2f}'"/></td>
+                                    <td style="text-align: right; padding: 4px 0;"><t t-esc="f'{l[\'credit\']:,.2f}'"/></td>
+                                    <td style="text-align: right; padding: 4px 0;"><t t-esc="f'{l[\'rtotal\']:,.2f}'"/></td>
+                                </tr>
+                            </t>
+                        </tbody>
+                        <tfoot>
+                            <tr style="border-top: 1px solid #000; font-weight: bold; line-height: 1.8;">
+                                <td colspan="2" style="padding: 8px 0;">Total / Closing Balance</td>
+                                <td style="text-align: right; padding: 8px 0;"><t t-esc="f'{ledger.get(\'total_period_debit\', 0.0):,.2f}'"/></td>
+                                <td style="text-align: right; padding: 8px 0;"><t t-esc="f'{ledger.get(\'total_period_credit\', 0.0):,.2f}'"/></td>
+                                <td style="text-align: right; padding: 8px 0;"><t t-esc="f'{ledger.get(\'ending_balance\', 0.0):,.2f}'"/></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </t>
+        </t>
+    </template>
+</odoo>

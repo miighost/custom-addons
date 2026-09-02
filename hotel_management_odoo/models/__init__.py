@@ -37,3 +37,4 @@ from . import room_booking
 from . import room_booking_line
 from . import service_booking_line
 from . import hotel_night_audit
+from . import res_partner

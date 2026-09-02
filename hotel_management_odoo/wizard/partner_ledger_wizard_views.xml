@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- On-Screen Interactive Customer Account Statement Form View -->
+    <record id="hotel_partner_ledger_wizard_view_form" model="ir.ui.view">
+        <field name="name">hotel.partner.ledger.wizard.form</field>
+        <field name="model">hotel.partner.ledger.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Customer Account Statement">
+                <header>
+                    <button name="action_print_pdf" string="Print PDF Statement" type="object" class="btn-primary" icon="fa-print"/>
+                </header>
+                <sheet>
+                    <div class="oe_title text-center mb-4">
+                        <h2 style="font-weight: bold; color: #111;">Customer Account Statement</h2>
+                    </div>
+
+                    <!-- Top Details Box -->
+                    <div class="row mb-3" style="background-color: #f8f9fa; border: 1px solid #ddd; border-radius: 6px; padding: 12px 10px;">
+                        <div class="col-6">
+                            <group>
+                                <field name="ref_number" string="Ref Number" readonly="1"/>
+                                <field name="partner_id" string="Customer" readonly="1"/>
+                            </group>
+                        </div>
+                        <div class="col-6">
+                            <group>
+                                <field name="statement_date" string="Statement Date"/>
+                                <field name="opening_balance" string="Opening Balance" readonly="1"/>
+                            </group>
+                        </div>
+                    </div>
+
+                    <!-- Date Range Filter -->
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <group>
+                                <field name="date_from" string="From Date"/>
+                            </group>
+                        </div>
+                        <div class="col-6">
+                            <group>
+                                <field name="date_to" string="To Date"/>
+                            </group>
+                        </div>
+                    </div>
+
+                    <!-- Statement Ledger Table (List View) -->
+                    <field name="line_ids" readonly="1">
+                        <list create="0" delete="0" edit="0" default_order="trans_date asc, id asc">
+                            <field name="description" string="Description"/>
+                            <field name="trans_date" string="Trans_Date"/>
+                            <field name="debit" string="Debit" sum="Total Debit"/>
+                            <field name="credit" string="Credit" sum="Total Credit"/>
+                            <field name="rtotal" string="RTotal1" decoration-bf="1"/>
+                        </list>
+                    </field>
+
+                    <!-- Bottom Summary Totals -->
+                    <div class="row mt-3">
+                        <div class="col-5 offset-7 ms-auto">
+                            <table class="table table-sm table-bordered text-end" style="font-size: 13px;">
+                                <tr>
+                                    <td style="font-weight: bold; width: 50%;">Total Debit:</td>
+                                    <td style="font-weight: bold;"><field name="total_debit" widget="monetary"/></td>
+                                </tr>
+                                <tr>
+                                    <td style="font-weight: bold;">Total Credit:</td>
+                                    <td style="font-weight: bold; color: #2e7d32;"><field name="total_credit" widget="monetary"/></td>
+                                </tr>
+                                <tr style="background-color: #f2f2f2;">
+                                    <td style="font-weight: bold; font-size: 14px;">Closing Balance (RTotal):</td>
+                                    <td style="font-weight: bold; font-size: 14px; color: #c62828;"><field name="ending_balance" widget="monetary"/></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </sheet>
+                <footer>
+                    <button name="action_print_pdf" string="Print PDF Statement" type="object" class="btn-primary" icon="fa-print"/>
+                    <button string="Close" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action to open Customer Account Statement -->
+    <record id="action_hotel_partner_ledger_wizard" model="ir.actions.act_window">
+        <field name="name">Customer Account Statement</field>
+        <field name="res_model">hotel.partner.ledger.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

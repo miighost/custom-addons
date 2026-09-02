@@ -1,6 +1,44 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Banquet Customer Statement Form View -->
+
+    <!-- 1. Interactive On-Screen Customer Statement List View -->
+    <record id="view_banquet_customer_statement_tree" model="ir.ui.view">
+        <field name="name">banquet.customer.statement.list</field>
+        <field name="model">account.move</field>
+        <field name="priority">30</field>
+        <field name="arch" type="xml">
+            <list string="Customer &amp; Company Statements">
+                <field name="name" string="Invoice / Ref #" decoration-bf="1"/>
+                <field name="partner_id" string="Customer / Company"/>
+                <field name="invoice_date" string="Invoice Date"/>
+                <field name="invoice_date_due" string="Due Date"/>
+                <field name="amount_untaxed" string="Untaxed" sum="Total Untaxed" optional="hide"/>
+                <field name="amount_total" string="Invoiced Amount" sum="Total Invoiced" decoration-bf="1"/>
+                <field name="amount_residual" string="Balance Due" sum="Total Balance Due" decoration-danger="amount_residual > 0" decoration-bf="1"/>
+                <field name="currency_id" column_invisible="True"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Action 1: Live On-Screen Customer Statement List -->
+    <record id="action_banquet_view_customer_statement" model="ir.actions.act_window">
+        <field name="name">View Customer / Company Statement</field>
+        <field name="res_model">account.move</field>
+        <field name="view_mode">list,form,pivot</field>
+        <field name="domain">[('move_type', 'in', ['out_invoice', 'out_refund'])]</field>
+        <field name="context">{'search_default_posted': 1, 'search_default_group_by_partner': 1}</field>
+        <field name="view_id" ref="view_banquet_customer_statement_tree"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                View Customer &amp; Company Statements live on screen!
+            </p>
+            <p>
+                Browse invoices, balances due, payment receipts, and customer statement totals grouped by client.
+            </p>
+        </field>
+    </record>
+
+    <!-- 2. PDF Customer Statement Wizard Form View -->
     <record id="view_banquet_customer_statement_form" model="ir.ui.view">
         <field name="name">banquet.customer.statement.form</field>
         <field name="model">banquet.customer.statement.wizard</field>
@@ -26,15 +64,15 @@
         </field>
     </record>
 
-    <!-- Action for Customer Statement Wizard -->
-    <record id="action_banquet_customer_statement" model="ir.actions.act_window">
-        <field name="name">Customer / Company Statement</field>
+    <!-- Action 2: PDF Statement Wizard -->
+    <record id="action_banquet_customer_statement_wizard" model="ir.actions.act_window">
+        <field name="name">Print Customer Statement (PDF)</field>
         <field name="res_model">banquet.customer.statement.wizard</field>
         <field name="view_mode">form</field>
         <field name="target">new</field>
     </record>
 
-    <!-- Action for Banquet Sales Analysis (Pivot & Graph) -->
+    <!-- Action 3: Banquet Sales Analysis (Pivot & Graph) -->
     <record id="action_banquet_sales_analysis" model="ir.actions.act_window">
         <field name="name">Banquet Sales Analysis</field>
         <field name="res_model">sale.order</field>
@@ -42,4 +80,5 @@
         <field name="domain">[('is_banquet', '=', True), ('state', 'in', ['sale', 'done'])]</field>
         <field name="context">{'default_is_banquet': 1}</field>
     </record>
+
 </odoo>

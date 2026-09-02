@@ -18,5 +18,14 @@
             <field name="padding">5</field>
             <field name="company_id" eval="False"/>
         </record>
+
+        <!-- Sequence for Flaad Quotations (FLAAD/...) -->
+        <record id="seq_banquet_flaad_quotation" model="ir.sequence">
+            <field name="name">Flaad Quotation</field>
+            <field name="code">banquet.flaad.quotation</field>
+            <field name="prefix">FLAAD/%(year)s/</field>
+            <field name="padding">5</field>
+            <field name="company_id" eval="False"/>
+        </record>
     </data>
 </odoo>

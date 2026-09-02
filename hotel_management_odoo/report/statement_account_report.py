@@ -14,7 +14,7 @@ class ReportStatementAccount(models.AbstractModel):
             stmt = data['statement']
         else:
             wizard = self.env['statement.account.wizard'].browse(docids[0]) if docids else False
-            stmt = wizard.generate_statement_data() if wizard else {'header': {}, 'lines': []}
+            stmt = wizard.generate_statement_data() if wizard else {'header': {}, 'lines': [], 'summary': {}}
 
         return {
             'doc_ids': docids,
@@ -22,4 +22,5 @@ class ReportStatementAccount(models.AbstractModel):
             'stmt': stmt,
             'header': stmt.get('header', {}),
             'lines': stmt.get('lines', []),
+            'summary': stmt.get('summary', {}),
         }

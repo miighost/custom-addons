@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Banquet Order & Quotation Report Action -->
-    <record id="action_report_banquet_order" model="ir.actions.report">
-        <field name="name">Banquet Quotation / Order</field>
-        <field name="model">sale.order</field>
+    <!-- Flaad Quotation Report Action -->
+    <record id="action_report_banquet_flaad_quotation" model="ir.actions.report">
+        <field name="name">Flaad Quotation</field>
+        <field name="model">banquet.flaad.quotation</field>
         <field name="report_type">qweb-pdf</field>
-        <field name="report_name">hotel_banquet_management.report_banquet_order_document</field>
-        <field name="report_file">hotel_banquet_management.report_banquet_order_document</field>
+        <field name="report_name">hotel_banquet_management.report_banquet_flaad_quotation_document</field>
+        <field name="report_file">hotel_banquet_management.report_banquet_flaad_quotation_document</field>
         <field name="binding_type">report</field>
     </record>
 
-    <!-- Banquet QWeb Template -->
-    <template id="report_banquet_order_document">
+    <!-- Flaad Quotation QWeb Template -->
+    <template id="report_banquet_flaad_quotation_document">
         <t t-call="web.html_container">
             <t t-foreach="docs" t-as="doc">
                 <t t-call="web.external_layout">
@@ -27,7 +27,6 @@
                             .lines-table { width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 15px; font-size: 11px; }
                             .lines-table th { background-color: #1a252f; color: #ffffff; font-weight: bold; border: 1px solid #1a252f; padding: 6px 8px; text-align: left; }
                             .lines-table td { border: 1px solid #dee2e6; padding: 6px 8px; }
-                            .lines-table tr.total-row td { font-weight: bold; background-color: #f8f9fa; border-top: 2px solid #1a252f; }
                             .text-right { text-align: right; }
                             .text-center { text-align: center; }
                             .terms-box { border: 1px solid #dee2e6; padding: 10px 14px; margin-top: 15px; background: #fdfdfd; border-radius: 4px; page-break-inside: avoid; }
@@ -38,10 +37,7 @@
                             <div class="banquet-badge">
                                 <t t-esc="doc.name"/>
                             </div>
-                            <h2 class="banquet-title">
-                                <t t-if="doc.state in ['sale', 'done']">BANQUET ORDER</t>
-                                <t t-else="">BANQUET QUOTATION</t>
-                            </h2>
+                            <h2 class="banquet-title">FLAAD QUOTATION</h2>
                         </div>
 
                         <!-- Client & Event Info Table -->
@@ -80,7 +76,7 @@
                                         <strong>End Date:</strong> <t t-esc="doc.event_end_date" t-options='{"widget": "datetime", "format": "dd/MM/yyyy HH:mm"}'/>
                                     </div>
                                     <div t-if="doc.date_order">
-                                        <strong>Order Date:</strong> <t t-esc="doc.date_order" t-options='{"widget": "date", "format": "dd/MM/yyyy"}'/>
+                                        <strong>Quote Date:</strong> <t t-esc="doc.date_order" t-options='{"widget": "date", "format": "dd/MM/yyyy"}'/>
                                     </div>
                                 </td>
                             </tr>
@@ -99,28 +95,15 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <t t-set="lines_to_report" t-value="doc._get_order_lines_to_report()" />
-                                <t t-foreach="lines_to_report" t-as="line">
-                                    <t t-if="not line.display_type">
-                                        <tr>
-                                            <td><strong><t t-esc="line.product_id.name"/></strong></td>
-                                            <td><t t-esc="line.name"/></td>
-                                            <td class="text-center"><t t-esc="line.product_uom_qty"/></td>
-                                            <td class="text-center"><strong><t t-esc="line.number_of_days or 1"/></strong></td>
-                                            <td class="text-right"><t t-esc="line.price_unit" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
-                                            <td class="text-right"><strong><t t-esc="line.price_subtotal" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></strong></td>
-                                        </tr>
-                                    </t>
-                                    <t t-elif="line.display_type == 'line_section'">
-                                        <tr style="background-color: #e9ecef; font-weight: bold;">
-                                            <td colspan="6"><t t-esc="line.name"/></td>
-                                        </tr>
-                                    </t>
-                                    <t t-elif="line.display_type == 'line_note'">
-                                        <tr style="font-style: italic; color: #555;">
-                                            <td colspan="6">Note: <t t-esc="line.name"/></td>
-                                        </tr>
-                                    </t>
+                                <t t-foreach="doc.line_ids" t-as="line">
+                                    <tr>
+                                        <td><strong><t t-esc="line.product_id.name"/></strong></td>
+                                        <td><t t-esc="line.name"/></td>
+                                        <td class="text-center"><t t-esc="line.product_uom_qty"/></td>
+                                        <td class="text-center"><strong><t t-esc="line.number_of_days or 1"/></strong></td>
+                                        <td class="text-right"><t t-esc="line.price_unit" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></td>
+                                        <td class="text-right"><strong><t t-esc="line.price_subtotal" t-options='{"widget": "monetary", "display_currency": doc.currency_id}'/></strong></td>
+                                    </tr>
                                 </t>
                             </tbody>
                         </table>
@@ -155,7 +138,7 @@
 
                         <!-- Customer Notes -->
                         <div t-if="doc.note" style="margin-top: 20px; font-size: 11px; border-left: 3px solid #1a252f; padding-left: 10px;">
-                            <strong>Special Instructions / Setup Notes:</strong>
+                            <strong>Special Notes:</strong>
                             <div t-field="doc.note"/>
                         </div>
 

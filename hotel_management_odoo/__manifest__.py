@@ -64,6 +64,7 @@
         'wizard/daily_cash_report_wizard_views.xml',
         'wizard/hotel_room_transfer_wizard_views.xml',
         'wizard/night_audit_wizard_views.xml',
+        'wizard/partner_ledger_wizard_views.xml',
         'report/room_booking_reports.xml',
         'report/sale_order_reports.xml',
         'report/combined_bill_report.xml',
@@ -77,8 +78,10 @@
         'report/room_analysis_report.xml',
         'report/daily_cash_report.xml',
         'report/night_audit_report.xml',
+        'report/partner_ledger_report.xml',
         'views/hotel_night_audit_views.xml',
         'views/reporting_views.xml',
+        'views/res_partner_views.xml',
     ],
     'assets': {
         'web.assets_backend': [
