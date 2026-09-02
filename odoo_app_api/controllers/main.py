@@ -105,7 +105,8 @@ class AppApi(http.Controller):
         if not products.exists() or len(products) != len(set(product_ids)):
             return {'error': 'unknown_product'}
         # Only let the app order things it is allowed to see
-        if any(not p.sale_ok or not p.active for p in products):
+        if any(not p.sale_ok or not p.active or not p.available_in_app
+               for p in products):
             return {'error': 'product_not_orderable'}
 
         order = request.env['sale.order'].sudo().create({
