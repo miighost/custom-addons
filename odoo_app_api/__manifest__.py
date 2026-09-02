@@ -11,7 +11,6 @@
         'views/res_partner_views.xml',
         'views/product_views.xml',
     ],
-    'external_dependencies': {'python': ['jwt', 'cryptography']},
     'installable': True,
     'application': True,
 }

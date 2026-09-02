@@ -6,7 +6,7 @@ Community backend. Firebase owns identity; Odoo owns the data.
 ```
 FlutterFlow  --Firebase ID token-->  Odoo controller
                                        |  verifies the JWT against Google's
-                                       |  public certs (no firebase-admin)
+                                       |  public certs (no extra libraries)
                                        v
                                      res.partner (firebase_uid)
                                        |
@@ -20,14 +20,10 @@ app can never ask for someone else's data.
 
 ## Install
 
-1. On the Odoo server:
-
-       pip install PyJWT cryptography requests
-
-2. Copy this folder into your addons path, restart Odoo, update the app list,
+1. Copy this folder into your addons path, restart Odoo, update the app list,
    install **App API (Firebase)**.
 
-3. Settings → Technical → System Parameters → set
+2. Settings → Technical → System Parameters → set
    `app_api.firebase_project_id` to your Firebase project id
    (Firebase console → Project settings → Project ID).
 
