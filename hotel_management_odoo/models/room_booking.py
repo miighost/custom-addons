@@ -380,10 +380,12 @@ class RoomBooking(models.Model):
                         'price_unit': room.price_unit,
                         'product_type': 'room'
                     }
-                    if room.room_id.income_account_id:
+                    if room.room_id and room.room_id.income_account_id:
                         room_data['account_id'] = room.room_id.income_account_id.id
-                    if room.taxes_ids:
-                        room_data['tax_ids'] = [(6, 0, room.taxes_ids.ids)]
+                    if hasattr(room, 'tax_ids') and room.tax_ids:
+                        room_data['tax_ids'] = [(6, 0, room.tax_ids.ids)]
+                    elif room.room_id and hasattr(room.room_id, 'taxes_ids') and room.room_id.taxes_ids:
+                        room_data['tax_ids'] = [(6, 0, room.room_id.taxes_ids.ids)]
                     booking_list.append(room_data)
                 if flag:
                     room.booking_line_visible = True
