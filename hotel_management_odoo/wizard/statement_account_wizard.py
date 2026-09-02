@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import io
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from odoo import api, fields, models
 from odoo.tools import json_default
 
@@ -46,7 +46,7 @@ class StatementAccountWizard(models.TransientModel):
         }
 
     def generate_statement_data(self):
-        """Build itemized debit/credit statement data with running balance."""
+        """Build itemized day-by-day debit/credit statement data with categorized summary."""
         self.ensure_one()
         domain = [("partner_id", "=", self.partner_id.id)]
         if self.booking_id:
@@ -69,40 +69,56 @@ class StatementAccountWizard(models.TransientModel):
         raw_lines = []
 
         for booking in bookings:
-            # 1. Room Lines
+            # 1. Room Lines (Broken down day-by-day for each night stayed)
             for rline in booking.room_line_ids:
-                dt = rline.checkin_date or booking.checkin_date
-                if self.date_from and dt and dt.date() < self.date_from:
-                    continue
-                if self.date_to and dt and dt.date() > self.date_to:
-                    continue
+                r_in = rline.checkin_date or booking.checkin_date
+                duration = int(rline.uom_qty or 1)
+                if duration <= 0:
+                    duration = 1
 
-                raw_lines.append({
-                    "date_sort": dt,
-                    "date": dt.strftime("%d/%m/%Y") if dt else "-",
-                    "description": f"ROOM CHARGES - {rline.room_id.name or 'Room'}",
-                    "room_no": rline.room_id.name or booking.room_name or "-",
-                    "debit": rline.price_subtotal,
-                    "credit": 0.0,
-                })
-                if rline.price_tax > 0:
+                daily_rent = (rline.price_subtotal / duration) if duration else rline.price_subtotal
+                daily_tax = (rline.price_tax / duration) if (rline.price_tax and duration) else 0.0
+
+                for d in range(duration):
+                    dt = (r_in + timedelta(days=d)) if r_in else False
+                    if self.date_from and dt and dt.date() < self.date_from:
+                        continue
+                    if self.date_to and dt and dt.date() > self.date_to:
+                        continue
+
                     raw_lines.append({
                         "date_sort": dt,
                         "date": dt.strftime("%d/%m/%Y") if dt else "-",
-                        "description": "VAT / TAX",
+                        "description": f"ROOM CHARGE - {rline.room_id.name or 'Room'}" if duration == 1 else f"ROOM CHARGE - {rline.room_id.name or 'Room'} (Night {d+1})",
                         "room_no": rline.room_id.name or booking.room_name or "-",
-                        "debit": rline.price_tax,
+                        "category": "room",
+                        "debit": daily_rent,
                         "credit": 0.0,
                     })
+                    if daily_tax > 0:
+                        raw_lines.append({
+                            "date_sort": dt,
+                            "date": dt.strftime("%d/%m/%Y") if dt else "-",
+                            "description": "VAT / TAX",
+                            "room_no": rline.room_id.name or booking.room_name or "-",
+                            "category": "tax",
+                            "debit": daily_tax,
+                            "credit": 0.0,
+                        })
 
             # 2. Food Lines
             for fline in booking.food_order_line_ids:
                 dt = booking.checkin_date
+                if self.date_from and dt and dt.date() < self.date_from:
+                    continue
+                if self.date_to and dt and dt.date() > self.date_to:
+                    continue
                 raw_lines.append({
                     "date_sort": dt,
                     "date": dt.strftime("%d/%m/%Y") if dt else "-",
                     "description": f"FOOD ORDER - {fline.food_id.name or 'Food'}",
                     "room_no": booking.room_name or "-",
+                    "category": "restaurant",
                     "debit": fline.price_total,
                     "credit": 0.0,
                 })
@@ -110,11 +126,16 @@ class StatementAccountWizard(models.TransientModel):
             # 3. Service Lines
             for sline in booking.service_line_ids:
                 dt = booking.checkin_date
+                if self.date_from and dt and dt.date() < self.date_from:
+                    continue
+                if self.date_to and dt and dt.date() > self.date_to:
+                    continue
                 raw_lines.append({
                     "date_sort": dt,
                     "date": dt.strftime("%d/%m/%Y") if dt else "-",
                     "description": f"SERVICE - {sline.service_id.name or 'Service'}",
                     "room_no": booking.room_name or "-",
+                    "category": "service",
                     "debit": sline.price_total,
                     "credit": 0.0,
                 })
@@ -122,11 +143,16 @@ class StatementAccountWizard(models.TransientModel):
             # 4. Fleet Lines
             for vline in booking.vehicle_line_ids:
                 dt = booking.checkin_date
+                if self.date_from and dt and dt.date() < self.date_from:
+                    continue
+                if self.date_to and dt and dt.date() > self.date_to:
+                    continue
                 raw_lines.append({
                     "date_sort": dt,
                     "date": dt.strftime("%d/%m/%Y") if dt else "-",
                     "description": f"VEHICLE - {vline.fleet_id.name or 'Vehicle'}",
                     "room_no": booking.room_name or "-",
+                    "category": "fleet",
                     "debit": vline.price_total,
                     "credit": 0.0,
                 })
@@ -134,11 +160,16 @@ class StatementAccountWizard(models.TransientModel):
             # 5. Event Lines
             for eline in booking.event_line_ids:
                 dt = booking.checkin_date
+                if self.date_from and dt and dt.date() < self.date_from:
+                    continue
+                if self.date_to and dt and dt.date() > self.date_to:
+                    continue
                 raw_lines.append({
                     "date_sort": dt,
                     "date": dt.strftime("%d/%m/%Y") if dt else "-",
                     "description": f"EVENT - {eline.event_id.name or 'Event'}",
                     "room_no": booking.room_name or "-",
+                    "category": "event",
                     "debit": eline.price_total,
                     "credit": 0.0,
                 })
@@ -147,11 +178,16 @@ class StatementAccountWizard(models.TransientModel):
             for pos_link in booking.pos_order_line_ids:
                 pos = pos_link.pos_order_id
                 dt = pos.date_order or booking.checkin_date
+                if self.date_from and dt and dt.date() < self.date_from:
+                    continue
+                if self.date_to and dt and dt.date() > self.date_to:
+                    continue
                 raw_lines.append({
                     "date_sort": dt,
                     "date": dt.strftime("%d/%m/%Y") if dt else "-",
                     "description": f"RESTAURANT CHARGE ({pos.pos_reference or pos.name})",
                     "room_no": booking.room_name or "-",
+                    "category": "restaurant",
                     "debit": pos.amount_total,
                     "credit": 0.0,
                 })
@@ -161,11 +197,13 @@ class StatementAccountWizard(models.TransientModel):
                 inv = booking.hotel_invoice_id
                 paid_amt = inv.amount_total - inv.amount_residual
                 if paid_amt > 0:
+                    dt = booking.checkout_date or booking.checkin_date
                     raw_lines.append({
-                        "date_sort": booking.checkout_date or booking.checkin_date,
-                        "date": (booking.checkout_date or booking.checkin_date).strftime("%d/%m/%Y"),
+                        "date_sort": dt,
+                        "date": dt.strftime("%d/%m/%Y") if dt else "-",
                         "description": "PAYMENT RECEIVED",
                         "room_no": booking.room_name or "-",
+                        "category": "payment",
                         "debit": 0.0,
                         "credit": paid_amt,
                     })
@@ -193,6 +231,30 @@ class StatementAccountWizard(models.TransientModel):
             })
             s_no += 1
 
+        # Summary Category Totals
+        total_room = sum(x["debit"] for x in raw_lines if x.get("category") == "room")
+        total_tax = sum(x["debit"] for x in raw_lines if x.get("category") == "tax")
+        total_restaurant = sum(x["debit"] for x in raw_lines if x.get("category") == "restaurant")
+        total_service = sum(x["debit"] for x in raw_lines if x.get("category") == "service")
+        total_fleet = sum(x["debit"] for x in raw_lines if x.get("category") == "fleet")
+        total_event = sum(x["debit"] for x in raw_lines if x.get("category") == "event")
+        total_payments = sum(x["credit"] for x in raw_lines if x.get("category") == "payment")
+        total_debit = sum(x["debit"] for x in raw_lines)
+        total_credit = sum(x["credit"] for x in raw_lines)
+
+        summary = {
+            "total_room": f"{total_room:,.2f}",
+            "total_tax": f"{total_tax:,.2f}",
+            "total_restaurant": f"{total_restaurant:,.2f}",
+            "total_service": f"{total_service:,.2f}",
+            "total_fleet": f"{total_fleet:,.2f}",
+            "total_event": f"{total_event:,.2f}",
+            "total_payments": f"{total_payments:,.2f}",
+            "total_debit": f"{total_debit:,.2f}",
+            "total_credit": f"{total_credit:,.2f}",
+            "net_balance": f"{running_balance:,.2f}",
+        }
+
         return {
             "header": {
                 "card_no": card_no,
@@ -207,6 +269,7 @@ class StatementAccountWizard(models.TransientModel):
                 "balance_amount": f"{running_balance:,.2f}",
             },
             "lines": lines,
+            "summary": summary,
         }
 
     def get_xlsx_report(self, data, response):
@@ -215,18 +278,26 @@ class StatementAccountWizard(models.TransientModel):
         workbook = xlsxwriter.Workbook(output, {"in_memory": True})
         sheet = workbook.add_worksheet("Statement of Account")
 
-        head_format = workbook.add_format({"align": "center", "bold": True, "font_size": 18, "border": 1})
-        label_bold = workbook.add_format({"bold": True, "font_size": 11})
-        val_norm = workbook.add_format({"font_size": 11})
-        tbl_header = workbook.add_format({"bold": True, "align": "center", "bg_color": "#D3D3D3", "border": 1, "font_size": 11})
-        tbl_cell = workbook.add_format({"align": "left", "border": 1, "font_size": 10})
-        tbl_num = workbook.add_format({"align": "right", "border": 1, "font_size": 10})
+        head_format = workbook.add_format({"align": "center", "bold": True, "font_size": 16, "border": 1, "bg_color": "#2c3e50", "font_color": "#ffffff"})
+        label_bold = workbook.add_format({"bold": True, "font_size": 10})
+        val_norm = workbook.add_format({"font_size": 10})
+        tbl_header = workbook.add_format({"bold": True, "align": "center", "bg_color": "#4A6572", "font_color": "#ffffff", "border": 1, "font_size": 10})
+        tbl_cell = workbook.add_format({"align": "left", "border": 1, "font_size": 9})
+        tbl_cell_center = workbook.add_format({"align": "center", "border": 1, "font_size": 9})
+        tbl_num = workbook.add_format({"align": "right", "border": 1, "font_size": 9})
+        sum_header = workbook.add_format({"bold": True, "align": "left", "bg_color": "#f2f2f2", "border": 1, "font_size": 10})
+        sum_val = workbook.add_format({"bold": True, "align": "right", "border": 1, "font_size": 10})
 
         stmt = data["statement"]
         hdr = stmt["header"]
+        summary = stmt.get("summary", {})
 
         sheet.merge_range("A1:G1", "STATEMENT OF ACCOUNT", head_format)
-        sheet.set_column("A:G", 18)
+        sheet.set_column("A:A", 8)
+        sheet.set_column("B:B", 14)
+        sheet.set_column("C:C", 35)
+        sheet.set_column("D:D", 14)
+        sheet.set_column("E:G", 15)
 
         sheet.write("A3", "Card No:", label_bold)
         sheet.write("B3", hdr["card_no"], val_norm)
@@ -260,14 +331,41 @@ class StatementAccountWizard(models.TransientModel):
 
         row += 1
         for item in stmt["lines"]:
-            sheet.write(row, 0, item["s_no"], tbl_cell)
-            sheet.write(row, 1, item["date"], tbl_cell)
+            sheet.write(row, 0, item["s_no"], tbl_cell_center)
+            sheet.write(row, 1, item["date"], tbl_cell_center)
             sheet.write(row, 2, item["description"], tbl_cell)
-            sheet.write(row, 3, item["room_no"], tbl_cell)
+            sheet.write(row, 3, item["room_no"], tbl_cell_center)
             sheet.write(row, 4, item["debit"], tbl_num)
             sheet.write(row, 5, item["credit"], tbl_num)
             sheet.write(row, 6, item["balance"], tbl_num)
             row += 1
+
+        # Summary Section at Bottom
+        row += 2
+        sheet.merge_range(row, 0, row, 3, "SUMMARY BREAKDOWN", sum_header)
+        sheet.merge_range(row, 4, row, 6, "STATEMENT TOTALS", sum_header)
+
+        row += 1
+        sheet.write(row, 0, "Total Room Charges", tbl_cell)
+        sheet.write(row, 3, summary.get("total_room", "0.00"), tbl_num)
+        sheet.write(row, 4, "Total Charges (Debit)", tbl_cell)
+        sheet.write(row, 6, summary.get("total_debit", "0.00"), sum_val)
+
+        row += 1
+        sheet.write(row, 0, "Total VAT / Tax", tbl_cell)
+        sheet.write(row, 3, summary.get("total_tax", "0.00"), tbl_num)
+        sheet.write(row, 4, "Total Payments (Credit)", tbl_cell)
+        sheet.write(row, 6, summary.get("total_payments", "0.00"), sum_val)
+
+        row += 1
+        sheet.write(row, 0, "Total Restaurant / Food / POS", tbl_cell)
+        sheet.write(row, 3, summary.get("total_restaurant", "0.00"), tbl_num)
+        sheet.write(row, 4, "NET BALANCE DUE", sum_header)
+        sheet.write(row, 6, summary.get("net_balance", "0.00"), sum_val)
+
+        row += 1
+        sheet.write(row, 0, "Total Hotel Services & Fleet", tbl_cell)
+        sheet.write(row, 3, summary.get("total_service", "0.00"), tbl_num)
 
         workbook.close()
         output.seek(0)

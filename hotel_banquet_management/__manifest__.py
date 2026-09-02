@@ -39,6 +39,7 @@ Hotel Banquet & Event Management
         'views/account_move_views.xml',
         'views/banquet_customer_statement_views.xml',
         'views/banquet_partner_ledger_views.xml',
+        'views/res_partner_views.xml',
         'views/banquet_menus.xml',
         'report/banquet_report.xml',
         'report/banquet_customer_statement_report.xml',

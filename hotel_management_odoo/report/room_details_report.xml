@@ -15,7 +15,7 @@
     <template id="report_room_details">
         <t t-call="web.html_container">
             <t t-call="web.external_layout">
-                <div class="page">
+                <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 12px; color: #222;">
                     <!-- Top Right Printed Date -->
                     <div class="row" style="margin-bottom: 8px;">
                         <div class="col-12 text-end text-right" style="font-size: 14px; font-weight: bold; color: #000;">
@@ -23,31 +23,91 @@
                         </div>
                     </div>
 
+                    <!-- Header Title -->
                     <div class="row mt16 mb16">
                         <div class="col-12 text-center">
-                            <h2 style="font-weight: bold; color: #111;">Room Details Report</h2>
+                            <h2 style="font-weight: bold; color: #111; margin-bottom: 4px;">Room Details Report</h2>
+                            <p style="font-size: 12px; color: #555; margin-bottom: 0;">Comprehensive Category &amp; Status Breakdown</p>
                         </div>
                     </div>
-                    <table class="table table-sm table-bordered mt16" style="width: 100%; font-size: 13px;">
-                        <thead>
-                            <tr style="background-color: #f2f2f2; text-align: center;">
-                                <th style="border: 1px solid #000; padding: 6px; width: 10%;">SN</th>
-                                <th style="border: 1px solid #000; padding: 6px; width: 45%;">Room No</th>
-                                <th style="border: 1px solid #000; padding: 6px; width: 45%;">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <t t-set="i" t-value="0"/>
-                            <t t-foreach="docs" t-as="o">
-                                <t t-set="i" t-value="i+1"/>
+
+                    <!-- Summary KPI Cards -->
+                    <div class="row mb16" style="margin-bottom: 15px;">
+                        <div class="col-12">
+                            <table style="width: 100%; border-collapse: collapse; text-align: center; font-size: 12px;">
                                 <tr>
-                                    <td class="text-center" style="border: 1px solid #000; padding: 6px;"><t t-esc="i"/></td>
-                                    <td style="border: 1px solid #000; padding: 6px;"><span t-field="o.name"/></td>
-                                    <td class="text-center" style="border: 1px solid #000; padding: 6px;"><span t-field="o.status"/></td>
+                                    <td style="border: 1px solid #ccc; background-color: #f8f9fa; padding: 6px; font-weight: bold;">
+                                        Total Rooms: <span style="color: #000;" t-esc="total_rooms_count"/>
+                                    </td>
+                                    <td style="border: 1px solid #ccc; background-color: #e8f5e9; padding: 6px; font-weight: bold; color: #2e7d32;">
+                                        Available: <span t-esc="available_count"/>
+                                    </td>
+                                    <td style="border: 1px solid #ccc; background-color: #ffebee; padding: 6px; font-weight: bold; color: #c62828;">
+                                        Occupied: <span t-esc="occupied_count"/>
+                                    </td>
+                                    <td style="border: 1px solid #ccc; background-color: #fff8e1; padding: 6px; font-weight: bold; color: #f57f17;">
+                                        Reserved: <span t-esc="reserved_count"/>
+                                    </td>
                                 </tr>
-                            </t>
-                        </tbody>
-                    </table>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Categorized Room Tables -->
+                    <t t-foreach="grouped_rooms" t-as="group">
+                        <t t-set="group_name" t-value="group"/>
+                        <t t-set="room_list" t-value="grouped_rooms[group]"/>
+
+                        <!-- Category Banner Header -->
+                        <div style="background-color: #2c3e50; color: #fff; padding: 6px 10px; font-weight: bold; font-size: 13px; margin-top: 15px; border-radius: 3px 3px 0 0;">
+                            <span t-esc="group_name"/>
+                            <span style="font-size: 11px; font-weight: normal; float: right;">
+                                Total in Category: <t t-esc="len(room_list)"/> Rooms
+                            </span>
+                        </div>
+
+                        <table class="table table-sm table-bordered" style="width: 100%; font-size: 11px; margin-bottom: 15px; border-top: none;">
+                            <thead>
+                                <tr style="background-color: #f2f2f2; text-align: center;">
+                                    <th style="border: 1px solid #777; padding: 5px; width: 6%;">SN</th>
+                                    <th style="border: 1px solid #777; padding: 5px; width: 28%; text-align: left;">Room No / Name</th>
+                                    <th style="border: 1px solid #777; padding: 5px; width: 20%;">Floor</th>
+                                    <th style="border: 1px solid #777; padding: 5px; width: 14%;">Capacity</th>
+                                    <th style="border: 1px solid #777; padding: 5px; width: 16%; text-align: right;">Rent / Day</th>
+                                    <th style="border: 1px solid #777; padding: 5px; width: 16%;">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-set="sn" t-value="0"/>
+                                <t t-foreach="room_list" t-as="room">
+                                    <t t-set="sn" t-value="sn + 1"/>
+                                    <tr>
+                                        <td class="text-center" style="border: 1px solid #ccc; padding: 5px;"><t t-esc="sn"/></td>
+                                        <td style="border: 1px solid #ccc; padding: 5px; font-weight: bold;"><span t-field="room.name"/></td>
+                                        <td class="text-center" style="border: 1px solid #ccc; padding: 5px;"><span t-esc="room.floor_id.name or '-'"/></td>
+                                        <td class="text-center" style="border: 1px solid #ccc; padding: 5px;"><t t-esc="room.num_person"/> Pax</td>
+                                        <td class="text-right" style="border: 1px solid #ccc; padding: 5px;">
+                                            <span t-field="room.list_price" t-options='{"widget": "monetary", "display_currency": currency}'/>
+                                        </td>
+                                        <td class="text-center" style="border: 1px solid #ccc; padding: 5px; font-weight: bold;">
+                                            <t t-if="room.status == 'available'">
+                                                <span style="color: #2e7d32; text-transform: capitalize;">Available</span>
+                                            </t>
+                                            <t t-elif="room.status == 'occupied'">
+                                                <span style="color: #c62828; text-transform: capitalize;">Occupied</span>
+                                            </t>
+                                            <t t-elif="room.status == 'reserved'">
+                                                <span style="color: #f57f17; text-transform: capitalize;">Reserved</span>
+                                            </t>
+                                            <t t-else="">
+                                                <span t-field="room.status" style="text-transform: capitalize;"/>
+                                            </t>
+                                        </td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                    </t>
                 </div>
             </t>
         </t>

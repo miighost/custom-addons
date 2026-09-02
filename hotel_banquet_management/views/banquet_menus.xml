@@ -23,6 +23,12 @@
               action="action_banquet_orders"
               sequence="20"/>
 
+    <menuitem id="menu_banquet_customers"
+              name="Customers"
+              parent="menu_banquet_orders_root"
+              action="action_banquet_customers"
+              sequence="30"/>
+
     <!-- ================= 2. INVOICES ================= -->
     <menuitem id="menu_banquet_invoices_root"
               name="Invoices"
