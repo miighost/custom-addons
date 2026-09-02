@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_partner_form_app" model="ir.ui.view">
+        <field name="name">res.partner.form.app.api</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='internal_notes']" position="before">
+                <page string="Mobile App" name="app_api"
+                      invisible="not firebase_uid">
+                    <group>
+                        <field name="firebase_uid" readonly="1"/>
+                        <field name="app_signup_date" readonly="1"/>
+                        <field name="is_app_user" invisible="1"/>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_res_partner_filter_app" model="ir.ui.view">
+        <field name="name">res.partner.search.app.api</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_res_partner_filter"/>
+        <field name="arch" type="xml">
+            <filter name="type_company" position="after">
+                <separator/>
+                <filter string="App Users" name="app_users"
+                        domain="[('firebase_uid', '!=', False)]"/>
+            </filter>
+        </field>
+    </record>
+</odoo>

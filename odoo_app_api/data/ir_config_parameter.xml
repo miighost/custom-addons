@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="param_firebase_project_id" model="ir.config_parameter">
+            <field name="key">app_api.firebase_project_id</field>
+            <field name="value">CHANGE-ME-your-firebase-project-id</field>
+        </record>
+    </data>
+</odoo>
