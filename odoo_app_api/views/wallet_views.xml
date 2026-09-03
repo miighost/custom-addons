@@ -28,7 +28,6 @@
         <field name="arch" type="xml">
             <search string="Wallets">
                 <field name="partner_id"/>
-                <field name="partner_barcode" string="Membership Code"/>
                 <field name="code"/>
                 <filter string="With Balance" name="with_balance"
                         domain="[('points', '&gt;', 0)]"/>

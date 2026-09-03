@@ -13,11 +13,20 @@ class ResPartner(models.Model):
     )
     app_signup_date = fields.Datetime(string='App Signup', readonly=True, copy=False)
     is_app_user = fields.Boolean(compute='_compute_is_app_user', store=True)
+    membership_code = fields.Char(
+        string='Membership Code', compute='_compute_membership_code',
+        help="Display copy of the contact's barcode. The barcode field itself "
+             "is company-dependent, so it cannot be listed or sorted on.")
 
     _sql_constraints = [
         ('firebase_uid_uniq', 'unique(firebase_uid)',
          'This Firebase account is already linked to another contact.'),
     ]
+
+    @api.depends('barcode')
+    def _compute_membership_code(self):
+        for partner in self:
+            partner.membership_code = partner.barcode or ''
 
     @api.depends('firebase_uid')
     def _compute_is_app_user(self):

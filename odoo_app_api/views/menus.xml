@@ -83,7 +83,7 @@
         <field name="arch" type="xml">
             <list string="App Customers">
                 <field name="name"/>
-                <field name="barcode" string="Membership Code"/>
+                <field name="membership_code"/>
                 <field name="email"/>
                 <field name="phone"/>
                 <field name="city" optional="show"/>

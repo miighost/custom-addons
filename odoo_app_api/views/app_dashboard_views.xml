@@ -5,7 +5,7 @@
         <field name="name">app.dashboard.form</field>
         <field name="model">app.dashboard</field>
         <field name="arch" type="xml">
-            <form string="Mobile App" create="0" edit="0" delete="0">
+            <form string="Mobile App">
                 <sheet>
                     <field name="currency_id" invisible="1"/>
 
