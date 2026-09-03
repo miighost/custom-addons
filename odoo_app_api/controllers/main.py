@@ -124,6 +124,7 @@ class AppApi(http.Controller):
 
         order = request.env['sale.order'].sudo().create({
             'partner_id': partner.id,
+            'is_app_order': True,
             'origin': 'Mobile app',
             'client_order_ref': payload.get('client_ref') or False,
             'note': payload.get('note') or False,

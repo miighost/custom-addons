@@ -403,3 +403,109 @@ Every route here builds its domain from the Firebase-resolved partner:
 An invoice id is only ever looked up *inside* that domain, never with
 `browse()`. So incrementing an id in the request body returns
 `invoice_not_found`, not someone else's invoice.
+
+---
+
+## The Mobile App menu in Odoo
+
+Installing the module adds a top-level **Mobile App** menu for your staff:
+
+```
+Mobile App
+├── Operations
+│   ├── Orders      sale.order where is_app_order = True
+│   ├── Invoices    customer invoices of app users
+│   └── eWallets    every ewallet loyalty.card, with a balance total
+├── Customers
+│   └── App Customers   contacts carrying a Firebase UID
+└── Configuration
+    └── Settings    Firebase, WaafiPay, journals, code prefix
+```
+
+Nothing here is a separate copy of your data. These are filtered views of the
+real `sale.order`, `account.move`, `loyalty.card` and `res.partner` records —
+the same ones Sales and Accounting show. An order opened from this menu is the
+same order your sales team sees, with the standard form.
+
+**Orders** opens on quotations by default, since those are the ones needing
+attention. Clear the filter to see confirmed orders. The list carries
+**Paid With** and **Reference** columns so you can tell an eWallet order from
+a WaafiPay one at a glance, and the search panel groups by payment method.
+
+**eWallets** sums the Balance column — that total is what you reconcile
+against your customer-wallet liability account.
+
+**App Customers** shows the membership code beside each contact, so a customer
+reading their code over the phone can be found instantly.
+
+Orders placed through the app are flagged with `is_app_order`, set by the API
+at creation. Existing orders made before this version are not flagged; if you
+want them listed, set the flag on them once:
+
+```python
+env['sale.order'].search([('origin', 'like', 'Mobile app')]).write(
+    {'is_app_order': True})
+```
+
+## Dashboard
+
+Clicking **Mobile App** in the menu bar lands on a dashboard built from live
+records — no stored snapshot, nothing to refresh:
+
+| Section | Shows |
+|---|---|
+| Today | orders confirmed, their value, orders this week |
+| Needs attention | quotations awaiting confirmation, overdue invoice total |
+| Money | eWallet balances held (money you owe), outstanding from app customers |
+| Customers | app users, and how many joined in the last 7 days |
+
+Every card's button opens the real records behind the number, pre-filtered —
+"Chase overdue" opens exactly the overdue invoices it counted, so the figure
+and the list can never disagree.
+
+The two figures to watch are **eWallet balances held** (reconcile it against
+your wallet liability account) and **Overdue** (money already earned and not
+collected).
+
+---
+
+## JPH Wallet (back office)
+
+A dedicated section under **Mobile App → JPH Wallet**:
+
+| Menu | What it is |
+|---|---|
+| Wallets | every customer wallet, with balance, topped-up and spent totals, last movement, and a **Total Held** sum |
+| Top Up Wallet | the wizard for crediting a customer at the counter |
+| Transactions | the wallet ledger — every credit and debit, with In/Out totals |
+| Configuration → Wallet Programs | the eWallet programs themselves |
+
+Nothing here is a new wallet model. It is Odoo's own `loyalty.card` /
+`loyalty.history`, filtered to eWallet programs and given a wallet-shaped
+list. So the Point of Sale, the portal and the app all see the same balances.
+
+### Topping up at the counter
+
+**Mobile App → JPH Wallet → Top Up Wallet** (or the **Top Up Wallet** entry in
+the Actions menu of any wallet).
+
+Pick the customer, the amount, and the journal the money went into. The wizard
+then does what Odoo would have you do by hand:
+
+1. creates a sale order for the program's top-up product with the line price
+   set to your amount;
+2. confirms it — **this is the step that credits the wallet**, because an
+   eWallet rule awards points equal to the money spent on its trigger product;
+3. invoices it and registers the payment, when *Customer is paying now* is
+   ticked.
+
+The result is one balance, one journal entry and one customer statement that
+all agree. Untick *Customer is paying now* to leave the invoice open for a
+customer paying later — the balance is credited either way, which is a credit
+decision your team makes deliberately rather than by accident.
+
+The wizard refuses a product that is not listed in the program's **eWallet
+Products**, since Odoo would silently credit nothing in that case.
+
+Access is limited to Sales users and Invoicing users — topping up a wallet
+creates a liability, so it is not something every internal user should do.

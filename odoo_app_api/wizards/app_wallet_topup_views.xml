@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_app_wallet_topup_form" model="ir.ui.view">
+        <field name="name">app.wallet.topup.form</field>
+        <field name="model">app.wallet.topup</field>
+        <field name="arch" type="xml">
+            <form string="Top Up Wallet">
+                <group>
+                    <group>
+                        <field name="partner_id"
+                               options="{'no_create_edit': True}"/>
+                        <field name="program_id" options="{'no_create': True}"/>
+                        <field name="available_product_ids" invisible="1"/>
+                        <field name="product_id"
+                               domain="[('id', 'in', available_product_ids)]"
+                               options="{'no_create': True}"/>
+                    </group>
+                    <group>
+                        <field name="currency_id" invisible="1"/>
+                        <field name="current_balance" widget="monetary" readonly="1"/>
+                        <field name="amount" widget="monetary"/>
+                        <field name="memo" placeholder="e.g. cash at Bakaara branch"/>
+                    </group>
+                </group>
+                <group string="Payment">
+                    <field name="register_payment"/>
+                    <field name="journal_id" required="register_payment"
+                           invisible="not register_payment"
+                           options="{'no_create': True}"/>
+                </group>
+                <div class="alert alert-info" role="status">
+                    The wallet is credited by confirming a top-up order, so the
+                    balance, the accounting entry and the customer's statement
+                    all agree. Leave <b>Customer is paying now</b> ticked when
+                    you have taken the money.
+                </div>
+                <footer>
+                    <button name="action_topup" type="object" string="Top Up"
+                            class="btn-primary" data-hotkey="q"/>
+                    <button string="Cancel" class="btn-secondary"
+                            special="cancel" data-hotkey="x"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_app_wallet_topup" model="ir.actions.act_window">
+        <field name="name">Top Up Wallet</field>
+        <field name="res_model">app.wallet.topup</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

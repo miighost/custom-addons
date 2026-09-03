@@ -135,6 +135,7 @@ class AppWallet(http.Controller):
 
         order = request.env['sale.order'].sudo().create({
             'partner_id': partner.id,
+            'is_app_order': True,
             'origin': 'Mobile app - eWallet top-up',
             'order_line': [(0, 0, {
                 'product_id': product.id,

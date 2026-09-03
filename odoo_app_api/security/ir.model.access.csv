@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_app_dashboard_user,app.dashboard.user,model_app_dashboard,base.group_user,1,1,1,1
+access_app_wallet_topup_sales,app.wallet.topup.sales,model_app_wallet_topup,sales_team.group_sale_salesman,1,1,1,1
+access_app_wallet_topup_account,app.wallet.topup.account,model_app_wallet_topup,account.group_account_invoice,1,1,1,1

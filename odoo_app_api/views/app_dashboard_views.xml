@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_app_dashboard_form" model="ir.ui.view">
+        <field name="name">app.dashboard.form</field>
+        <field name="model">app.dashboard</field>
+        <field name="arch" type="xml">
+            <form string="Mobile App" create="0" edit="0" delete="0">
+                <sheet>
+                    <field name="currency_id" invisible="1"/>
+
+                    <div class="oe_title mb-4">
+                        <h1 class="mb-1">Mobile App</h1>
+                        <span class="text-muted">Live figures from the customer app. Click any card to open the records behind it.</span>
+                    </div>
+
+                    <!-- === TODAY === -->
+                    <h3 class="mt-2 mb-2">Today</h3>
+                    <div class="row g-3 mb-4">
+                        <div class="col-12 col-md-4">
+                            <div class="border rounded p-3 h-100 d-flex flex-column">
+                                <span class="text-muted text-uppercase small">Orders confirmed</span>
+                                <field name="orders_today" nolabel="1" class="fs-1 fw-bolder"/>
+                                <button name="action_open_orders" type="object"
+                                        string="All app orders"
+                                        class="btn btn-link p-0 text-start mt-auto"/>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <div class="border rounded p-3 h-100 d-flex flex-column">
+                                <span class="text-muted text-uppercase small">Value confirmed</span>
+                                <field name="revenue_today" nolabel="1" widget="monetary"
+                                       class="fs-1 fw-bolder"/>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <div class="border rounded p-3 h-100 d-flex flex-column">
+                                <span class="text-muted text-uppercase small">Orders this week</span>
+                                <field name="orders_week" nolabel="1" class="fs-1 fw-bolder"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- === NEEDS ATTENTION === -->
+                    <h3 class="mt-2 mb-2">Needs attention</h3>
+                    <div class="row g-3 mb-4">
+                        <div class="col-12 col-md-6">
+                            <div class="border rounded p-3 h-100 d-flex flex-column">
+                                <span class="text-muted text-uppercase small">Quotations waiting to be confirmed</span>
+                                <field name="quotations_pending" nolabel="1" class="fs-1 fw-bolder"/>
+                                <span class="text-muted">
+                                    worth <field name="quotations_value" nolabel="1"
+                                                 widget="monetary" class="fw-bold"/>
+                                </span>
+                                <button name="action_open_quotations" type="object"
+                                        string="Review quotations"
+                                        class="btn btn-primary mt-3 align-self-start"/>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <div class="border rounded p-3 h-100 d-flex flex-column">
+                                <span class="text-muted text-uppercase small">Overdue invoices</span>
+                                <field name="overdue_total" nolabel="1" widget="monetary"
+                                       class="fs-1 fw-bolder text-danger"/>
+                                <span class="text-muted">
+                                    across <field name="overdue_count" nolabel="1" class="fw-bold"/> invoices
+                                </span>
+                                <button name="action_open_overdue" type="object"
+                                        string="Chase overdue"
+                                        class="btn btn-secondary mt-3 align-self-start"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- === MONEY === -->
+                    <h3 class="mt-2 mb-2">Money</h3>
+                    <div class="row g-3 mb-4">
+                        <div class="col-12 col-md-6">
+                            <div class="border rounded p-3 h-100 d-flex flex-column">
+                                <span class="text-muted text-uppercase small">eWallet balances held</span>
+                                <field name="wallet_total" nolabel="1" widget="monetary"
+                                       class="fs-1 fw-bolder"/>
+                                <span class="text-muted">
+                                    on <field name="wallet_count" nolabel="1" class="fw-bold"/> wallets — this is money you owe customers
+                                </span>
+                                <button name="action_open_wallets" type="object"
+                                        string="Open wallets"
+                                        class="btn btn-link p-0 text-start mt-auto"/>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <div class="border rounded p-3 h-100 d-flex flex-column">
+                                <span class="text-muted text-uppercase small">Outstanding from app customers</span>
+                                <field name="due_total" nolabel="1" widget="monetary"
+                                       class="fs-1 fw-bolder"/>
+                                <span class="text-muted">
+                                    across <field name="due_count" nolabel="1" class="fw-bold"/> open invoices
+                                </span>
+                                <button name="action_open_invoices" type="object"
+                                        string="Open invoices"
+                                        class="btn btn-link p-0 text-start mt-auto"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- === CUSTOMERS === -->
+                    <h3 class="mt-2 mb-2">Customers</h3>
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <div class="border rounded p-3 h-100 d-flex flex-column">
+                                <span class="text-muted text-uppercase small">Using the app</span>
+                                <field name="customers_total" nolabel="1" class="fs-1 fw-bolder"/>
+                                <span class="text-muted">
+                                    <field name="customers_week" nolabel="1" class="fw-bold"/> signed up in the last 7 days
+                                </span>
+                                <button name="action_open_customers" type="object"
+                                        string="Open customers"
+                                        class="btn btn-link p-0 text-start mt-auto"/>
+                            </div>
+                        </div>
+                    </div>
+
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_app_dashboard" model="ir.actions.act_window">
+        <field name="name">Mobile App</field>
+        <field name="res_model">app.dashboard</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_app_dashboard_form"/>
+        <field name="target">current</field>
+    </record>
+
+</odoo>

@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================ ORDERS ============================ -->
+    <record id="view_app_order_list" model="ir.ui.view">
+        <field name="name">sale.order.list.app</field>
+        <field name="model">sale.order</field>
+        <field name="arch" type="xml">
+            <list string="App Orders" decoration-muted="state == 'cancel'"
+                  decoration-info="state in ('draft', 'sent')">
+                <field name="name" string="Order"/>
+                <field name="date_order"/>
+                <field name="partner_id"/>
+                <field name="app_payment_method" string="Paid With"/>
+                <field name="app_payment_reference" string="Reference" optional="show"/>
+                <field name="amount_total" sum="Total" widget="monetary"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'sale'"
+                       decoration-warning="state in ('draft', 'sent')"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_app_order_search" model="ir.ui.view">
+        <field name="name">sale.order.search.app</field>
+        <field name="model">sale.order</field>
+        <field name="arch" type="xml">
+            <search string="App Orders">
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="app_payment_reference"/>
+                <filter string="Quotations" name="draft"
+                        domain="[('state', 'in', ('draft', 'sent'))]"/>
+                <filter string="Confirmed" name="confirmed"
+                        domain="[('state', '=', 'sale')]"/>
+                <separator/>
+                <filter string="Paid by eWallet" name="by_wallet"
+                        domain="[('app_payment_method', '=', 'wallet')]"/>
+                <filter string="Paid by WaafiPay" name="by_waafi"
+                        domain="[('app_payment_method', '=', 'waafi')]"/>
+                <filter string="Not Paid Yet" name="unpaid"
+                        domain="[('app_payment_method', '=', False)]"/>
+                <separator/>
+                <filter string="Today" name="today"
+                        domain="[('date_order', '&gt;=', datetime.datetime.combine(context_today(), datetime.time(0,0,0)))]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Customer" name="by_partner" context="{'group_by': 'partner_id'}"/>
+                    <filter string="Status" name="by_state" context="{'group_by': 'state'}"/>
+                    <filter string="Payment Method" name="by_method" context="{'group_by': 'app_payment_method'}"/>
+                    <filter string="Order Date" name="by_date" context="{'group_by': 'date_order'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_app_orders" model="ir.actions.act_window">
+        <field name="name">App Orders</field>
+        <field name="res_model">sale.order</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('is_app_order', '=', True)]</field>
+        <field name="search_view_id" ref="view_app_order_search"/>
+        <field name="context">{'search_default_draft': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No orders from the app yet</p>
+            <p>Orders placed by customers in the mobile app land here, and in
+               Sales like any other order. Clear the Quotations filter to see
+               confirmed ones too.</p>
+        </field>
+    </record>
+
+    <record id="action_app_orders_view_list" model="ir.actions.act_window.view">
+        <field name="sequence" eval="1"/>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="view_app_order_list"/>
+        <field name="act_window_id" ref="action_app_orders"/>
+    </record>
+
+    <!-- ========================== CUSTOMERS =========================== -->
+    <record id="view_app_customer_list" model="ir.ui.view">
+        <field name="name">res.partner.list.app</field>
+        <field name="model">res.partner</field>
+        <field name="arch" type="xml">
+            <list string="App Customers">
+                <field name="name"/>
+                <field name="barcode" string="Membership Code"/>
+                <field name="email"/>
+                <field name="phone"/>
+                <field name="city" optional="show"/>
+                <field name="app_signup_date" string="Signed Up"/>
+                <field name="firebase_uid" string="Firebase UID" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_app_customers" model="ir.actions.act_window">
+        <field name="name">App Customers</field>
+        <field name="res_model">res.partner</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="domain">[('firebase_uid', '!=', False)]</field>
+        <field name="context">{'default_customer_rank': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Nobody has signed up yet</p>
+            <p>A contact appears here the first time that person signs in to
+               the app. Their membership code is generated at the same moment.</p>
+        </field>
+    </record>
+
+    <record id="action_app_customers_view_list" model="ir.actions.act_window.view">
+        <field name="sequence" eval="1"/>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="view_app_customer_list"/>
+        <field name="act_window_id" ref="action_app_customers"/>
+    </record>
+
+    <!-- =========================== WALLETS ============================ -->
+    <record id="view_app_wallet_list" model="ir.ui.view">
+        <field name="name">loyalty.card.list.app</field>
+        <field name="model">loyalty.card</field>
+        <field name="arch" type="xml">
+            <list string="eWallets" create="0">
+                <field name="partner_id"/>
+                <field name="program_id"/>
+                <field name="points" string="Balance" sum="Total"/>
+                <field name="expiration_date" optional="show"/>
+                <field name="code" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_app_wallets" model="ir.actions.act_window">
+        <field name="name">eWallets</field>
+        <field name="res_model">loyalty.card</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('program_type', '=', 'ewallet')]</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No eWallets yet</p>
+            <p>Create an eWallet program under Sales &gt; Products &gt; Gift
+               cards &amp; eWallet. A card appears here the first time a
+               customer tops up.</p>
+        </field>
+    </record>
+
+    <record id="action_app_wallets_view_list" model="ir.actions.act_window.view">
+        <field name="sequence" eval="1"/>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="view_app_wallet_list"/>
+        <field name="act_window_id" ref="action_app_wallets"/>
+    </record>
+
+    <!-- ========================== INVOICES ============================ -->
+    <record id="action_app_invoices" model="ir.actions.act_window">
+        <field name="name">Customer Invoices</field>
+        <field name="res_model">account.move</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('move_type', '=', 'out_invoice'), ('partner_id.firebase_uid', '!=', False)]</field>
+        <field name="context">{'default_move_type': 'out_invoice'}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No invoices for app customers</p>
+            <p>Invoices addressed to a customer who uses the app. They can see
+               these in the app and clear them from their eWallet or by mobile
+               money.</p>
+        </field>
+    </record>
+
+    <!-- ========================== SETTINGS ============================ -->
+    <record id="action_app_settings" model="ir.actions.act_window">
+        <field name="name">Settings</field>
+        <field name="res_model">res.config.settings</field>
+        <field name="view_mode">form</field>
+        <field name="target">inline</field>
+        <field name="context">{'module': 'odoo_app_api'}</field>
+    </record>
+
+    <!-- ============================ MENUS ============================= -->
+    <menuitem id="menu_app_root" name="Mobile App" sequence="82"
+              action="action_app_dashboard"
+              web_icon="odoo_app_api,static/description/icon.png"/>
+
+    <menuitem id="menu_app_dashboard" name="Dashboard"
+              parent="menu_app_root" action="action_app_dashboard" sequence="5"/>
+
+    <menuitem id="menu_app_operations" name="Operations"
+              parent="menu_app_root" sequence="10"/>
+
+    <menuitem id="menu_app_orders" name="Orders"
+              parent="menu_app_operations" action="action_app_orders" sequence="10"/>
+    <menuitem id="menu_app_invoices" name="Invoices"
+              parent="menu_app_operations" action="action_app_invoices" sequence="20"/>
+
+    <menuitem id="menu_jph_wallet_root" name="JPH Wallet"
+              parent="menu_app_root" sequence="15"/>
+    <menuitem id="menu_jph_wallets" name="Wallets"
+              parent="menu_jph_wallet_root" action="action_jph_wallets" sequence="10"/>
+    <menuitem id="menu_jph_wallet_topup" name="Top Up Wallet"
+              parent="menu_jph_wallet_root" action="action_app_wallet_topup" sequence="20"/>
+    <menuitem id="menu_jph_wallet_history" name="Transactions"
+              parent="menu_jph_wallet_root" action="action_wallet_history" sequence="30"/>
+
+    <menuitem id="menu_app_customers_root" name="Customers"
+              parent="menu_app_root" sequence="20"/>
+    <menuitem id="menu_app_customers" name="App Customers"
+              parent="menu_app_customers_root" action="action_app_customers" sequence="10"/>
+
+    <menuitem id="menu_app_configuration" name="Configuration"
+              parent="menu_app_root" sequence="90"
+              groups="base.group_system"/>
+    <menuitem id="menu_app_wallet_programs" name="Wallet Programs"
+              parent="menu_app_configuration" action="action_wallet_programs" sequence="5"/>
+    <menuitem id="menu_app_settings" name="Settings"
+              parent="menu_app_configuration" action="action_app_settings" sequence="10"/>
+
+</odoo>
