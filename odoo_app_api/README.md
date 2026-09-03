@@ -258,3 +258,44 @@ UID that is already on another contact — that error means you should merge
 rather than link.
 
 Clear the field to unlink; the next sign-in will create a fresh contact.
+
+---
+
+## Paying from the app
+
+```
+POST /api/v1/pay   {"order_id": 123, "phone": "25261xxxxxxx"}
+```
+
+Odoo calls WaafiPay itself: `API_PREAUTHORIZE` (customer approves on their
+handset), then `API_PREAUTHORIZE_COMMIT`. The order is confirmed only when the
+gateway's own answer says the money moved. The transaction id is written to
+**App Payment Reference** on the order and posted to the chatter.
+
+**Do not call WaafiPay from FlutterFlow.** Two reasons:
+
+1. The merchant `apiKey` would sit inside your published APK/IPA, where anyone
+   can extract it and charge your merchant account.
+2. An app that reports its own payment as successful is an app that can be
+   modified to lie. Only the server may decide an order is paid.
+
+Set the credentials in Settings → Technical → System Parameters:
+
+| Parameter | Value |
+|---|---|
+| `app_api.waafi_url` | `https://sandbox.waafipay.com/asm` (prod: `https://api.waafipay.net/asm`) |
+| `app_api.waafi_merchant_uid` | from your WaafiPay merchant account |
+| `app_api.waafi_api_user_id` | " |
+| `app_api.waafi_api_key` | " |
+
+Test on sandbox first. Switch `app_api.waafi_url` to production only once a
+sandbox payment confirms an order end to end.
+
+The call blocks while the customer approves on their phone, so set the
+FlutterFlow API call timeout to at least 60 seconds and show a spinner.
+
+### Paying a top-up
+
+Identical: `/api/v1/wallet/topup` creates the order, then `/api/v1/pay` with
+that order id. Confirming a top-up order is what credits the eWallet, so the
+balance appears the moment the gateway commits.

@@ -5,5 +5,23 @@
             <field name="key">app_api.firebase_project_id</field>
             <field name="value">CHANGE-ME-your-firebase-project-id</field>
         </record>
+
+        <!-- WaafiPay. Leave blank to disable in-app card/EVC payment. -->
+        <record id="param_waafi_url" model="ir.config_parameter">
+            <field name="key">app_api.waafi_url</field>
+            <field name="value">https://sandbox.waafipay.com/asm</field>
+        </record>
+        <record id="param_waafi_merchant_uid" model="ir.config_parameter">
+            <field name="key">app_api.waafi_merchant_uid</field>
+            <field name="value"></field>
+        </record>
+        <record id="param_waafi_api_user_id" model="ir.config_parameter">
+            <field name="key">app_api.waafi_api_user_id</field>
+            <field name="value"></field>
+        </record>
+        <record id="param_waafi_api_key" model="ir.config_parameter">
+            <field name="key">app_api.waafi_api_key</field>
+            <field name="value"></field>
+        </record>
     </data>
 </odoo>
