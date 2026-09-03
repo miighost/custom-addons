@@ -471,41 +471,41 @@ collected).
 
 ## JPH Wallet (back office)
 
-A dedicated section under **Mobile App → JPH Wallet**:
+**Mobile App → JPH Wallet**
 
-| Menu | What it is |
+| Menu | Opens |
 |---|---|
-| Wallets | every customer wallet, with balance, topped-up and spent totals, last movement, and a **Total Held** sum |
+| Wallets | Odoo's standard loyalty card screen, filtered to eWallet programs |
 | Top Up Wallet | the wizard for crediting a customer at the counter |
-| Transactions | the wallet ledger — every credit and debit, with In/Out totals |
+| Transactions | the wallet ledger (`loyalty.history`), every credit and debit |
 | Configuration → Wallet Programs | the eWallet programs themselves |
 
-Nothing here is a new wallet model. It is Odoo's own `loyalty.card` /
-`loyalty.history`, filtered to eWallet programs and given a wallet-shaped
-list. So the Point of Sale, the portal and the app all see the same balances.
+These are Odoo's own standard screens with a domain applied - no custom list,
+form or search views. Whatever Odoo improves in a future version arrives for
+free, and there is nothing here to break on upgrade. The **Top Up Wallet**
+entry is added to the Actions menu of the standard wallet list and form
+through a bound server action, so no core view is modified either.
 
 ### Topping up at the counter
 
-**Mobile App → JPH Wallet → Top Up Wallet** (or the **Top Up Wallet** entry in
-the Actions menu of any wallet).
-
 Pick the customer, the amount, and the journal the money went into. The wizard
-then does what Odoo would have you do by hand:
+does what Odoo would have you do by hand:
 
 1. creates a sale order for the program's top-up product with the line price
    set to your amount;
-2. confirms it — **this is the step that credits the wallet**, because an
-   eWallet rule awards points equal to the money spent on its trigger product;
+2. confirms it - **this is what credits the wallet**, because an eWallet rule
+   awards points equal to the money spent on its trigger product;
 3. invoices it and registers the payment, when *Customer is paying now* is
    ticked.
 
-The result is one balance, one journal entry and one customer statement that
-all agree. Untick *Customer is paying now* to leave the invoice open for a
-customer paying later — the balance is credited either way, which is a credit
-decision your team makes deliberately rather than by accident.
+One balance, one journal entry, one customer statement, all agreeing. Untick
+*Customer is paying now* to leave the invoice open for a customer paying
+later - the balance is credited either way, which is a credit decision your
+team makes deliberately rather than by accident.
 
 The wizard refuses a product that is not listed in the program's **eWallet
-Products**, since Odoo would silently credit nothing in that case.
+Products**, since Odoo would otherwise confirm the order and silently credit
+nothing.
 
-Access is limited to Sales users and Invoicing users — topping up a wallet
-creates a liability, so it is not something every internal user should do.
+Access is limited to Sales and Invoicing users - topping up a wallet creates a
+liability on your books.

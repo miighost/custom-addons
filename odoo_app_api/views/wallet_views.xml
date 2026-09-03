@@ -1,68 +1,50 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- === WALLET LIST === -->
-    <record id="view_jph_wallet_list" model="ir.ui.view">
-        <field name="name">loyalty.card.list.jph.wallet</field>
-        <field name="model">loyalty.card</field>
-        <field name="arch" type="xml">
-            <list string="JPH Wallets" create="0"
-                  decoration-muted="points == 0">
-                <field name="partner_id" string="Customer"/>
-                <field name="partner_barcode" string="Code" optional="show"/>
-                <field name="partner_phone" optional="show"/>
-                <field name="points" string="Balance" sum="Total Held"/>
-                <field name="topped_up_total" string="Topped Up" sum="Total In" optional="show"/>
-                <field name="spent_total" string="Spent" sum="Total Out" optional="show"/>
-                <field name="last_activity" optional="show"/>
-                <field name="expiration_date" optional="hide"/>
-                <field name="program_id" optional="hide"/>
-                <field name="is_app_customer" optional="hide"/>
-            </list>
+    <!-- No custom views here on purpose. Each action opens Odoo's own
+         standard loyalty screens, filtered to eWallet programs. Anything
+         Odoo changes in a future version, we inherit for free. -->
+
+    <record id="action_jph_wallets" model="ir.actions.act_window">
+        <field name="name">JPH Wallets</field>
+        <field name="res_model">loyalty.card</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('program_type', '=', 'ewallet')]</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No wallets yet</p>
+            <p>A wallet appears the first time a customer is topped up. Create
+               the eWallet program under Configuration first, then use
+               <b>Top Up Wallet</b> to credit a customer.</p>
         </field>
     </record>
 
-    <record id="view_jph_wallet_search" model="ir.ui.view">
-        <field name="name">loyalty.card.search.jph.wallet</field>
-        <field name="model">loyalty.card</field>
-        <field name="arch" type="xml">
-            <search string="Wallets">
-                <field name="partner_id"/>
-                <field name="code"/>
-                <filter string="With Balance" name="with_balance"
-                        domain="[('points', '&gt;', 0)]"/>
-                <filter string="Empty" name="empty"
-                        domain="[('points', '&lt;=', 0)]"/>
-                <separator/>
-                <filter string="App Customers" name="app_only"
-                        domain="[('is_app_customer', '=', True)]"/>
-                <filter string="Expiring" name="expiring"
-                        domain="[('expiration_date', '!=', False)]"/>
-                <group expand="0" string="Group By">
-                    <filter string="Customer" name="by_partner"
-                            context="{'group_by': 'partner_id'}"/>
-                    <filter string="Program" name="by_program"
-                            context="{'group_by': 'program_id'}"/>
-                </group>
-            </search>
+    <record id="action_wallet_history" model="ir.actions.act_window">
+        <field name="name">Wallet Transactions</field>
+        <field name="res_model">loyalty.history</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('card_id.program_type', '=', 'ewallet')]</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No wallet movements yet</p>
+            <p>Every top-up and every spend writes a line here. This is the
+               ledger to reconcile against your wallet liability account.</p>
         </field>
     </record>
 
-    <record id="view_jph_wallet_form" model="ir.ui.view">
-        <field name="name">loyalty.card.form.jph.wallet</field>
-        <field name="model">loyalty.card</field>
-        <field name="inherit_id" ref="loyalty.loyalty_card_view_form"/>
-        <field name="arch" type="xml">
-            <field name="partner_id" position="after">
-                <field name="program_type" invisible="1"/>
-                <field name="partner_barcode" readonly="1"/>
-                <field name="last_activity" readonly="1"/>
-            </field>
+    <record id="action_wallet_programs" model="ir.actions.act_window">
+        <field name="name">Wallet Programs</field>
+        <field name="res_model">loyalty.program</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('program_type', '=', 'ewallet')]</field>
+        <field name="context">{'default_program_type': 'ewallet'}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Create your JPH Wallet program</p>
+            <p>Add an eWallet program, list your top-up products on it, and
+               customers can start loading credit.</p>
         </field>
     </record>
 
-    <!-- Top Up sits in the Actions menu of the wallet list and form, rather
-         than in a header we would have to graft onto Odoo's own view. -->
+    <!-- Top Up appears in the Actions menu of the standard wallet list
+         and form, so no core view needs to be modified. -->
     <record id="action_server_wallet_topup" model="ir.actions.server">
         <field name="name">Top Up Wallet</field>
         <field name="model_id" ref="loyalty.model_loyalty_card"/>
@@ -73,70 +55,6 @@
 if records:
     action = records[0].action_open_topup_wizard()
         </field>
-    </record>
-
-    <record id="action_jph_wallets" model="ir.actions.act_window">
-        <field name="name">JPH Wallets</field>
-        <field name="res_model">loyalty.card</field>
-        <field name="view_mode">list,form</field>
-        <field name="domain">[('program_type', '=', 'ewallet')]</field>
-        <field name="search_view_id" ref="view_jph_wallet_search"/>
-        <field name="help" type="html">
-            <p class="o_view_nocontent_smiling_face">No wallets yet</p>
-            <p>A wallet appears the first time a customer is topped up. Create
-               the eWallet program under Configuration first, then use
-               <b>Top Up Wallet</b> to credit a customer.</p>
-        </field>
-    </record>
-
-    <record id="action_jph_wallets_view_list" model="ir.actions.act_window.view">
-        <field name="sequence" eval="1"/>
-        <field name="view_mode">list</field>
-        <field name="view_id" ref="view_jph_wallet_list"/>
-        <field name="act_window_id" ref="action_jph_wallets"/>
-    </record>
-
-    <!-- === STATEMENT / TRANSACTIONS === -->
-    <record id="view_wallet_history_list" model="ir.ui.view">
-        <field name="name">loyalty.history.list.jph</field>
-        <field name="model">loyalty.history</field>
-        <field name="arch" type="xml">
-            <list string="Wallet Transactions" create="0" edit="0">
-                <field name="create_date" string="Date"/>
-                <field name="card_id" string="Wallet"/>
-                <field name="description"/>
-                <field name="issued" string="In" sum="Total In"/>
-                <field name="used" string="Out" sum="Total Out"/>
-            </list>
-        </field>
-    </record>
-
-    <record id="action_wallet_history" model="ir.actions.act_window">
-        <field name="name">Wallet Transactions</field>
-        <field name="res_model">loyalty.history</field>
-        <field name="view_mode">list</field>
-        <field name="domain">[('card_id.program_type', '=', 'ewallet')]</field>
-        <field name="help" type="html">
-            <p class="o_view_nocontent_smiling_face">No wallet movements yet</p>
-            <p>Every top-up and every spend writes a line here. This is the
-               ledger to reconcile against your wallet liability account.</p>
-        </field>
-    </record>
-
-    <record id="action_wallet_history_view_list" model="ir.actions.act_window.view">
-        <field name="sequence" eval="1"/>
-        <field name="view_mode">list</field>
-        <field name="view_id" ref="view_wallet_history_list"/>
-        <field name="act_window_id" ref="action_wallet_history"/>
-    </record>
-
-    <!-- === PROGRAMS === -->
-    <record id="action_wallet_programs" model="ir.actions.act_window">
-        <field name="name">Wallet Programs</field>
-        <field name="res_model">loyalty.program</field>
-        <field name="view_mode">list,form</field>
-        <field name="domain">[('program_type', '=', 'ewallet')]</field>
-        <field name="context">{'default_program_type': 'ewallet'}</field>
     </record>
 
 </odoo>
