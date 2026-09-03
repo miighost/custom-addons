@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_app_api" model="ir.ui.view">
+        <field name="name">res.config.settings.form.app.api</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app data-string="Mobile App" string="Mobile App" name="odoo_app_api">
+                    <block title="Firebase Authentication" name="app_api_firebase_block">
+                        <setting string="Firebase Project ID"
+                                 help="Firebase console: Project settings &gt; General &gt; Project ID">
+                            <field name="app_firebase_project_id" placeholder="my-project-3f2a1"/>
+                        </setting>
+                    </block>
+                    <block title="WaafiPay" name="app_api_waafi_block">
+                        <setting string="API URL"
+                                 help="Sandbox: https://sandbox.waafipay.com/asm — Production: https://api.waafipay.net/asm">
+                            <field name="app_waafi_url" placeholder="https://sandbox.waafipay.com/asm"/>
+                        </setting>
+                        <setting string="Merchant UID">
+                            <field name="app_waafi_merchant_uid"/>
+                        </setting>
+                        <setting string="API User ID">
+                            <field name="app_waafi_api_user_id"/>
+                        </setting>
+                        <setting string="API Key" help="Never put this key in the mobile app.">
+                            <field name="app_waafi_api_key" password="True"/>
+                        </setting>
+                    </block>
+                </app>
+            </xpath>
+        </field>
+    </record>
+</odoo>

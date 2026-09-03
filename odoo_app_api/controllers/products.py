@@ -8,15 +8,22 @@ from .firebase import current_partner
 
 class AppProducts(http.Controller):
 
+    BASE = [('sale_ok', '=', True), ('active', '=', True),
+            ('available_in_app', '=', True)]
+
+    def _search_term(self, payload):
+        term = (payload.get('search') or '').strip()
+        # A caller that forgot to fill its template variable sends the
+        # placeholder itself ("[search]", "{{search}}"). Treat that as blank
+        # rather than searching for a product with that literal name.
+        if term.startswith(('[', '{', '<')) and term.endswith((']', '}', '>')):
+            return ''
+        return term
+
     def _domain(self, payload):
-        domain = [
-            ('sale_ok', '=', True),
-            ('active', '=', True),
-            ('available_in_app', '=', True),
-            ('type', '!=', 'combo'),
-        ]
-        if payload.get('search'):
-            term = payload['search'].strip()
+        domain = list(self.BASE) + [('type', '!=', 'combo')]
+        term = self._search_term(payload)
+        if term:
             domain += ['|', '|',
                        ('name', 'ilike', term),
                        ('default_code', 'ilike', term),
@@ -47,7 +54,7 @@ class AppProducts(http.Controller):
         currency = (pricelist.currency_id if pricelist
                     else request.env.company.currency_id)
 
-        return {
+        result = {
             'total': total,
             'limit': limit,
             'offset': offset,
@@ -66,15 +73,41 @@ class AppProducts(http.Controller):
                 'in_stock': (p.qty_available > 0) if p.is_storable else True,
             } for p in products],
         }
+        if not total:
+            result['hint'] = self._why_empty(payload)
+        return result
+
+    def _why_empty(self, payload):
+        """Nothing matched. Say which condition removed everything, so the
+        app developer is not left guessing between Odoo and FlutterFlow."""
+        Product = request.env['product.product'].sudo()
+        term = self._search_term(payload)
+        counts = {
+            'products_in_database': Product.search_count([('active', '=', True)]),
+            'can_be_sold': Product.search_count(
+                [('active', '=', True), ('sale_ok', '=', True)]),
+            'and_shown_in_app': Product.search_count(self.BASE),
+        }
+        if not counts['products_in_database']:
+            counts['reason'] = 'no active products exist in Odoo'
+        elif not counts['can_be_sold']:
+            counts['reason'] = "no product has 'Can be Sold' ticked"
+        elif not counts['and_shown_in_app']:
+            counts['reason'] = "every saleable product has 'Show in Mobile App' unticked"
+        elif payload.get('category_id'):
+            counts['reason'] = 'no product in that category'
+        elif term:
+            counts['reason'] = f'nothing matches the search term {term!r}'
+        else:
+            counts['reason'] = 'the offset is past the end of the list'
+        return counts
 
     # ------------------------------------------------------- categories
     @http.route('/api/v1/categories', **ROUTE)
     @api_endpoint
     def categories(self, partner, payload):
         groups = request.env['product.product'].sudo()._read_group(
-            [('sale_ok', '=', True), ('active', '=', True),
-             ('available_in_app', '=', True)],
-            groupby=['categ_id'], aggregates=['__count'])
+            self.BASE, groupby=['categ_id'], aggregates=['__count'])
         return {'categories': [{
             'id': category.id,
             'name': category.display_name,
@@ -88,12 +121,8 @@ class AppProducts(http.Controller):
     def product_image(self, product_id, size='512', **kw):
         """Served without a token so <Image> widgets can load it directly,
         but only ever for products the app is allowed to list."""
-        product = request.env['product.product'].sudo().search([
-            ('id', '=', product_id),
-            ('sale_ok', '=', True),
-            ('active', '=', True),
-            ('available_in_app', '=', True),
-        ], limit=1)
+        product = request.env['product.product'].sudo().search(
+            [('id', '=', product_id)] + self.BASE, limit=1)
         if not product:
             return request.not_found()
 

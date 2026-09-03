@@ -23,9 +23,10 @@ app can never ask for someone else's data.
 1. Copy this folder into your addons path, restart Odoo, update the app list,
    install **App API (Firebase)**.
 
-2. Settings → Technical → System Parameters → set
-   `app_api.firebase_project_id` to your Firebase project id
-   (Firebase console → Project settings → Project ID).
+2. **Settings → Mobile App** → fill in the Firebase Project ID, and the
+   WaafiPay credentials when you get to payments. (These are also visible
+   as `app_api.*` system parameters, but the Settings page is the place to
+   edit them.)
 
 ## Endpoints
 
@@ -181,10 +182,13 @@ places — worth a word with your accountant before you take real top-ups.
 | `/api/v1/product/<id>/image` | *(GET, no token)* | the product image, cached 24h |
 
 A product appears in the app when it is **active**, **Can be Sold**, and
-**Available in App** — a checkbox this module adds next to "Can be Sold" on
-the product form, with a matching "In Mobile App" filter in the product
-search panel. Untick it to pull something from the app without affecting the
-rest of Odoo.
+**Show in Mobile App**.
+
+That last one is **on by default for every product**, existing ones included —
+there is nothing to switch on. It exists only so you can HIDE something:
+untick it and that product disappears from the app while staying available
+everywhere else in Odoo (internal services, staff-only items, a product you
+are not ready to publish).
 
 Prices come from the **customer's own pricelist**
 (`partner.property_product_pricelist`), not `list_price` — so B2B customers on
@@ -279,14 +283,14 @@ gateway's own answer says the money moved. The transaction id is written to
 2. An app that reports its own payment as successful is an app that can be
    modified to lie. Only the server may decide an order is paid.
 
-Set the credentials in Settings → Technical → System Parameters:
+Set the credentials in **Settings → Mobile App → WaafiPay**:
 
-| Parameter | Value |
+| Field | Value |
 |---|---|
-| `app_api.waafi_url` | `https://sandbox.waafipay.com/asm` (prod: `https://api.waafipay.net/asm`) |
-| `app_api.waafi_merchant_uid` | from your WaafiPay merchant account |
-| `app_api.waafi_api_user_id` | " |
-| `app_api.waafi_api_key` | " |
+| API URL | `https://sandbox.waafipay.com/asm` (prod: `https://api.waafipay.net/asm`) |
+| Merchant UID | from your WaafiPay merchant account |
+| API User ID | " |
+| API Key | " (stored masked; never goes near the app) |
 
 Test on sandbox first. Switch `app_api.waafi_url` to production only once a
 sandbox payment confirms an order end to end.

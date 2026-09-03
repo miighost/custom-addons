@@ -5,8 +5,10 @@ class ProductTemplate(models.Model):
     _inherit = 'product.template'
 
     available_in_app = fields.Boolean(
-        string='Available in App',
+        string='Show in Mobile App',
         default=True,
-        help="Untick to hide this product from the mobile app catalogue. "
-             "Products that are not saleable are hidden regardless.",
+        help="On by default for every product. Untick it only to HIDE this "
+             "product from the mobile app - it stays available everywhere "
+             "else in Odoo. Products that are not saleable never appear in "
+             "the app regardless of this setting.",
     )
