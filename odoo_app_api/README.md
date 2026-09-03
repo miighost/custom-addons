@@ -509,3 +509,31 @@ nothing.
 
 Access is limited to Sales and Invoicing users - topping up a wallet creates a
 liability on your books.
+
+---
+
+## A note on views
+
+This module deliberately defines almost no views of its own. The Mobile App
+menus are `ir.actions.act_window` records with a domain, opening Odoo's own
+standard screens for `sale.order`, `account.move`, `loyalty.card`,
+`loyalty.history`, `loyalty.program` and `res.partner`.
+
+That is a choice, not a shortcut. A custom list or search view has to be kept
+valid against every field it names, across every Odoo release; a domain on a
+standard action has nothing to break. The custom views that remain are the
+ones that add something Odoo has no equivalent for:
+
+| View | Why it has to exist |
+|---|---|
+| Mobile App tab on the contact form | Firebase UID and membership code |
+| Show in Mobile App on the product form | the catalogue switch |
+| App fields on the sale order form | payment method and gateway reference |
+| Settings → Mobile App | Firebase, WaafiPay and journal configuration |
+| Dashboard | the landing screen |
+| Top-Up wizard | the counter flow |
+
+Filters and extra columns can be added on top later, from the UI: open a list,
+set up the filters and grouping you want, then **Favorites → Save current
+search → Shared with all users**. That survives module upgrades and needs no
+code.
