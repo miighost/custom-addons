@@ -40,13 +40,19 @@ class ResPartner(models.Model):
 
         # Returning customer who already exists in Odoo: claim the record
         # instead of creating a duplicate. Only trust a VERIFIED email.
+        # Only ever claim a contact that is not already linked to someone else
+        unlinked = [('firebase_uid', '=', False)]
         domain = []
         if email and claims.get('email_verified'):
-            domain = [('email', '=ilike', email)]
+            domain = unlinked + [('email', '=ilike', email)]
         elif phone:
-            domain = [('phone', '=', phone)]
+            if 'mobile' in self._fields:
+                domain = unlinked + ['|', ('phone', '=', phone),
+                                          ('mobile', '=', phone)]
+            else:
+                domain = unlinked + [('phone', '=', phone)]
         if domain:
-            partner = self.search(domain + [('firebase_uid', '=', False)], limit=1)
+            partner = self.search(domain, limit=1)
 
         vals = {
             'firebase_uid': uid,

@@ -213,3 +213,48 @@ Add `?size=128` (128 / 256 / 512 / 1024) for list thumbnails; the default is
 services and consumables. It is a display hint, not a reservation — two
 customers can both be told "in stock" for the last unit. If you need real
 availability, confirm the order and let Odoo's stock rules do it.
+
+---
+
+## Linking existing customers to app accounts
+
+Three ways, in order of preference.
+
+### 1. Automatic (do nothing)
+
+On a customer's first sign-in the module tries, in order:
+
+1. a contact already carrying that Firebase UID;
+2. an **unlinked** contact whose email matches the token's email — only when
+   Firebase reports `email_verified: true`;
+3. an **unlinked** contact whose phone or mobile matches the token's phone;
+4. otherwise a new contact is created.
+
+So the cheapest preparation is simply to make sure your existing contacts have
+the right email address. The customer signs up with that email, verifies it,
+and the accounts join themselves.
+
+Unverified emails are never matched. Otherwise anyone could sign up as
+`bigcustomer@example.com` and inherit that company's orders and wallet.
+
+### 2. Manual, before they sign up
+
+Nothing to do — see above. Just fix the email on the contact.
+
+### 3. Manual, after a duplicate already exists
+
+Two situations:
+
+**The customer signed up and got a NEW contact, and the old one still exists.**
+Use Odoo's built-in merge: Contacts → tick both records → **Actions → Merge
+Contacts** → choose the one to keep → Merge. Orders, invoices and the Firebase
+UID all follow to the surviving record.
+
+**You want to link a contact by hand.** Open the contact → **Mobile App** tab →
+paste the Firebase UID into **Firebase UID** → Save. Find the UID in the
+Firebase console under **Authentication → Users**, column **User UID** (a
+28-character string like `k3Jd8sLp...`). The field is unique, so Odoo refuses a
+UID that is already on another contact — that error means you should merge
+rather than link.
+
+Clear the field to unlink; the next sign-in will create a fresh contact.
