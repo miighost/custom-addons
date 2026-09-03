@@ -5,7 +5,8 @@
     'summary': 'REST endpoints for a FlutterFlow client app authenticated with Firebase',
     'author': 'QBH',
     'license': 'LGPL-3',
-    'depends': ['base', 'sale_management', 'loyalty', 'sale_loyalty'],
+    'depends': ['base', 'account', 'sale_management', 'loyalty',
+                'sale_loyalty'],
     'data': [
         'data/ir_config_parameter.xml',
         'views/res_partner_views.xml',

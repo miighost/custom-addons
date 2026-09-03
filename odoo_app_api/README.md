@@ -303,3 +303,103 @@ FlutterFlow API call timeout to at least 60 seconds and show a spinner.
 Identical: `/api/v1/wallet/topup` creates the order, then `/api/v1/pay` with
 that order id. Confirming a top-up order is what credits the eWallet, so the
 balance appears the moment the gateway commits.
+
+---
+
+## Membership barcode
+
+`/api/v1/me` returns a scannable code for the customer:
+
+```json
+{
+  "barcode": "JPH000016",
+  "barcode_image_url": "https://…/report/barcode/Code128/JPH000016?width=600&height=150&humanreadable=1",
+  "qr_image_url": "https://…/report/barcode/QR/JPH000016?width=400&height=400"
+}
+```
+
+The code is generated on the customer's first sign-in as `<prefix><partner id>`
+padded to six digits. Change the prefix in **Settings → Mobile App →
+Membership Code Prefix**; it applies to customers who sign up after the change.
+Staff can read or overwrite it on the contact's **Mobile App** tab.
+
+It is Odoo's standard `res.partner.barcode` field, so anything that already
+scans contacts — Point of Sale, a barcode scanner on the contacts list —
+recognises it without further setup.
+
+The two image URLs are absolute and use Odoo's built-in public barcode
+renderer, so an `Image` widget can load them with no token. They are built
+from `web.base.url`, so make sure that system parameter is your real HTTPS
+domain and not `localhost:8069`.
+
+---
+
+## Account: what they owe, and clearing it
+
+| Route | Body | Returns |
+|---|---|---|
+| `/api/v1/summary` | `{}` | one call for the home screen |
+| `/api/v1/invoices` | `{"only_unpaid":true,"limit":20}` | invoice list |
+| `/api/v1/invoices/detail` | `{"invoice_id":42}` | one invoice with its lines |
+| `/api/v1/invoices/pay` | `{"invoice_id":42,"method":"wallet"}` | pay one invoice |
+| `/api/v1/invoices/clear` | `{"method":"wallet"}` | pay every open invoice, oldest first |
+
+`/api/v1/summary` is the one to build the home screen on — it replaces four
+separate calls:
+
+```json
+{
+  "name": "Cabdi Trading",
+  "barcode": "JPH000016",
+  "barcode_image_url": "https://…/report/barcode/Code128/JPH000016?…",
+  "wallet_balance": 250.0,
+  "total_due": 1840.5,
+  "overdue": 640.0,
+  "credit_notes": 0.0,
+  "open_invoice_count": 3,
+  "can_clear_with_wallet": false,
+  "currency": "SOS"
+}
+```
+
+`can_clear_with_wallet` is the flag to enable or grey out the "Pay from
+wallet" button — the app never has to do that arithmetic itself.
+
+### Paying
+
+`method` is `"wallet"` or `"waafi"`. Both register a real
+`account.payment` through Odoo's own payment-register wizard, so the invoice
+reconciles exactly as it would if your accountant had done it by hand — the
+payment shows in the journal, on the invoice, and in the customer's
+statement.
+
+Add `"amount": 500` to pay part of an invoice; leave it out to pay the
+balance in full. Paying from the wallet also debits the loyalty card and
+writes a `loyalty.history` line, so the wallet ledger and the accounting
+entry always agree.
+
+`/api/v1/invoices/clear` walks the open invoices oldest-first and **stops at
+the first failure** rather than continuing to charge a customer whose payment
+is already failing. Read `failed[0].error` to see why it stopped.
+
+### Configure the journals first
+
+**Settings → Mobile App → Accounting**
+
+| Field | Point it at |
+|---|---|
+| eWallet Journal | a journal whose account is your customer-wallet liability account |
+| WaafiPay Journal | the bank/cash journal your WaafiPay settlements land in |
+
+If either is blank the module falls back to the first bank or cash journal it
+finds, which will book the money in the wrong place. Set them.
+
+### Scoping
+
+Every route here builds its domain from the Firebase-resolved partner:
+
+    ('partner_id', 'child_of', partner.commercial_partner_id.id)
+
+An invoice id is only ever looked up *inside* that domain, never with
+`browse()`. So incrementing an id in the request body returns
+`invoice_not_found`, not someone else's invoice.

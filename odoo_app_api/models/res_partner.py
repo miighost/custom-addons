@@ -60,11 +60,25 @@ class ResPartner(models.Model):
         }
         if partner:
             partner.write(vals)
-            return partner
+        else:
+            partner = self.create(dict(vals, **{
+                'name': claims.get('name') or email or phone or 'App user',
+                'email': email or False,
+                'phone': phone or False,
+                'customer_rank': 1,
+            }))
+        partner._ensure_app_barcode()
+        return partner
 
-        return self.create(dict(vals, **{
-            'name': claims.get('name') or email or phone or 'App user',
-            'email': email or False,
-            'phone': phone or False,
-            'customer_rank': 1,
-        }))
+    def _ensure_app_barcode(self):
+        """Give every app customer a membership number they can be scanned by.
+
+        Kept short and numeric-friendly so it encodes cleanly as Code128 and
+        is still readable out loud over the phone.
+        """
+        prefix = self.env['ir.config_parameter'].sudo().get_param(
+            'app_api.barcode_prefix', 'JPH')
+        for partner in self:
+            if not partner.barcode:
+                partner.barcode = '%s%06d' % (prefix, partner.id)
+        return True

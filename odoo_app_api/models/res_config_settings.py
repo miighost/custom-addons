@@ -10,6 +10,27 @@ class ResConfigSettings(models.TransientModel):
         help="Firebase console > Project settings > General > Project ID. "
              "Must match the 'aud' claim in the app's tokens.")
 
+    app_barcode_prefix = fields.Char(
+        string='Membership Code Prefix',
+        config_parameter='app_api.barcode_prefix',
+        default='JPH',
+        help="Prefix for the scannable membership code generated for each app "
+             "customer, e.g. JPH gives JPH000016. Changing it only affects "
+             "customers who sign up from now on.")
+
+    app_wallet_journal_id = fields.Many2one(
+        'account.journal', string='eWallet Journal',
+        domain="[('type', 'in', ('bank', 'cash'))]",
+        config_parameter='app_api.wallet_journal_id',
+        help="Journal used when a customer clears an invoice from their "
+             "eWallet balance. Point it at a journal whose account is your "
+             "customer-wallet liability account.")
+    app_waafi_journal_id = fields.Many2one(
+        'account.journal', string='WaafiPay Journal',
+        domain="[('type', 'in', ('bank', 'cash'))]",
+        config_parameter='app_api.waafi_journal_id',
+        help="Journal used for invoices paid through WaafiPay from the app.")
+
     app_waafi_url = fields.Char(
         string='WaafiPay API URL',
         config_parameter='app_api.waafi_url',

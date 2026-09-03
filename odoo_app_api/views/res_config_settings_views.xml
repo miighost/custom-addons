@@ -12,6 +12,10 @@
                                  help="Firebase console: Project settings &gt; General &gt; Project ID">
                             <field name="app_firebase_project_id" placeholder="my-project-3f2a1"/>
                         </setting>
+                        <setting string="Membership Code Prefix"
+                                 help="Each app customer gets a scannable code like JPH000016.">
+                            <field name="app_barcode_prefix" placeholder="JPH"/>
+                        </setting>
                     </block>
                     <block title="WaafiPay" name="app_api_waafi_block">
                         <setting string="API URL"
@@ -26,6 +30,16 @@
                         </setting>
                         <setting string="API Key" help="Never put this key in the mobile app.">
                             <field name="app_waafi_api_key" password="True"/>
+                        </setting>
+                    </block>
+                    <block title="Accounting" name="app_api_accounting_block">
+                        <setting string="eWallet Journal"
+                                 help="Where invoice payments taken from a customer's eWallet are booked.">
+                            <field name="app_wallet_journal_id"/>
+                        </setting>
+                        <setting string="WaafiPay Journal"
+                                 help="Where invoice payments taken through WaafiPay are booked.">
+                            <field name="app_waafi_journal_id"/>
                         </setting>
                     </block>
                 </app>

@@ -37,6 +37,9 @@ class AppApi(http.Controller):
     @api_endpoint
     def me(self, partner, payload):
         """First call after Firebase sign-in. Creates/links the contact."""
+        base = (request.env['ir.config_parameter'].sudo()
+                .get_param('web.base.url') or '').rstrip('/')
+        code = partner.barcode or ''
         return {
             'partner_id': partner.id,
             'name': partner.name,
@@ -47,6 +50,16 @@ class AppApi(http.Controller):
             'country': partner.country_id.name or '',
             'currency': partner.company_id.currency_id.name
                         or request.env.company.currency_id.name,
+            # Membership code. Render it in the app with a barcode widget, or
+            # just load one of these images - both routes are public and
+            # render whatever value you hand them.
+            'barcode': code,
+            'barcode_image_url': (
+                f"{base}/report/barcode/Code128/{code}"
+                "?width=600&height=150&humanreadable=1" if code else ''),
+            'qr_image_url': (
+                f"{base}/report/barcode/QR/{code}?width=400&height=400"
+                if code else ''),
         }
 
     @http.route('/api/v1/me/update', **ROUTE)

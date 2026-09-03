@@ -10,6 +10,8 @@
                     <group>
                         <field name="firebase_uid"
                                placeholder="Paste the Firebase UID to link this contact"/>
+                        <field name="barcode" string="Membership Code"
+                               placeholder="Generated on first app sign-in"/>
                         <field name="app_signup_date" readonly="1"/>
                         <field name="is_app_user" invisible="1"/>
                     </group>
