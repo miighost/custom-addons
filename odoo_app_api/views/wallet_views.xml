@@ -10,11 +10,16 @@
         <field name="res_model">loyalty.card</field>
         <field name="view_mode">list,form</field>
         <field name="domain">[('program_type', '=', 'ewallet')]</field>
+        <!-- A wallet is never created by hand: a card with no program breaks
+             Odoo's own creation hook. Wallets come from a top-up or from the
+             program's Generate button. -->
+        <field name="context">{'create': False}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">No wallets yet</p>
-            <p>A wallet appears the first time a customer is topped up. Create
-               the eWallet program under Configuration first, then use
-               <b>Top Up Wallet</b> to credit a customer.</p>
+            <p>Wallets are not created by hand. Either use <b>Top Up Wallet</b>
+               to credit a customer, or open the program under
+               Configuration &gt; Wallet Programs and use its <b>Generate</b>
+               button to issue wallets to a list of customers at once.</p>
         </field>
     </record>
 
@@ -23,6 +28,7 @@
         <field name="res_model">loyalty.history</field>
         <field name="view_mode">list,form</field>
         <field name="domain">[('card_id.program_type', '=', 'ewallet')]</field>
+        <field name="context">{'create': False, 'edit': False}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">No wallet movements yet</p>
             <p>Every top-up and every spend writes a line here. This is the
