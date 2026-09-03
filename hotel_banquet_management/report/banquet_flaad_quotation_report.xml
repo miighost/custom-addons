@@ -136,10 +136,9 @@
                             </div>
                         </div>
 
-                        <!-- Customer Notes -->
-                        <div t-if="doc.note" style="margin-top: 20px; font-size: 11px; border-left: 3px solid #1a252f; padding-left: 10px;">
-                            <strong>Special Notes:</strong>
-                            <div t-field="doc.note"/>
+                        <!-- Customer Notes (Clean layout matching Invoice PDF) -->
+                        <div t-if="doc.note" style="margin-top: 20px; font-size: 11px;">
+                            <span t-field="doc.note"/>
                         </div>
 
                         <!-- Terms and Conditions Section -->

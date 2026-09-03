@@ -243,7 +243,10 @@ export class CustomDashBoard extends Component {
             view_mode: 'list,form',
             views: [[false, 'list'], [false, 'form']],
             domain: [['booking_id', '!=', false]],
-            context: {'search_default_hotel_orders': 1},
+            context: {
+                'search_default_hotel_orders': 1,
+                'group_by': 'date_order:month',
+            },
             target: 'current'
         }, options)
     }

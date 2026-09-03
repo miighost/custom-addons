@@ -21,6 +21,10 @@ class ReportPartnerLedger(models.AbstractModel):
             'doc_model': 'hotel.partner.ledger.wizard',
             'ledger': ledger,
             'partner': ledger.get('partner', {}),
+            'opening_balance': ledger.get('opening_balance', '0.00'),
             'lines': ledger.get('lines', []),
+            'total_period_debit': ledger.get('total_period_debit', '0.00'),
+            'total_period_credit': ledger.get('total_period_credit', '0.00'),
+            'ending_balance': ledger.get('ending_balance', '0.00'),
             'currency': ledger.get('currency', self.env.company.currency_id),
         }

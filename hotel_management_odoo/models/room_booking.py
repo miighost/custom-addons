@@ -19,9 +19,10 @@
 #    If not, see <http://www.gnu.org/licenses/>.
 #
 #############################################################################
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time
 from odoo import api, fields, models
 from odoo.exceptions import ValidationError
+from odoo.osv import expression
 
 
 class RoomBooking(models.Model):
@@ -33,7 +34,7 @@ class RoomBooking(models.Model):
 
     name = fields.Char(string="Folio Number", readonly=True, index=True,
                        default="New", help="Name of Folio")
-    room_name = fields.Char(string="Room No", compute="_compute_room_name")
+    room_name = fields.Char(string="Room No", compute="_compute_room_name", search="_search_room_name")
     room_number = fields.Char(string="Room Number", related="room_name")
     company_id = fields.Many2one('res.company', string="Company",
                                  help="Choose the Company",
@@ -46,6 +47,25 @@ class RoomBooking(models.Model):
         for rec in self:
             rooms = [line.room_id.name for line in rec.room_line_ids if line.room_id and line.room_id.name]
             rec.room_name = ", ".join(rooms) if rooms else ""
+
+    def _search_room_name(self, operator, value):
+        """Enable searching room bookings directly by room name / number."""
+        lines = self.env['room.booking.line'].search([('room_id.name', operator, value)])
+        return [('id', 'in', lines.mapped('booking_id').ids)]
+
+    @api.model
+    def _name_search(self, name, domain=None, operator='ilike', limit=None, order=None):
+        """Enable searching search box across Folio Number, Customer Name, and Room Number."""
+        domain = domain or []
+        if name:
+            name_domain = [
+                '|', '|',
+                ('name', operator, name),
+                ('partner_id.name', operator, name),
+                ('room_line_ids.room_id.name', operator, name)
+            ]
+            return self._search(expression.AND([name_domain, domain]), limit=limit, order=order)
+        return super()._name_search(name, domain=domain, operator=operator, limit=limit, order=order)
     partner_id = fields.Many2one('res.partner', string="Customer",
                                  help="Customers of hotel",
                                  required=True, index=True, tracking=1,
@@ -818,7 +838,13 @@ class RoomBooking(models.Model):
                 today_events += 1
         food_items = self.env['lunch.product'].search_count([]) if 'lunch.product' in self.env else 0
         if 'pos.order' in self.env and 'booking_id' in self.env['pos.order']._fields:
-            food_order = self.env['pos.order'].search_count([('booking_id', '!=', False)])
+            start_today = datetime.combine(today_date, time.min)
+            end_today = datetime.combine(today_date, time.max)
+            food_order = self.env['pos.order'].search_count([
+                ('booking_id', '!=', False),
+                ('date_order', '>=', fields.Datetime.to_string(start_today)),
+                ('date_order', '<=', fields.Datetime.to_string(end_today)),
+            ])
         elif 'hotel.pos.line' in self.env:
             food_order = self.env['hotel.pos.line'].search_count([])
         else:

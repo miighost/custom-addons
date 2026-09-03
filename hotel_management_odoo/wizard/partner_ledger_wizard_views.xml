@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- On-Screen Interactive Customer Account Statement Form View -->
+    <!-- Enhanced On-Screen Interactive Customer Account Statement Form View -->
     <record id="hotel_partner_ledger_wizard_view_form" model="ir.ui.view">
         <field name="name">hotel.partner.ledger.wizard.form</field>
         <field name="model">hotel.partner.ledger.wizard</field>
@@ -8,77 +8,114 @@
             <form string="Customer Account Statement">
                 <header>
                     <button name="action_print_pdf" string="Print PDF Statement" type="object" class="btn-primary" icon="fa-print"/>
+                    <button name="action_refresh" string="Apply Date Filter" type="object" class="btn-secondary" icon="fa-filter"/>
+                    <button name="action_view_partner" string="Back to Customer" type="object" class="btn-secondary" icon="fa-user"/>
                 </header>
                 <sheet>
-                    <div class="oe_title text-center mb-4">
-                        <h2 style="font-weight: bold; color: #111;">Customer Account Statement</h2>
+                    <!-- Title Header -->
+                    <div class="oe_title mb-4">
+                        <h2 class="fw-bold text-dark mb-1">Customer Account Statement</h2>
+                        <div class="text-muted fs-6">Itemized transaction ledger and balance statement</div>
                     </div>
 
-                    <!-- Top Details Box -->
-                    <div class="row mb-3" style="background-color: #f8f9fa; border: 1px solid #ddd; border-radius: 6px; padding: 12px 10px;">
-                        <div class="col-6">
-                            <group>
+                    <!-- Top Customer & Filter Information Box -->
+                    <div class="row g-3 mb-4 p-3 bg-light border rounded">
+                        <div class="col-md-6">
+                            <group string="Customer Information" class="p-0 m-0">
+                                <field name="partner_id" string="Customer" readonly="1" options="{'no_open': True}"/>
                                 <field name="ref_number" string="Ref Number" readonly="1"/>
-                                <field name="partner_id" string="Customer" readonly="1"/>
+                                <field name="partner_phone" string="Phone" readonly="1"/>
+                                <field name="partner_email" string="Email" readonly="1"/>
+                                <field name="currency_id" invisible="1"/>
                             </group>
                         </div>
-                        <div class="col-6">
-                            <group>
+                        <div class="col-md-6">
+                            <group string="Statement &amp; Period Settings" class="p-0 m-0">
                                 <field name="statement_date" string="Statement Date"/>
-                                <field name="opening_balance" string="Opening Balance" readonly="1"/>
-                            </group>
-                        </div>
-                    </div>
-
-                    <!-- Date Range Filter -->
-                    <div class="row mb-3">
-                        <div class="col-6">
-                            <group>
                                 <field name="date_from" string="From Date"/>
-                            </group>
-                        </div>
-                        <div class="col-6">
-                            <group>
                                 <field name="date_to" string="To Date"/>
                             </group>
                         </div>
                     </div>
 
-                    <!-- Statement Ledger Table (List View) -->
-                    <field name="line_ids" readonly="1">
-                        <list create="0" delete="0" edit="0" default_order="trans_date asc, id asc">
-                            <field name="description" string="Description"/>
-                            <field name="trans_date" string="Trans_Date"/>
-                            <field name="debit" string="Debit" sum="Total Debit"/>
-                            <field name="credit" string="Credit" sum="Total Credit"/>
-                            <field name="rtotal" string="RTotal1" decoration-bf="1"/>
-                        </list>
-                    </field>
-
-                    <!-- Bottom Summary Totals -->
-                    <div class="row mt-3">
-                        <div class="col-5 offset-7 ms-auto">
-                            <table class="table table-sm table-bordered text-end" style="font-size: 13px;">
-                                <tr>
-                                    <td style="font-weight: bold; width: 50%;">Total Debit:</td>
-                                    <td style="font-weight: bold;"><field name="total_debit" widget="monetary"/></td>
-                                </tr>
-                                <tr>
-                                    <td style="font-weight: bold;">Total Credit:</td>
-                                    <td style="font-weight: bold; color: #2e7d32;"><field name="total_credit" widget="monetary"/></td>
-                                </tr>
-                                <tr style="background-color: #f2f2f2;">
-                                    <td style="font-weight: bold; font-size: 14px;">Closing Balance (RTotal):</td>
-                                    <td style="font-weight: bold; font-size: 14px; color: #c62828;"><field name="ending_balance" widget="monetary"/></td>
-                                </tr>
-                            </table>
+                    <!-- 4 Summary KPI Metric Cards -->
+                    <div class="row g-3 mb-4 text-center">
+                        <div class="col-md-3">
+                            <div class="card shadow-sm border-0 bg-light p-3">
+                                <div class="text-muted small fw-bold text-uppercase">Opening Balance</div>
+                                <div class="fs-4 fw-bold text-dark mt-1">
+                                    <field name="opening_balance" widget="monetary" readonly="1"/>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card shadow-sm border-0 bg-light p-3">
+                                <div class="text-muted small fw-bold text-uppercase">Period Debits (Charges)</div>
+                                <div class="fs-4 fw-bold text-primary mt-1">
+                                    <field name="total_debit" widget="monetary" readonly="1"/>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card shadow-sm border-0 bg-light p-3">
+                                <div class="text-muted small fw-bold text-uppercase">Period Credits (Payments)</div>
+                                <div class="fs-4 fw-bold text-success mt-1">
+                                    <field name="total_credit" widget="monetary" readonly="1"/>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card shadow-sm border-0 bg-light p-3">
+                                <div class="text-muted small fw-bold text-uppercase">Closing Net Balance</div>
+                                <div class="fs-4 fw-bold text-danger mt-1">
+                                    <field name="ending_balance" widget="monetary" readonly="1"/>
+                                </div>
+                            </div>
                         </div>
                     </div>
+
+                    <!-- Statement Ledger Table (List View) -->
+                    <div class="mb-3">
+                        <h4 class="fw-bold text-secondary mb-2">Statement Ledger Transactions</h4>
+                        <field name="line_ids" readonly="1">
+                            <list create="0" delete="0" edit="0" default_order="trans_date asc, id asc" class="table-hover">
+                                <field name="currency_id" column_invisible="1"/>
+                                <field name="description" string="Description" class="fw-bold text-dark"/>
+                                <field name="trans_date" string="Trans_Date" class="text-center"/>
+                                <field name="debit" string="Debit" widget="monetary" class="text-end"/>
+                                <field name="credit" string="Credit" widget="monetary" decoration-success="credit > 0" class="text-end"/>
+                                <field name="rtotal" string="RTotal1" decoration-bf="1" widget="monetary" class="text-end fw-bold"/>
+                                <field name="move_id" string="Entry / Invoice" optional="show"/>
+                            </list>
+                        </field>
+                    </div>
+
+                    <!-- Bottom Summary Box Highlighted in Theme Palette -->
+                    <div class="row mt-3">
+                        <div class="col-md-5 offset-md-7 ms-auto">
+                            <div class="border rounded overflow-hidden shadow-sm bg-white">
+                                <div class="p-2 text-white fw-bold text-uppercase text-center" style="background-color: #2c3e50; font-size: 12px; letter-spacing: 0.5px;">
+                                    Statement Totals Summary
+                                </div>
+                                <table class="table table-sm mb-0 text-end" style="font-size: 13px;">
+                                    <tr style="border-bottom: 1px solid #eee;">
+                                        <td class="text-start ps-3 fw-bold text-secondary">Total Debit (Charges):</td>
+                                        <td class="pe-3 fw-bold text-primary"><field name="total_debit" widget="monetary"/></td>
+                                    </tr>
+                                    <tr style="border-bottom: 1px solid #eee;">
+                                        <td class="text-start ps-3 fw-bold text-secondary">Total Credit (Payments):</td>
+                                        <td class="pe-3 fw-bold text-success"><field name="total_credit" widget="monetary"/></td>
+                                    </tr>
+                                    <tr style="background-color: #f8f9fa; border-top: 2px solid #2c3e50;">
+                                        <td class="text-start ps-3 fw-bold fs-6 text-dark">Closing Net Balance:</td>
+                                        <td class="pe-3 fw-bold fs-6 text-danger"><field name="ending_balance" widget="monetary"/></td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
                 </sheet>
-                <footer>
-                    <button name="action_print_pdf" string="Print PDF Statement" type="object" class="btn-primary" icon="fa-print"/>
-                    <button string="Close" class="btn-secondary" special="cancel"/>
-                </footer>
             </form>
         </field>
     </record>
@@ -88,6 +125,6 @@
         <field name="name">Customer Account Statement</field>
         <field name="res_model">hotel.partner.ledger.wizard</field>
         <field name="view_mode">form</field>
-        <field name="target">new</field>
+        <field name="target">current</field>
     </record>
 </odoo>

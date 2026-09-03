@@ -19,7 +19,7 @@
 #    If not, see <http://www.gnu.org/licenses/>.
 #
 #############################################################################
-from odoo import api, fields, models, tools
+from odoo import api, fields, models, tools, _
 from odoo.exceptions import ValidationError
 
 
@@ -47,9 +47,10 @@ class RoomBookingLine(models.Model):
     room_id = fields.Many2one('hotel.room', string="Room",
                               help="Indicates the Room",
                               required=False, ondelete="set null")
+    is_special = fields.Boolean(related='room_id.is_special', string="Special Room", readonly=True)
     uom_qty = fields.Float(string="Duration",
-                           help="The quantity converted into the UoM used by "
-                                "the product", readonly=True)
+                           help="The quantity converted into the UoM used by the product",
+                           compute="_compute_uom_qty", store=True, readonly=False)
     uom_id = fields.Many2one('uom.uom',
                              default=_set_default_uom_id,
                              string="Unit of Measure",
@@ -65,8 +66,8 @@ class RoomBookingLine(models.Model):
                                help="Default taxes used when selling the room.",
                                domain=[('type_tax_use', '=', 'sale')])
     currency_id = fields.Many2one(string='Currency',
-                                  related='booking_id.pricelist_id.currency_id'
-                                  , help='The currency used')
+                                  related='booking_id.pricelist_id.currency_id',
+                                  help='The currency used')
     price_subtotal = fields.Float(string="Subtotal",
                                   compute='_compute_price_subtotal',
                                   help="Total Price excluding Tax",
@@ -86,12 +87,38 @@ class RoomBookingLine(models.Model):
                                          help="Accrued room charge up to today")
     state = fields.Selection(related='booking_id.state',
                              string="Order Status",
-                             help=" Status of the Order",
+                             help="Status of the Order",
                              copy=False)
     booking_line_visible = fields.Boolean(default=False,
                                           string="Booking Line Visible",
-                                          help="If True, then Booking Line "
-                                               "will be visible")
+                                          help="If True, then Booking Line will be visible")
+
+    @api.depends('checkin_date', 'checkout_date')
+    def _compute_uom_qty(self):
+        """Automatically recompute stay duration whenever checkin or checkout date changes."""
+        for line in self:
+            if line.checkin_date and line.checkout_date:
+                cin = fields.Datetime.to_datetime(line.checkin_date)
+                cout = fields.Datetime.to_datetime(line.checkout_date)
+                if cout >= cin:
+                    diff = cout - cin
+                    days = diff.days
+                    if diff.total_seconds() > 0:
+                        days += 1
+                    line.uom_qty = max(1.0, float(days))
+                else:
+                    line.uom_qty = 1.0
+            else:
+                line.uom_qty = 1.0
+
+    @api.onchange("checkin_date", "checkout_date")
+    def _onchange_checkin_date(self):
+        """When you change checkin_date or checkout_date it will check
+        and update the qty of hotel service line"""
+        if self.checkout_date and self.checkin_date and self.checkout_date < self.checkin_date:
+            raise ValidationError(
+                _("Checkout must be greater or equal checkin date"))
+        self._compute_uom_qty()
 
     @api.depends('checkin_date', 'checkout_date', 'price_unit', 'price_subtotal', 'uom_qty')
     def _compute_today_accrued(self):
@@ -115,22 +142,6 @@ class RoomBookingLine(models.Model):
             line.elapsed_days = max(1.0, float(min(days, line.uom_qty or days)))
             daily_rate = line.price_unit or (line.price_subtotal / (line.uom_qty or 1.0) if line.uom_qty else 0.0)
             line.today_accrued_rent = daily_rate * line.elapsed_days
-
-    @api.onchange("checkin_date", "checkout_date")
-    def _onchange_checkin_date(self):
-        """When you change checkin_date or checkout_date it will check
-        and update the qty of hotel service line
-        -----------------------------------------------------------------
-        @param self: object pointer"""
-        if self.checkout_date < self.checkin_date:
-            raise ValidationError(
-                _("Checkout must be greater or equal checkin date"))
-        if self.checkin_date and self.checkout_date:
-            diffdate = self.checkout_date - self.checkin_date
-            qty = diffdate.days
-            if diffdate.total_seconds() > 0:
-                qty = qty + 1
-            self.uom_qty = qty
 
     @api.depends('uom_qty', 'price_unit', 'tax_ids')
     def _compute_price_subtotal(self):
@@ -187,4 +198,3 @@ class RoomBookingLine(models.Model):
                     f"{overlapping.checkin_date.strftime('%d/%m/%Y')} to {overlapping.checkout_date.strftime('%d/%m/%Y')} "
                     f"(Booking Ref: {overlapping.booking_id.name}). Please select a different room or date range."
                 )
-

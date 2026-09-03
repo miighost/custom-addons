@@ -1,27 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
-    <!-- Hotel Room list view (Sorted by Name with Badges) -->
+    <!-- Hotel Room list view (Clean List View with Sea View Blue Status Highlight) -->
     <record id="hotel_room_view_tree" model="ir.ui.view">
         <field name="name">hotel.room.view.tree</field>
         <field name="model">hotel.room</field>
         <field name="arch" type="xml">
-            <list default_order="name asc" decoration-muted="not active">
-                <field name="name" string="Room No / Name" decoration-bf="1"/>
-                <field name="room_type" string="Room Type"/>
-                <field name="floor_id" string="Floor"/>
-                <field name="num_person" string="Capacity (Pax)"/>
-                <field name="list_price" string="Rent / Day" widget="monetary"/>
+            <list default_order="name asc" decoration-muted="not active" class="table-hover">
+                <field name="currency_id" column_invisible="True"/>
+                <field name="is_special" column_invisible="True"/>
+                <field name="name" string="Room No / Name" class="fw-bold text-primary"/>
+                <field name="room_type" string="Room Type" class="fw-bold"/>
+                <field name="floor_id" string="Floor" class="text-center"/>
+                <field name="num_person" string="Capacity (Pax)" class="text-center"/>
+                <field name="list_price" string="Rent / Day" class="text-end fw-bold"/>
                 <field name="income_account_id" string="Income Account" optional="hide"/>
                 <field name="status" widget="badge"
-                       decoration-success="status == 'available'"
-                       decoration-warning="status == 'reserved'"
-                       decoration-danger="status == 'occupied'"/>
+                       decoration-info="is_special"
+                       decoration-success="not is_special and status == 'available'"
+                       decoration-warning="not is_special and status == 'reserved'"
+                       decoration-danger="not is_special and status == 'occupied'"
+                       class="text-center fw-bold"/>
                 <field name="active" column_invisible="True"/>
             </list>
         </field>
     </record>
 
-    <!-- Hotel Room form view -->
+    <!-- Hotel Room form view with Special Room Toggle -->
     <record id="hotel_room_view_form" model="ir.ui.view">
         <field name="name">hotel.room.view.form</field>
         <field name="model">hotel.room</field>
@@ -49,6 +53,7 @@
                             <group>
                                 <group>
                                     <field name="floor_id" string="Floor"/>
+                                    <field name="is_special" string="Special Room (Sea View)" widget="boolean_toggle"/>
                                     <field name="user_id" string="Room Manager"/>
                                     <field name="taxes_ids"
                                            widget="many2many_tags"
@@ -56,7 +61,7 @@
                                 </group>
                                 <group>
                                     <field name="room_type"/>
-                                    <field name="list_price" widget="monetary"
+                                    <field name="list_price"
                                            string="Rent"/>
                                     <field name="num_person"/>
                                     <field name="uom_id" invisible="1"/>

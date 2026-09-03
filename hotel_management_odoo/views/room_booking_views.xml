@@ -333,16 +333,16 @@
         <field name="name">room.booking.view.tree</field>
         <field name="model">room.booking</field>
         <field name="arch" type="xml">
-            <list>
-                <field name="name" string="Folio Number"/>
-                <field name="room_name" string="Room No"/>
-                <field name="partner_id" string="Customer"/>
-                <field name="date_order" string="Order Date"/>
-                <field name="checkin_date" string="Check In" optional="show"/>
-                <field name="checkout_date" string="Check Out" optional="show"/>
-                <field name="today_balance" string="Today's Balance" widget="monetary" decoration-bf="1"/>
-                <field name="amount_total" string="Total Expected" widget="monetary" optional="show"/>
-                <field name="state" string="Status" widget="badge" decoration-info="state == 'draft'" decoration-warning="state == 'reserved'" decoration-success="state == 'check_in'" decoration-muted="state == 'check_out'"/>
+            <list default_order="name desc" class="table-hover">
+                <field name="name" string="Folio Number" class="fw-bold text-dark"/>
+                <field name="room_name" string="Room No" class="fw-bold text-primary text-center"/>
+                <field name="partner_id" string="Customer" class="fw-bold"/>
+                <field name="date_order" string="Order Date" class="text-center"/>
+                <field name="checkin_date" string="Check In" class="text-center" optional="show"/>
+                <field name="checkout_date" string="Check Out" class="text-center" optional="show"/>
+                <field name="today_balance" string="Today's Balance" widget="monetary" decoration-bf="1" class="text-end"/>
+                <field name="amount_total" string="Total Expected" widget="monetary" class="text-end" optional="show"/>
+                <field name="state" string="Status" widget="badge" decoration-info="state == 'draft'" decoration-warning="state == 'reserved'" decoration-success="state == 'check_in'" decoration-muted="state == 'check_out'" class="text-center"/>
             </list>
         </field>
     </record>

@@ -21,6 +21,7 @@
 #############################################################################
 from odoo import api, fields, models, tools
 from odoo.exceptions import ValidationError
+from odoo.osv import expression
 
 
 class HotelRoom(models.Model):
@@ -29,6 +30,20 @@ class HotelRoom(models.Model):
     _description = 'Rooms'
     _inherit = ['mail.thread', 'mail.activity.mixin']
     _order = 'name asc, id asc'
+
+    @api.model
+    def _name_search(self, name, domain=None, operator='ilike', limit=None, order=None):
+        """Enable search in search box across Room Name, Floor, and Room Type."""
+        domain = domain or []
+        if name:
+            name_domain = [
+                '|', '|',
+                ('name', operator, name),
+                ('floor_id.name', operator, name),
+                ('room_type', operator, name)
+            ]
+            return self._search(expression.AND([name_domain, domain]), limit=limit, order=order)
+        return super()._name_search(name, domain=domain, operator=operator, limit=limit, order=order)
 
     def _get_default_uom_id(self):
         """Method for getting the default uom id"""
@@ -52,10 +67,15 @@ class HotelRoom(models.Model):
                               default="available", string="Status",
                               help="Status of The Room",
                               tracking=True)
+    is_special = fields.Boolean(string="Special Room (Sea View)", default=False,
+                                help="Check to mark this room as Special (highlights status in Blue)",
+                                tracking=True)
     is_room_avail = fields.Boolean(default=True, string="Available",
                                    help="Check if the room is available")
     active = fields.Boolean(default=True, string="Active",
                             help="Check to keep room active, uncheck to archive.")
+    currency_id = fields.Many2one('res.currency', string='Currency',
+                                  default=lambda self: self.env.company.currency_id)
     list_price = fields.Float(string='Rent', digits='Product Price',
                               help="The rent of the room.")
     uom_id = fields.Many2one('uom.uom', string='Unit of Measure',

@@ -13,6 +13,9 @@
                 <field name="banquet_venue_id" string="Venue / Hall"/>
             </xpath>
             <xpath expr="//filter[@name='my_sale_orders_filter']" position="before">
+                <filter string="Quotations" name="filter_banquet_quotations" domain="[('state', 'in', ['draft', 'sent'])]"/>
+                <filter string="Confirmed Orders" name="filter_banquet_confirmed" domain="[('state', 'in', ['sale', 'done'])]"/>
+                <separator/>
                 <filter string="Banquets" name="banquet_orders" domain="[('is_banquet', '=', True)]"/>
                 <separator/>
             </xpath>
@@ -227,12 +230,12 @@
         </field>
     </record>
 
-    <!-- Action 1: Banquet Quotations -->
+    <!-- Action 1: Banquet Quotations & Orders -->
     <record id="action_banquet_quotations" model="ir.actions.act_window">
-        <field name="name">Banquet Quotations</field>
+        <field name="name">Quotations &amp; Orders</field>
         <field name="res_model">sale.order</field>
         <field name="view_mode">list,kanban,calendar,pivot,graph,form</field>
-        <field name="domain">[('is_banquet', '=', True), ('state', 'in', ['draft', 'sent', 'cancel'])]</field>
+        <field name="domain">[('is_banquet', '=', True)]</field>
         <field name="context">{'default_is_banquet': 1, 'search_default_banquet_orders': 1}</field>
         <field name="search_view_id" ref="view_banquet_order_search"/>
         <field name="help" type="html">

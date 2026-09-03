@@ -227,7 +227,7 @@
                         <div class="dash-count">
                             <t t-esc="food_order"/>
                         </div>
-                        <div class="dash-head">POS Orders</div>
+                        <div class="dash-head">Today's POS Orders</div>
                     </div>
                 </div>
             </div>

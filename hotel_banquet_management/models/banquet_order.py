@@ -82,15 +82,14 @@ class BanquetSaleOrder(models.Model):
         return super().create(vals_list)
 
     def action_confirm(self):
-        """When confirming a banquet quotation, assign BO/... sequence if still on QUOT/..."""
-        res = super().action_confirm()
+        """When confirming a banquet quotation, assign BO/... sequence before confirmation for instant processing."""
         for order in self:
             if order.is_banquet:
                 if order.name and ('QUOT/' in order.name or order.name.startswith('QUOT')):
                     new_seq = self.env['ir.sequence'].next_by_code('banquet.order')
                     if new_seq:
-                        order.write({'name': new_seq})
-        return res
+                        order.name = new_seq
+        return super().action_confirm()
 
     def action_print_banquet_quotation(self):
         self.ensure_one()

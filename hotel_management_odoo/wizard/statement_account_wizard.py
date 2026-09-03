@@ -182,10 +182,24 @@ class StatementAccountWizard(models.TransientModel):
                     continue
                 if self.date_to and dt and dt.date() > self.date_to:
                     continue
+                # Clean ticket / receipt number without internal POS name
+                pos_ref = pos.tracking_number or pos.pos_reference or pos.name or ""
+                if 'Receipt' in pos_ref:
+                    receipt_clean = pos_ref.split('Receipt')[-1].replace('#', '').strip()
+                elif '/' in pos_ref:
+                    receipt_clean = pos_ref.split('/')[-1].strip()
+                elif '-' in pos_ref:
+                    last_p = pos_ref.split('-')[-1].strip()
+                    receipt_clean = str(int(last_p)) if last_p.isdigit() and int(last_p) > 0 else last_p
+                else:
+                    receipt_clean = pos_ref.replace('Order ', '').replace('Order', '').replace('POS', '').replace('Restaurant', '').strip()
+
+                pos_desc = f"Food Receipt # {receipt_clean}" if receipt_clean else "Food Receipt"
+
                 raw_lines.append({
                     "date_sort": dt,
                     "date": dt.strftime("%d/%m/%Y") if dt else "-",
-                    "description": f"RESTAURANT CHARGE ({pos.pos_reference or pos.name})",
+                    "description": pos_desc,
                     "room_no": booking.room_name or "-",
                     "category": "restaurant",
                     "debit": pos.amount_total,
