@@ -32,6 +32,14 @@ class AppProducts(http.Controller):
             domain.append(('categ_id', 'child_of', int(payload['category_id'])))
         return domain
 
+    @staticmethod
+    def _in_stock(product):
+        """Stock figures only exist when the Inventory app is installed.
+        Without it every saleable product is orderable."""
+        if 'is_storable' not in product._fields or not product.is_storable:
+            return True
+        return product.qty_available > 0
+
     # -------------------------------------------------------- catalogue
     @http.route('/api/v1/products', **ROUTE)
     @api_endpoint
@@ -70,7 +78,7 @@ class AppProducts(http.Controller):
                 'description': p.description_sale or '',
                 'image_url': f'/api/v1/product/{p.id}/image',
                 'has_image': bool(p.image_128),
-                'in_stock': (p.qty_available > 0) if p.is_storable else True,
+                'in_stock': self._in_stock(p),
             } for p in products],
         }
         if not total:

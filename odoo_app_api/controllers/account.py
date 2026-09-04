@@ -6,6 +6,7 @@ ownership clause in its own domain - so a customer cannot read or pay another
 customer's invoice by guessing an id.
 """
 import logging
+from datetime import date
 
 from odoo import fields, http
 from odoo.http import request
@@ -206,7 +207,8 @@ class AppAccount(http.Controller):
         # Take the money off the cards first, oldest expiry first.
         remaining = amount
         History = request.env['loyalty.history'].sudo()
-        for card in cards.sorted(lambda c: (c.expiration_date or fields.Date.max)):
+        for card in cards.sorted(
+                lambda c: c.expiration_date or date.max):
             if remaining <= 0:
                 break
             take = min(card.points, remaining)

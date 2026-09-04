@@ -7,6 +7,7 @@ balance movement inside loyalty.history, which is what staff and accounting
 actually reconcile against.
 """
 import logging
+from datetime import date
 
 from odoo import fields, http
 from odoo.http import request
@@ -58,7 +59,8 @@ class AppWallet(http.Controller):
         total_before = order.amount_total
         applied = []
 
-        for card in cards.sorted(lambda c: (c.expiration_date or fields.Date.max)):
+        for card in cards.sorted(
+                lambda c: c.expiration_date or date.max):
             if order.amount_total <= 0:
                 break
             result = order._try_apply_code(card.code)
