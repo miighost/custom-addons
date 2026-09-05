@@ -1,5 +1,13 @@
 /** @odoo-module */
 
+/**
+ * DEPRECATED name-keyword heuristic.
+ *
+ * Kept only so existing callers keep working. It matches product NAMES
+ * against a hardcoded word list, so "Water Melon Salad" routes to the bar
+ * and "Coconut Rice" routes to the bar via "coco". Prefer real POS category
+ * routing configured on the printer record.
+ */
 export function getRootCategoryGroup(pos, product) {
     if (!product) {
         return "Food";
@@ -64,18 +72,23 @@ export function getRootCategoryGroup(pos, product) {
     return "Food";
 }
 
-export function exportForKitchenPrinting(pos, order, targetCategoryGroup = null) {
+export function exportForKitchenPrinting(pos, order, filterOrGroup = null) {
     if (!order) {
         return null;
     }
 
     let lines = order.getOrderlines ? order.getOrderlines() : (order.orderlines || order.lines || []);
 
-    if (targetCategoryGroup) {
+    // `filterOrGroup` is either a predicate function (preferred: real POS
+    // category routing, supplied by escpos_transport.js) or a legacy
+    // "Food"/"Drinks" string handled by the keyword heuristic below.
+    if (typeof filterOrGroup === "function") {
+        lines = lines.filter(filterOrGroup);
+    } else if (filterOrGroup) {
         lines = lines.filter((line) => {
             const product = line.getProduct ? line.getProduct() : (line.product || {});
             const group = getRootCategoryGroup(pos, product);
-            return group === targetCategoryGroup;
+            return group === filterOrGroup;
         });
     }
 

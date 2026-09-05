@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+      Exposes the kitchen_print / kitchen_print_auto fields that models/pos.py
+      declares. Without this the fields exist in the database but are
+      unreachable from the interface, which is why kitchen_print_auto never
+      fired.
+
+      If your Odoo build renames point_of_sale.pos_config_view_form, the module
+      will refuse to install with a clear "view not found" error. Drop this one
+      file from __manifest__ 'data' and the rest of the module still works.
+    -->
+    <record id="view_pos_config_form_kitchen_print" model="ir.ui.view">
+        <field name="name">pos.config.form.kitchen.print</field>
+        <field name="model">pos.config</field>
+        <field name="inherit_id" ref="point_of_sale.pos_config_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet" position="inside">
+                <group string="Kitchen Receipt Printing">
+                    <field name="kitchen_print"/>
+                    <field name="kitchen_print_auto"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>

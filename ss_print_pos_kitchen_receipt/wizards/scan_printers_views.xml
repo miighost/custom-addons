@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_ss_printer_scan_form" model="ir.ui.view">
+        <field name="name">ss.escpos.printer.scan.form</field>
+        <field name="model">ss.escpos.printer.scan</field>
+        <field name="arch" type="xml">
+            <form string="Scan network for printers">
+                <group>
+                    <group>
+                        <field name="target" placeholder="192.168.1.0/24"/>
+                        <field name="timeout"/>
+                    </group>
+                    <group string="Ports to check">
+                        <field name="scan_raw"/>
+                        <field name="scan_http"/>
+                        <field name="scan_ipp"/>
+                        <field name="scan_lpd"/>
+                    </group>
+                </group>
+
+                <div class="alert alert-info" role="status" invisible="state == 'done'">
+                    The scan runs from the Odoo server, so it only sees devices on the
+                    server's own network. Up to 1024 addresses per scan.
+                </div>
+
+                <field name="state" invisible="1"/>
+
+                <div invisible="state != 'done'">
+                    <h4><field name="summary" readonly="1" nolabel="1"/></h4>
+                    <field name="line_ids" nolabel="1">
+                        <list editable="bottom" create="false" delete="false"
+                              decoration-success="kind == 'escpos' and confidence == 'high'"
+                              decoration-muted="kind == 'unknown'"
+                              decoration-warning="existing_printer_id">
+                            <field name="selected" widget="boolean_toggle"
+                                   readonly="existing_printer_id != False"/>
+                            <field name="ip" readonly="1"/>
+                            <field name="kind" readonly="1"/>
+                            <field name="confidence" readonly="1"/>
+                            <field name="escpos_verified" readonly="1"/>
+                            <field name="ports" readonly="1"/>
+                            <field name="device_name" readonly="1" optional="show"/>
+                            <field name="existing_printer_id" readonly="1" optional="show"/>
+                            <field name="name" placeholder="Kitchen"/>
+                            <button name="action_test_print" type="object"
+                                    string="Test print" icon="fa-print"
+                                    class="btn-link"
+                                    title="Send a sample ticket to this address now"/>
+                        </list>
+                    </field>
+                    <div class="text-muted mt-2">
+                        <b>Answered status query</b> means the device replied to a
+                        non-printing ESC/POS status request — strong evidence it is a
+                        real thermal printer. Devices already registered are shown in
+                        orange and cannot be added twice. Use <b>Test print</b> to
+                        confirm which physical printer is at which address before
+                        naming it.
+                    </div>
+                </div>
+
+                <footer>
+                    <button name="action_scan" type="object" string="Scan"
+                            class="btn-primary" invisible="state == 'done'"/>
+                    <button name="action_scan" type="object" string="Scan again"
+                            class="btn-secondary" invisible="state != 'done'"/>
+                    <button name="action_import" type="object" string="Add selected"
+                            class="btn-primary" invisible="state != 'done'"/>
+                    <button string="Close" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_ss_printer_scan" model="ir.actions.act_window">
+        <field name="name">Scan network for printers</field>
+        <field name="res_model">ss.escpos.printer.scan</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <menuitem id="menu_ss_printer_scan"
+              name="Scan for Printers"
+              parent="point_of_sale.menu_point_config"
+              action="action_ss_printer_scan"
+              sequence="91"/>
+
+</odoo>
