@@ -81,7 +81,7 @@
 
     <menuitem id="menu_ss_printer_scan"
               name="Scan for Printers"
-              parent="point_of_sale.menu_point_config"
+              parent="point_of_sale.menu_point_config_product"
               action="action_ss_printer_scan"
               sequence="91"/>
 

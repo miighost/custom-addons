@@ -12,7 +12,7 @@
     'author': "Smartron Solutions Pvt Ltd",
     'website': "https://smartronsolutions.co.uk",
     'category': 'Point of Sale',
-    'version': '19.0.1.2.0',
+    'version': '19.0.2.0.2',
     'data': [
         'security/ir.model.access.csv',
         'views/views.xml',
@@ -22,6 +22,7 @@
     'depends': ['base', 'point_of_sale', 'pos_restaurant'],
     'assets': {
         'point_of_sale._assets_pos': [
+            'ss_print_pos_kitchen_receipt/static/src/js/trigger_rules.js',
             'ss_print_pos_kitchen_receipt/static/src/js/utils.js',
             'ss_print_pos_kitchen_receipt/static/src/js/escpos_transport.js',
             'ss_print_pos_kitchen_receipt/static/src/js/ReceiptScreen.js',

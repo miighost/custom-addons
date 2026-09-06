@@ -11,8 +11,11 @@
             <list string="Network Printers">
                 <field name="sequence" widget="handle"/>
                 <field name="name"/>
+                <field name="role"/>
+                <field name="connection"/>
                 <field name="ip"/>
-                <field name="port"/>
+                <field name="local_printer_name" optional="show"/>
+                <field name="port" optional="hide"/>
                 <field name="transport"/>
                 <field name="paper_width"/>
                 <field name="product_category_ids" widget="many2many_tags"/>
@@ -31,6 +34,7 @@
                         title="Send a sample ticket"
                         invisible="transport != 'server_socket'"/>
                 <field name="transport" column_invisible="1"/>
+                <field name="connection" column_invisible="1"/>
                 <field name="active" column_invisible="1"/>
             </list>
         </field>
@@ -48,6 +52,7 @@
                     <button name="action_test_print" type="object" string="Test print"
                             class="btn-primary"
                             invisible="transport != 'server_socket'"/>
+                    <field name="connection" invisible="1"/>
                     <button name="action_open_scan" type="object"
                             string="Scan network" class="btn-secondary"/>
                     <field name="status" widget="statusbar"
@@ -61,10 +66,19 @@
                         <h1><field name="name" placeholder="e.g. Kitchen"/></h1>
                     </div>
                     <group>
-                        <group string="Network">
-                            <field name="ip" placeholder="192.168.1.50"/>
-                            <field name="port"/>
-                            <field name="transport"/>
+                        <group string="Connection">
+                            <field name="role"/>
+                            <field name="connection"/>
+                            <field name="ip" placeholder="192.168.13.50"
+                                   invisible="connection != 'network'"
+                                   required="connection == 'network'"/>
+                            <field name="port" invisible="connection != 'network'"/>
+                            <field name="local_printer_name"
+                                   placeholder="XP-58 (name in Windows printer settings)"
+                                   invisible="connection != 'local'"
+                                   required="connection == 'local'"/>
+                            <field name="transport"
+                                   readonly="connection == 'local'"/>
                             <field name="agent_url"
                                    invisible="transport != 'browser_agent'"
                                    required="transport == 'browser_agent'"/>
@@ -112,11 +126,15 @@
                 <separator/>
                 <filter name="filter_inactive" string="Archived"
                         domain="[('active','=',False)]"/>
-                <group expand="0" string="Group By">
+                <!-- Odoo 19 removed expand="0" / string="Group By" /
+                     name="group_by" from <group> inside a search view. -->
+                <group>
                     <filter name="group_transport" string="Transport"
                             context="{'group_by': 'transport'}"/>
                     <filter name="group_status" string="Status"
                             context="{'group_by': 'status'}"/>
+                    <filter name="group_role" string="Role"
+                            context="{'group_by': 'role'}"/>
                 </group>
             </search>
         </field>
@@ -142,7 +160,7 @@
 
     <menuitem id="menu_ss_escpos_printer"
               name="Network Printers"
-              parent="point_of_sale.menu_point_config"
+              parent="point_of_sale.menu_point_config_product"
               action="action_ss_escpos_printer"
               sequence="90"/>
 

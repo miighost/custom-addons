@@ -1,20 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates id="template" xml:space="preserve">
 
-    <!-- Always-available Print KOT button on the POS Action / Control Buttons bar -->
+    <!--
+      Manual "Print KOT" reprint button.
+
+      Hidden when the POS has "Show the manual Print KOT button" switched off,
+      so staff cannot send duplicate tickets to the kitchen. The green Order
+      button on the action pad is unaffected.
+
+      ssKitchenSettings is reactive and defaults to visible, so if the settings
+      fetch never lands the button behaves exactly as it did before rather than
+      disappearing.
+    -->
     <t t-name="ss_print_pos_kitchen_receipt.ControlButtons" t-inherit="point_of_sale.ControlButtons" t-inherit-mode="extension">
         <xpath expr="//div[hasclass('control-buttons')]" position="inside">
-            <button class="control-button btn btn-light rounded-0 fw-bold border-end d-flex align-items-center justify-content-center py-2 px-3 me-1"
+            <button t-if="ssKitchenSettings.kitchen_print"
+                    class="control-button btn btn-light rounded-0 fw-bold border-end d-flex align-items-center justify-content-center py-2 px-3 me-1"
                     style="font-size: 15px; font-weight: bold; cursor: pointer;"
-                    t-on-click="() => (this.onClickManualKotButton ? this.onClickManualKotButton() : (this.pos &amp;&amp; this.pos.forceBrowserPrintDialog &amp;&amp; this.pos.forceBrowserPrintDialog()))">
+                    t-on-click="() => this.onClickManualKotButton()">
                 <i class="fa fa-print me-1 text-primary"/> Print KOT
             </button>
         </xpath>
     </t>
 
 </templates>
-
-
-
-
-

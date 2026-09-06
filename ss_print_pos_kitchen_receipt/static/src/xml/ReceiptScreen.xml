@@ -7,6 +7,11 @@
         <button class="button print btn btn-lg btn-secondary w-100 py-3" t-on-click="() => this.printKitchenReceipt()">
             <i class="fa fa-cutlery me-1"/> Print Kitchen Receipt
         </button>
+        <!-- Reprint of the customer bill on the USB receipt printer. The bill
+             prints by itself when this screen opens; this is the retry. -->
+        <button class="button print btn btn-lg btn-secondary w-100 py-3" t-on-click="() => this.printCustomerBillAgain()">
+            <i class="fa fa-file-text-o me-1"/> Print Bill
+        </button>
     </xpath>
 
     <!-- Keep existing buttons for backward compatibility (kitchen change printing) -->

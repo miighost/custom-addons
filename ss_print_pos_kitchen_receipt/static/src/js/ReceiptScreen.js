@@ -7,23 +7,49 @@ import { exportForKitchenPrinting } from "./utils";
 import {
     printOrderToNetworkPrinters,
     reportPrintFailures,
+    kitchenSettings,
+    printCustomerBill,
 } from "./escpos_transport";
+import { shouldAutoPrint, TRIGGER_ON_PAYMENT } from "./trigger_rules";
 
 const LOG = "[ss_kot]";
 
 patch(ReceiptScreen.prototype, {
     setup() {
         super.setup();
-        this.kitchenPrintState = useState({ printedChanges: false });
+        this.kitchenPrintState = useState({
+            printedChanges: false,
+            printedBill: false,
+        });
 
         onMounted(() => {
-            if (this.pos?.config?.kitchen_print_auto) {
-                // Fire and forget, but never silently: an unhandled rejection
-                // here is what "automatic printing does nothing" looks like.
-                this.printKitchenChanges().catch((err) =>
-                    console.error(LOG, "automatic kitchen print failed", err)
-                );
+            // Only when the shop is configured to print at payment. With the
+            // on_send trigger the ticket already went to the kitchen when the
+            // waiter left the order screen, and firing again here would
+            // duplicate it.
+            const order = this.currentOrder;
+            const fire = shouldAutoPrint({
+                moment: TRIGGER_ON_PAYMENT,
+                settings: kitchenSettings,
+                hasLines: Boolean(order),
+                hasUnsentChanges: true,
+            });
+            if (!fire) {
+                return;
             }
+            // Fire and forget, but never silently: an unhandled rejection
+            // here is what "automatic printing does nothing" looks like.
+            this.printKitchenChanges().catch((err) =>
+                console.error(LOG, "automatic kitchen print failed", err)
+            );
+        });
+
+        onMounted(() => {
+            // The customer bill goes to the receipt printer as soon as the
+            // receipt screen opens. No-ops when no bill printer is configured.
+            this.printCustomerBillOnce().catch((err) =>
+                console.error(LOG, "automatic bill print failed", err)
+            );
         });
     },
 
@@ -79,6 +105,55 @@ patch(ReceiptScreen.prototype, {
         );
         reportPrintFailures(this.pos, result);
         return result;
+    },
+
+    /** The server-side id of the order, once it has been saved. */
+    _savedOrderId() {
+        const order = this.currentOrder;
+        if (!order) {
+            return null;
+        }
+        for (const key of ["id", "server_id", "backendId"]) {
+            const value = order[key];
+            if (typeof value === "number" && value > 0) {
+                return value;
+            }
+        }
+        return null;
+    },
+
+    /** Print the bill exactly once per visit to this screen. */
+    async printCustomerBillOnce() {
+        if (this.kitchenPrintState.printedBill) {
+            return null;
+        }
+        const orderId = this._savedOrderId();
+        if (!orderId) {
+            console.warn(LOG, "order has no saved id yet; bill not printed");
+            return null;
+        }
+        // Latch before awaiting so a second mount cannot race in.
+        this.kitchenPrintState.printedBill = true;
+        try {
+            return await printCustomerBill(this.pos, orderId);
+        } catch (err) {
+            // Unlatch: a failed attempt should be retryable from the button.
+            this.kitchenPrintState.printedBill = false;
+            const notification = this.pos?.env?.services?.notification;
+            if (notification?.add) {
+                notification.add(`Bill did not print: ${err.message}`, {
+                    type: "danger",
+                    sticky: true,
+                });
+            }
+            throw err;
+        }
+    },
+
+    /** Manual reprint of the customer bill. */
+    async printCustomerBillAgain() {
+        this.kitchenPrintState.printedBill = false;
+        return this.printCustomerBillOnce();
     },
 
     _exportForKitchenPrinting(order) {

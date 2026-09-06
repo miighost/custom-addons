@@ -1,6 +1,7 @@
 /** @odoo-module */
 
 import { patch } from "@web/core/utils/patch";
+import { onWillUnmount, useState } from "@odoo/owl";
 import { ProductScreen } from "@point_of_sale/app/screens/product_screen/product_screen";
 import { ActionpadWidget } from "@point_of_sale/app/screens/product_screen/action_pad/action_pad";
 import { ControlButtons } from "@point_of_sale/app/screens/product_screen/control_buttons/control_buttons";
@@ -8,7 +9,11 @@ import { exportForKitchenPrinting } from "./utils";
 import {
     printOrderToNetworkPrinters,
     reportPrintFailures,
+    kitchenSettings,
+    primeSetup,
+    runHealthCheck,
 } from "./escpos_transport";
+import { shouldAutoPrint, TRIGGER_ON_SEND } from "./trigger_rules";
 
 const LOG = "[ss_kot]";
 
@@ -26,6 +31,34 @@ function getOrderLines(order) {
         return order.getOrderlines() || [];
     }
     return order.lines || order.orderlines || [];
+}
+
+/** Orders with a print in flight, so an auto-trigger cannot double-fire. */
+const printing = new Set();
+
+function orderKey(order) {
+    return order?.uuid || order?.uid || order?.name || String(order?.id || "");
+}
+
+/** Has anything been added or cancelled since the kitchen last saw this order? */
+function orderHasUnsentChanges(pos, order) {
+    if (!order) {
+        return false;
+    }
+    if (getOrderLines(order).length === 0) {
+        return false;
+    }
+    if (!order.was_kot_printed) {
+        return true;
+    }
+    const diff = exportForKitchenPrinting(pos, order);
+    if (!diff) {
+        return false;
+    }
+    return (
+        (diff.new_lines || []).length > 0 ||
+        (diff.cancelled_lines || []).length > 0
+    );
 }
 
 function lineQty(line) {
@@ -75,33 +108,62 @@ async function doPrintKitchenReceipt(posStore, currentOrder) {
         return null;
     }
 
-    order.kot_print_count = (order.kot_print_count || 0) + 1;
+    const key = orderKey(order);
+    if (printing.has(key)) {
+        console.info(LOG, "print already in flight for this order, skipping");
+        return null;
+    }
+    printing.add(key);
 
-    // Keep Odoo's own preparation-display / order-printer flow in step.
-    // Failures here are logged rather than swallowed, but they do not stop
-    // our own printing.
-    if (typeof pos.sendOrderInPreparation === "function") {
-        try {
-            await pos.sendOrderInPreparation(order);
-        } catch (err) {
-            console.warn(LOG, "native sendOrderInPreparation failed", err);
+    // try/finally: if anything below throws, the guard must still be released
+    // or this order could never be printed again for the rest of the session.
+    try {
+        order.kot_print_count = (order.kot_print_count || 0) + 1;
+
+        // Keep Odoo's own preparation-display / order-printer flow in step.
+        // Failures here are logged rather than swallowed, but they do not stop
+        // our own printing.
+        if (typeof pos.sendOrderInPreparation === "function") {
+            try {
+                await pos.sendOrderInPreparation(order);
+            } catch (err) {
+                console.warn(LOG, "native sendOrderInPreparation failed", err);
+            }
         }
-    }
 
-    const result = await printOrderToNetworkPrinters(pos, order, {
-        changesOnly: true,
+        const result = await printOrderToNetworkPrinters(pos, order, {
+            changesOnly: true,
+        });
+
+        if (result.succeeded > 0) {
+            markLinesPrinted(order);
+        } else if (result.attempted > 0) {
+            // Nothing reached a printer: roll the counter back so the next
+            // attempt is not labelled "2nd Print (Re-Order)".
+            order.kot_print_count = Math.max(0, (order.kot_print_count || 1) - 1);
+        }
+
+        reportPrintFailures(pos, result);
+        return result;
+    } finally {
+        printing.delete(key);
+    }
+}
+
+/** Fired when the waiter leaves the order screen, if configured to. */
+async function maybeAutoPrintOnSend(pos, order) {
+    const decision = shouldAutoPrint({
+        moment: TRIGGER_ON_SEND,
+        settings: kitchenSettings,
+        hasLines: getOrderLines(order).length > 0,
+        hasUnsentChanges: orderHasUnsentChanges(pos, order),
+        alreadyPrinting: printing.has(orderKey(order)),
     });
-
-    if (result.succeeded > 0) {
-        markLinesPrinted(order);
-    } else if (result.attempted > 0) {
-        // Nothing reached a printer: roll the counter back so the next
-        // attempt is not labelled "2nd Print (Re-Order)".
-        order.kot_print_count = Math.max(0, (order.kot_print_count || 1) - 1);
+    if (!decision) {
+        return null;
     }
-
-    reportPrintFailures(pos, result);
-    return result;
+    console.info(LOG, "auto-printing on send for order", orderKey(order));
+    return doPrintKitchenReceipt(pos, order);
 }
 
 /** Manual "Print KOT" button: always reprint everything, changes or not. */
@@ -174,6 +236,36 @@ patch(ProductScreen.prototype, {
     setup() {
         super.setup();
         const pos = this.pos || this.env?.services?.pos;
+
+        // Fetch printers + settings once, early, so the templates and the
+        // auto-trigger both have real values before they are consulted.
+        if (pos) {
+            primeSetup(pos);
+
+            // Probe the printers the first time the order screen opens in this
+            // session, so a dead station surfaces before the first order.
+            if (!pos._ssHealthChecked) {
+                pos._ssHealthChecked = true;
+                runHealthCheck(pos).catch((err) =>
+                    console.error(LOG, "health check failed", err)
+                );
+            }
+        }
+
+        // Leaving the order screen IS the send-to-kitchen moment in table
+        // service: the waiter has finished taking the order and walked away.
+        onWillUnmount(() => {
+            const order = this._kotOrder();
+            if (!pos || !order) {
+                return;
+            }
+            // onWillUnmount is synchronous; the order object outlives the
+            // component, so the print can safely finish after teardown.
+            maybeAutoPrintOnSend(pos, order).catch((err) =>
+                console.error(LOG, "auto-print on send failed", err)
+            );
+        });
+
         if (pos) {
             pos.printKitchenReceipt = (order) =>
                 doPrintKitchenReceipt(pos, order || this._kotOrder());
@@ -193,24 +285,7 @@ if (ActionpadWidget && ActionpadWidget.prototype) {
         },
 
         get hasChangesToOrder() {
-            const order = this._kotOrder();
-            if (!order) {
-                return false;
-            }
-            if (getOrderLines(order).length === 0) {
-                return false;
-            }
-            if (!order.was_kot_printed) {
-                return true;
-            }
-            const diff = exportForKitchenPrinting(this._kotPos(), order);
-            if (!diff) {
-                return false;
-            }
-            return (
-                (diff.new_lines || []).length > 0 ||
-                (diff.cancelled_lines || []).length > 0
-            );
+            return orderHasUnsentChanges(this._kotPos(), this._kotOrder());
         },
 
         get changeSummary() {
@@ -242,5 +317,17 @@ if (ActionpadWidget && ActionpadWidget.prototype) {
 }
 
 if (ControlButtons && ControlButtons.prototype) {
-    patch(ControlButtons.prototype, commonMethods);
+    patch(ControlButtons.prototype, {
+        setup() {
+            super.setup();
+            // useState so the button appears/disappears when the settings
+            // fetch lands, rather than being stuck at its first-render value.
+            this.ssKitchenSettings = useState(kitchenSettings);
+            const pos = this.pos || this.env?.services?.pos;
+            if (pos) {
+                primeSetup(pos);
+            }
+        },
+        ...commonMethods,
+    });
 }

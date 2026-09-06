@@ -224,3 +224,122 @@ def render_kot(data, width=48, codepage="cp437", station="KITCHEN"):
     ticket.rule("=")
     ticket.cut()
     return ticket.bytes()
+
+
+# ---------------------------------------------------------------------------
+# Customer bill
+# ---------------------------------------------------------------------------
+
+def format_amount(value, currency=None):
+    """Format a monetary value for a fixed-width thermal receipt."""
+    currency = currency or {}
+    decimals = currency.get("decimals")
+    if decimals is None:
+        decimals = 2
+    symbol = currency.get("symbol") or ""
+    position = currency.get("position") or "after"
+    try:
+        number = float(value or 0.0)
+    except (TypeError, ValueError):
+        number = 0.0
+    text = "{:,.{d}f}".format(number, d=int(decimals))
+    if not symbol:
+        return text
+    return ("%s%s" % (symbol, text)) if position == "before" else ("%s %s" % (text, symbol))
+
+
+def render_bill(data, width=48, codepage="cp437"):
+    """Render a customer receipt from a plain dict.
+
+    Kept dict-driven so it can be unit-tested without an Odoo environment;
+    the model builds the dict from the saved pos.order.
+    """
+    data = data or {}
+    currency = data.get("currency") or {}
+    ticket = EscposTicket(width=width, codepage=codepage)
+
+    # --- header -------------------------------------------------------
+    company = data.get("company_name")
+    if company:
+        ticket.text(company, bold=True, big=True, center=True)
+    for line in (data.get("company_details") or []):
+        if line:
+            ticket.wrap(line)
+    if data.get("vat"):
+        ticket.text(data["vat"], center=True)
+    ticket.rule("=")
+
+    if data.get("header_note"):
+        ticket.wrap(data["header_note"])
+        ticket.rule("-")
+
+    ticket.columns("Receipt:", data.get("order_ref") or "")
+    ticket.columns("Date:", data.get("datetime") or "")
+    if data.get("cashier"):
+        ticket.columns("Served by:", data["cashier"])
+    if data.get("table_name"):
+        ticket.columns("Table:", data["table_name"])
+    if data.get("customer"):
+        ticket.columns("Customer:", data["customer"])
+    ticket.rule("=")
+
+    # --- lines --------------------------------------------------------
+    for line in (data.get("lines") or []):
+        name = line.get("name") or ""
+        qty = line.get("qty") or 0
+        unit = line.get("price_unit")
+        total = format_amount(line.get("subtotal"), currency)
+
+        ticket.wrap(name, bold=True)
+        try:
+            qty_text = ("%g" % float(qty))
+        except (TypeError, ValueError):
+            qty_text = str(qty)
+        left = "  %s x %s" % (qty_text, format_amount(unit, currency))
+        ticket.columns(left, total)
+
+        discount = line.get("discount") or 0
+        if discount:
+            ticket.columns("  Discount", "-%g%%" % float(discount))
+
+    ticket.rule("-")
+
+    # --- totals -------------------------------------------------------
+    if data.get("subtotal") is not None:
+        ticket.columns("Subtotal", format_amount(data.get("subtotal"), currency))
+    for tax in (data.get("taxes") or []):
+        ticket.columns(
+            "  %s" % (tax.get("name") or "Tax"),
+            format_amount(tax.get("amount"), currency),
+        )
+    ticket.rule("-")
+    ticket.text("")
+    total_text = format_amount(data.get("total"), currency)
+    ticket.columns("TOTAL", total_text, bold=True)
+    ticket.text("")
+
+    # --- payment ------------------------------------------------------
+    payments = data.get("payments") or []
+    if payments:
+        ticket.rule("-")
+        for payment in payments:
+            ticket.columns(
+                payment.get("name") or "Payment",
+                format_amount(payment.get("amount"), currency),
+            )
+    if data.get("change"):
+        ticket.columns("Change", format_amount(data.get("change"), currency), bold=True)
+
+    # --- footer -------------------------------------------------------
+    ticket.rule("=")
+    footer = data.get("footer_note")
+    if footer:
+        ticket.blank(1)
+        for chunk in str(footer).split("\n"):
+            ticket.text(chunk.strip(), center=True)
+    if data.get("tracking_number"):
+        ticket.blank(1)
+        ticket.text(str(data["tracking_number"]), big=True, center=True, bold=True)
+
+    ticket.cut()
+    return ticket.bytes()

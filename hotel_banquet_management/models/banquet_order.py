@@ -81,15 +81,49 @@ class BanquetSaleOrder(models.Model):
                     vals['name'] = self.env['ir.sequence'].next_by_code('banquet.quotation') or _('New')
         return super().create(vals_list)
 
+    @api.depends('order_line.price_subtotal', 'order_line.price_tax', 'order_line.price_total', 'order_line.number_of_days')
+    def _compute_amounts(self):
+        """Synchronize Untaxed Amount, Taxes and Total Amount with Banquet multi-day line subtotals."""
+        super()._compute_amounts()
+        for order in self:
+            if order.is_banquet:
+                order_lines = order.order_line.filtered(lambda x: not x.display_type)
+                order.amount_untaxed = sum(order_lines.mapped('price_subtotal'))
+                order.amount_tax = sum(order_lines.mapped('price_tax'))
+                order.amount_total = order.amount_untaxed + order.amount_tax
+
+    @api.depends('order_line.price_subtotal', 'order_line.number_of_days', 'order_line.price_unit', 'order_line.product_uom_qty')
+    def _compute_tax_totals(self):
+        """Ensure the tax_totals widget on the form displays the exact multi-day calculation."""
+        super()._compute_tax_totals()
+        for order in self:
+            if order.is_banquet and order.tax_totals:
+                order_lines = order.order_line.filtered(lambda x: not x.display_type)
+                untaxed = sum(order_lines.mapped('price_subtotal'))
+                tax = sum(order_lines.mapped('price_tax'))
+                total = untaxed + tax
+                tax_totals = dict(order.tax_totals)
+                tax_totals['amount_untaxed'] = untaxed
+                tax_totals['amount_total'] = total
+                if 'subtotals' in tax_totals and tax_totals['subtotals']:
+                    for sub in tax_totals['subtotals']:
+                        sub['amount'] = untaxed
+                order.tax_totals = tax_totals
+
     def action_confirm(self):
-        """When confirming a banquet quotation, assign BO/... sequence before confirmation for instant processing."""
+        """Instant confirmation without stock picking delays or mail timeouts."""
         for order in self:
             if order.is_banquet:
                 if order.name and ('QUOT/' in order.name or order.name.startswith('QUOT')):
                     new_seq = self.env['ir.sequence'].next_by_code('banquet.order')
                     if new_seq:
                         order.name = new_seq
-        return super().action_confirm()
+        return super(BanquetSaleOrder, self.with_context(
+            mail_notrack=True,
+            mail_create_nosubscribe=True,
+            mail_notify_author=False,
+            mail_post_autofollow=False,
+        )).action_confirm()
 
     def action_print_banquet_quotation(self):
         self.ensure_one()
@@ -109,6 +143,12 @@ class BanquetSaleOrderLine(models.Model):
         digits='Product Unit of Measure',
         help="Number of days or sessions for this service."
     )
+
+    @api.onchange('number_of_days')
+    def _onchange_number_of_days(self):
+        """Trigger immediate recalculation in the UI when typing No of Days."""
+        if self.order_id.is_banquet:
+            self._compute_amount()
 
     @api.depends('product_uom_qty', 'number_of_days', 'discount', 'price_unit', 'tax_ids')
     def _compute_amount(self):
@@ -141,12 +181,29 @@ class BanquetSaleOrderLine(models.Model):
                         'price_subtotal': subtotal,
                     })
 
+    def _convert_to_tax_base_line_dict(self, **kwargs):
+        """Pass effective quantity (product_uom_qty * number_of_days) to Odoo tax computation."""
+        res = super()._convert_to_tax_base_line_dict(**kwargs)
+        if self.order_id.is_banquet:
+            days = self.number_of_days if self.number_of_days > 0 else 1.0
+            res['quantity'] = self.product_uom_qty * days
+            if 'price_subtotal' in res:
+                res['price_subtotal'] = self.price_subtotal
+        return res
+
+    def _action_launch_stock_rule(self, previous_product_uom_qty=False):
+        """Banquet service orders should not trigger warehouse delivery pickings or reservation delays."""
+        banquet_lines = self.filtered(lambda l: l.order_id.is_banquet)
+        other_lines = self - banquet_lines
+        if other_lines:
+            return super(BanquetSaleOrderLine, other_lines)._action_launch_stock_rule(previous_product_uom_qty=previous_product_uom_qty)
+        return True
+
     def _prepare_invoice_line(self, **optional_values):
-        """Propagate number_of_days and adjust quantity so standard Odoo invoices calculate accurately."""
+        """Propagate quantity and number_of_days cleanly to invoice line."""
         res = super()._prepare_invoice_line(**optional_values)
         if self.order_id.is_banquet:
             days = self.number_of_days if self.number_of_days > 0 else 1.0
             res['number_of_days'] = days
-            # Set invoice line quantity to total billable units (qty * days) to ensure invoice subtotal matches order
-            res['quantity'] = (self.qty_to_invoice or self.product_uom_qty) * days
+            res['quantity'] = self.qty_to_invoice or self.product_uom_qty
         return res

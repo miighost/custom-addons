@@ -23,9 +23,9 @@ import logging
 import socket
 
 from odoo import _, api, fields, models
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 
-from .escpos import render_kot
+from .escpos import render_bill, render_kot
 
 _logger = logging.getLogger(__name__)
 
@@ -41,12 +41,42 @@ class SsEscposPrinter(models.Model):
     sequence = fields.Integer(default=10)
     active = fields.Boolean(default=True)
 
+    role = fields.Selection(
+        [
+            ("kitchen", "Kitchen / bar ticket"),
+            ("receipt", "Customer bill"),
+        ],
+        default="kitchen",
+        required=True,
+        string="Role",
+        help="Kitchen printers receive order tickets routed by category. "
+             "The customer bill printer receives the receipt at payment and "
+             "is never sent kitchen tickets.",
+    )
+
+    connection = fields.Selection(
+        [
+            ("network", "Network (LAN, port 9100)"),
+            ("local", "Local printer on the till (USB)"),
+        ],
+        default="network",
+        required=True,
+        help="USB printers are not reachable from the Odoo server. They are "
+             "driven by the local agent running on the till, addressed by the "
+             "name the operating system knows them by.",
+    )
+
     ip = fields.Char(
         string="IP address",
-        required=True,
-        help="LAN address of the printer, e.g. 192.168.1.50.",
+        help="LAN address of the printer, e.g. 192.168.1.50. Network printers only.",
     )
-    port = fields.Integer(default=DEFAULT_PORT, required=True)
+    port = fields.Integer(default=DEFAULT_PORT)
+    local_printer_name = fields.Char(
+        string="Local printer name",
+        help="Exactly as the till's operating system names it — on Windows, "
+             "the name in Settings > Printers & scanners. The agent's "
+             "/printers endpoint lists what it can see.",
+    )
 
     transport = fields.Selection(
         [
@@ -109,6 +139,34 @@ class SsEscposPrinter(models.Model):
              "Leave empty to send every line.",
     )
 
+    @api.constrains("connection", "ip", "local_printer_name", "transport")
+    def _check_target(self):
+        for printer in self:
+            if printer.connection == "network":
+                if not (printer.ip or "").strip():
+                    raise ValidationError(
+                        _("Printer '%s' is a network printer and needs an IP address.")
+                        % printer.name
+                    )
+            else:
+                if not (printer.local_printer_name or "").strip():
+                    raise ValidationError(
+                        _("Printer '%s' is a local printer and needs the name the "
+                          "till's operating system uses for it.") % printer.name
+                    )
+                if printer.transport != "browser_agent":
+                    raise ValidationError(
+                        _("Printer '%s' is plugged into the till by USB, so the "
+                          "Odoo server cannot reach it. Set its transport to "
+                          "'Local agent on the till'.") % printer.name
+                    )
+
+    @api.onchange("connection")
+    def _onchange_connection(self):
+        # A USB printer can only ever be driven by the agent.
+        if self.connection == "local":
+            self.transport = "browser_agent"
+
     # ------------------------------------------------------------------
     # Status bookkeeping
     # ------------------------------------------------------------------
@@ -141,6 +199,29 @@ class SsEscposPrinter(models.Model):
             station=self.station_label or self.name,
         )
 
+    def _routed_category_ids(self):
+        """Category ids this printer claims, including every subcategory.
+
+        Assigning "Drinks" to the bar should also route "Drinks / Hot" and
+        "Drinks / Cocktails". Without this expansion, a product filed in a
+        subcategory matches no printer and is silently never cooked.
+        """
+        self.ensure_one()
+        direct = self.product_category_ids.ids
+        if not direct:
+            return []
+        try:
+            return self.env["pos.category"].search([("id", "child_of", direct)]).ids
+        except Exception:
+            # pos.category without a hierarchy on this version: direct ids
+            # still route correctly, we just lose the subcategory expansion.
+            _logger.warning(
+                "pos.category child_of expansion unavailable; "
+                "printer %s routes only its directly assigned categories",
+                self.name,
+            )
+            return direct
+
     @api.model
     def load_printers(self, pos_config_id=None):
         """Return the printer set the POS front-end should know about."""
@@ -154,15 +235,90 @@ class SsEscposPrinter(models.Model):
             {
                 "id": p.id,
                 "name": p.name,
+                "role": p.role,
+                "connection": p.connection,
+                "local_printer_name": p.local_printer_name or "",
                 "transport": p.transport,
                 "agent_url": p.agent_url or "",
                 "ip": p.ip,
                 "port": p.port or DEFAULT_PORT,
-                "category_ids": p.product_category_ids.ids,
+                "category_ids": p._routed_category_ids(),
                 "station_label": p.station_label or p.name,
             }
             for p in printers
         ]
+
+    @api.model
+    def health_check(self, pos_config_id=None):
+        """Probe every configured printer. Called when a POS session opens.
+
+        The point is to find a dead station before the first order, not
+        halfway through service with a queue at the till.
+        """
+        import socket as _socket
+
+        printers = self.search([("active", "=", True)])
+        if pos_config_id:
+            printers = printers.filtered(
+                lambda p: not p.pos_config_ids or pos_config_id in p.pos_config_ids.ids
+            )
+
+        online, offline, skipped = [], [], []
+        for printer in printers:
+            if printer.connection == "local":
+                # Driven by the agent on the till; the server cannot see it.
+                skipped.append({"name": printer.name, "reason": "usb"})
+                continue
+            try:
+                sock = _socket.create_connection(
+                    ((printer.ip or "").strip(), printer.port or DEFAULT_PORT),
+                    timeout=2.5,
+                )
+                sock.close()
+            except OSError as err:
+                offline.append({
+                    "name": printer.name,
+                    "role": printer.role,
+                    "ip": printer.ip,
+                    "error": str(err)[:120],
+                })
+                printer._set_status({"status": "offline", "last_error": str(err)[:200]})
+            else:
+                online.append({"name": printer.name, "role": printer.role})
+                printer._set_status({
+                    "status": "online",
+                    "last_seen": fields.Datetime.now(),
+                    "last_error": False,
+                })
+
+        return {
+            "total": len(printers),
+            "online": online,
+            "offline": offline,
+            "skipped": skipped,
+        }
+
+    @api.model
+    def load_setup(self, pos_config_id=None):
+        """Everything the POS front-end needs, in one round trip.
+
+        Bundling the settings with the printer list keeps the front-end
+        independent of whether custom pos.config fields are shipped in the POS
+        bundle, which varies by Odoo version.
+        """
+        settings = {
+            "kitchen_print": True,
+            "kitchen_print_auto": False,
+            "kitchen_print_trigger": "on_send",
+        }
+        if pos_config_id:
+            config = self.env["pos.config"].browse(pos_config_id).exists()
+            if config and hasattr(config, "_ss_kitchen_settings"):
+                settings = config._ss_kitchen_settings()
+        return {
+            "printers": self.load_printers(pos_config_id),
+            "settings": settings,
+        }
 
     @api.model
     def render_ticket(self, printer_id, data):
@@ -173,21 +329,169 @@ class SsEscposPrinter(models.Model):
         printer = self.browse(printer_id).exists()
         if not printer:
             raise UserError(_("Printer %s no longer exists.") % printer_id)
-        payload = printer._render_bytes(data)
-        return {
-            "printer_id": printer.id,
-            "name": printer.name,
-            "ip": printer.ip,
-            "port": printer.port or DEFAULT_PORT,
-            "agent_url": printer.agent_url or "",
+        return printer._agent_payload(printer._render_bytes(data))
+
+    def _agent_payload(self, payload):
+        """Describe a print job for the local agent, network or USB."""
+        self.ensure_one()
+        job = {
+            "printer_id": self.id,
+            "name": self.name,
+            "connection": self.connection,
+            "agent_url": self.agent_url or "",
             "payload_b64": base64.b64encode(payload).decode("ascii"),
         }
+        if self.connection == "local":
+            job["printer_name"] = self.local_printer_name or ""
+        else:
+            job["ip"] = self.ip
+            job["port"] = self.port or DEFAULT_PORT
+        return job
+
+    # ------------------------------------------------------------------
+    # Customer bill
+    # ------------------------------------------------------------------
+    def _bill_data(self, order):
+        """Build the receipt dict from the SAVED pos.order.
+
+        Reading the persisted order rather than the browser's order object
+        means the printed bill always matches what was actually recorded, and
+        the code does not depend on POS front-end internals.
+        """
+        self.ensure_one()
+        company = order.company_id or self.env.company
+        currency = order.currency_id or company.currency_id
+
+        def money(value):
+            return value or 0.0
+
+        details = []
+        if company.partner_id:
+            addr = company.partner_id
+            street = " ".join(filter(None, [addr.street, addr.street2]))
+            town = " ".join(filter(None, [addr.zip, addr.city]))
+            for chunk in (street, town, addr.phone, addr.email):
+                if chunk:
+                    details.append(chunk)
+
+        lines = []
+        for line in order.lines:
+            lines.append({
+                "name": line.full_product_name or line.product_id.display_name,
+                "qty": line.qty,
+                "price_unit": money(line.price_unit),
+                "discount": line.discount or 0.0,
+                "subtotal": money(line.price_subtotal_incl),
+            })
+
+        # One combined tax line. Per-rate breakdown lives behind a helper
+        # whose name and shape move between versions, and a wrong total on a
+        # customer's bill is worse than a less detailed one.
+        taxes = []
+        if order.amount_tax:
+            taxes.append({"name": "Tax", "amount": money(order.amount_tax)})
+
+        payments = [
+            {
+                "name": pay.payment_method_id.name or "Payment",
+                "amount": money(pay.amount),
+            }
+            for pay in order.payment_ids
+        ]
+
+        cashier = ""
+        for attr in ("employee_id", "user_id"):
+            rec = getattr(order, attr, False)
+            if rec:
+                cashier = rec.name
+                break
+
+        table = ""
+        table_rec = getattr(order, "table_id", False)
+        if table_rec:
+            table = str(
+                getattr(table_rec, "table_number", False) or table_rec.name or ""
+            )
+
+        return {
+            "company_name": company.name,
+            "company_details": details,
+            "vat": ("VAT: %s" % company.vat) if company.vat else "",
+            "header_note": (order.config_id.receipt_header or "").strip(),
+            "footer_note": (order.config_id.receipt_footer or "").strip(),
+            "order_ref": order.pos_reference or order.name,
+            "datetime": fields.Datetime.to_string(order.date_order or fields.Datetime.now()),
+            "cashier": cashier,
+            "table_name": table,
+            "customer": order.partner_id.name if order.partner_id else "",
+            "lines": lines,
+            "subtotal": money(order.amount_total - order.amount_tax),
+            "taxes": taxes,
+            "total": money(order.amount_total),
+            "payments": payments,
+            "change": money(getattr(order, "amount_return", 0.0)),
+            "tracking_number": getattr(order, "tracking_number", "") or "",
+            "currency": {
+                "symbol": currency.symbol or "",
+                "position": currency.position or "after",
+                "decimals": currency.decimal_places
+                if currency.decimal_places is not None else 2,
+            },
+        }
+
+    def _render_bill_bytes(self, order):
+        self.ensure_one()
+        return render_bill(
+            self._bill_data(order),
+            width=int(self.paper_width or 48),
+            codepage=self.codepage or "cp437",
+        )
+
+    @api.model
+    def _receipt_printer(self, pos_config_id=None):
+        printers = self.search([("active", "=", True), ("role", "=", "receipt")])
+        if pos_config_id:
+            printers = printers.filtered(
+                lambda p: not p.pos_config_ids or pos_config_id in p.pos_config_ids.ids
+            )
+        return printers[:1]
+
+    @api.model
+    def render_bill_job(self, order_id, pos_config_id=None):
+        """Render the customer bill for the agent to deliver."""
+        printer = self._receipt_printer(pos_config_id)
+        if not printer:
+            return {"ok": False, "error": "no_receipt_printer"}
+        order = self.env["pos.order"].browse(order_id).exists()
+        if not order:
+            return {"ok": False, "error": "order_not_found"}
+        job = printer._agent_payload(printer._render_bill_bytes(order))
+        job["ok"] = True
+        return job
+
+    @api.model
+    def print_bill(self, order_id, pos_config_id=None):
+        """Render and send the bill from the server (network receipt printer)."""
+        printer = self._receipt_printer(pos_config_id)
+        if not printer:
+            return {"ok": False, "error": "no_receipt_printer"}
+        order = self.env["pos.order"].browse(order_id).exists()
+        if not order:
+            return {"ok": False, "error": "order_not_found"}
+        payload = printer._render_bill_bytes(order)
+        printer._send_socket(payload)
+        return {"ok": True, "printer_id": printer.id, "bytes": len(payload)}
 
     # ------------------------------------------------------------------
     # Transport: server-side socket
     # ------------------------------------------------------------------
     def _send_socket(self, payload, timeout=6.0):
         self.ensure_one()
+        if self.connection == "local":
+            raise UserError(_(
+                "Printer '%s' is connected to the till by USB. The Odoo server "
+                "cannot reach it — printing goes through the local agent."
+            ) % self.name)
         host = (self.ip or "").strip()
         port = self.port or DEFAULT_PORT
         if not host:
