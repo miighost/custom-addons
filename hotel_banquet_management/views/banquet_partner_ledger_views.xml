@@ -27,7 +27,7 @@
         <field name="name">View Partner Ledger</field>
         <field name="res_model">account.move.line</field>
         <field name="view_mode">list,pivot,graph</field>
-        <field name="domain">[('account_id.account_type', '=', 'asset_receivable'), ('parent_state', '=', 'posted')]</field>
+        <field name="domain">[('account_id.account_type', '=', 'asset_receivable'), ('parent_state', '=', 'posted'), '|', ('partner_id.is_banquet_customer', '=', True), ('move_id.line_ids.sale_line_ids.order_id.is_banquet', '=', True)]</field>
         <field name="context">{'search_default_group_by_partner': 1}</field>
         <field name="view_id" ref="view_banquet_partner_ledger_tree"/>
         <field name="help" type="html">
@@ -49,7 +49,7 @@
                 <sheet>
                     <group>
                         <group string="Customer / Company">
-                            <field name="partner_id" string="Customer / Company" options="{'no_create': True}"/>
+                            <field name="partner_id" string="Customer / Company" domain="['|', ('is_banquet_customer', '=', True), ('sale_order_ids.is_banquet', '=', True)]" options="{'no_create': True}"/>
                             <field name="include_initial_balance"/>
                             <field name="company_id" groups="base.group_multi_company"/>
                         </group>

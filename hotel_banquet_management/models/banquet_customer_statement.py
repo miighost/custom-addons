@@ -23,7 +23,7 @@ class BanquetCustomerStatementWizard(models.TransientModel):
         'res.partner',
         string='Customer / Company',
         required=True,
-        domain="['|', ('is_company', '=', True), ('customer_rank', '>', 0)]"
+        domain="['|', ('is_banquet_customer', '=', True), ('sale_order_ids.is_banquet', '=', True)]"
     )
     date_from = fields.Date(
         string='From Date',

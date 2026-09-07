@@ -16,14 +16,12 @@
     <!-- 2. Inherit Standard Invoice PDF Report to print 'No of Days' column -->
     <template id="report_invoice_document_banquet" inherit_id="account.report_invoice_document">
         <xpath expr="//th[@name='th_quantity']" position="after">
-            <t t-set="show_banquet_days" t-value="any((l.number_of_days or 0.0) > 1.0 for l in o.invoice_line_ids) or any(l.sale_line_ids.order_id.is_banquet for l in o.invoice_line_ids)"/>
-            <th name="th_number_of_days" class="text-end" t-if="show_banquet_days">
+            <th name="th_number_of_days" class="text-end" t-if="o.is_banquet or any((l.number_of_days or 0.0) > 1.0 for l in o.invoice_line_ids)">
                 <span>No of Days</span>
             </th>
         </xpath>
         <xpath expr="//td[@name='td_quantity']" position="after">
-            <t t-set="show_banquet_days" t-value="any((l.number_of_days or 0.0) > 1.0 for l in o.invoice_line_ids) or any(l.sale_line_ids.order_id.is_banquet for l in o.invoice_line_ids)"/>
-            <td name="td_number_of_days" class="text-end" t-if="show_banquet_days">
+            <td name="td_number_of_days" class="text-end" t-if="o.is_banquet or any((l.number_of_days or 0.0) > 1.0 for l in o.invoice_line_ids)">
                 <span t-field="line.number_of_days"/>
             </td>
         </xpath>

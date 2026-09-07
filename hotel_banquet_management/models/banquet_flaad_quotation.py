@@ -256,15 +256,11 @@ class BanquetFlaadQuotationLine(models.Model):
                     product=line.product_id,
                     partner=line.quotation_id.partner_id
                 )
-                line.update({
-                    'price_tax': sum(t.get('amount', 0.0) for t in taxes.get('taxes', [])),
-                    'price_total': taxes['total_included'],
-                    'price_subtotal': taxes['total_excluded'],
-                })
+                line.price_tax = sum(t.get('amount', 0.0) for t in taxes.get('taxes', []))
+                line.price_total = taxes['total_included']
+                line.price_subtotal = taxes['total_excluded']
             else:
                 subtotal = price * effective_qty
-                line.update({
-                    'price_tax': 0.0,
-                    'price_total': subtotal,
-                    'price_subtotal': subtotal,
-                })
+                line.price_tax = 0.0
+                line.price_total = subtotal
+                line.price_subtotal = subtotal

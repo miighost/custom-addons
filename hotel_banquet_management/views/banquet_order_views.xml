@@ -157,12 +157,12 @@
                     <group>
                         <group string="Client &amp; Event Info">
                             <field name="partner_id" string="Customer / Company" widget="res_partner_many2one" context="{'res_partner_search_mode': 'customer', 'show_address': 1}" options='{"always_reload": True}' required="1"/>
-                            <field name="event_name" string="Event / Function Name" placeholder="e.g. Annual Corporate Dinner / Wedding Party" required="1"/>
-                            <field name="event_type_id" string="Event Type" options="{'no_create_edit': True}" required="1"/>
+                            <field name="event_name" string="Event / Function Name" placeholder="e.g. Annual Corporate Dinner / Wedding Party"/>
+                            <field name="event_type_id" string="Event Type" options="{'no_create_edit': True}"/>
                             <field name="banquet_venue_id" string="Venue / Hall" options="{'no_create_edit': True}"/>
                         </group>
                         <group string="Date &amp; Pricing Setup">
-                            <field name="event_start_date" string="Start Date &amp; Time" required="1"/>
+                            <field name="event_start_date" string="Start Date &amp; Time"/>
                             <field name="event_end_date" string="End Date &amp; Time"/>
                             <field name="guest_count" string="Guests / Pax"/>
                             <field name="payment_term_id" string="Payment Terms" options="{'no_open': True, 'no_create': True}"/>

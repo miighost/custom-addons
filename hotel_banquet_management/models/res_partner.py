@@ -16,6 +16,12 @@ from odoo import api, fields, models
 class ResPartner(models.Model):
     _inherit = 'res.partner'
 
+    is_banquet_customer = fields.Boolean(
+        string='Banquet Customer',
+        compute='_compute_is_banquet_customer',
+        search='_search_is_banquet_customer',
+        help="Whether this customer has banquet bookings or events."
+    )
     banquet_count = fields.Integer(
         string='Banquet Bookings',
         compute='_compute_banquet_count',
@@ -28,6 +34,25 @@ class ResPartner(models.Model):
                 ('partner_id', 'child_of', partner.id),
                 ('is_banquet', '=', True)
             ])
+
+    @api.depends('sale_order_ids.is_banquet')
+    def _compute_is_banquet_customer(self):
+        for partner in self:
+            partner.is_banquet_customer = partner.banquet_count > 0
+
+    def _search_is_banquet_customer(self, operator, value):
+        order_partner_ids = self.env['sale.order'].search([
+            ('is_banquet', '=', True)
+        ]).mapped('partner_id').ids
+        flaad_partner_ids = []
+        if 'banquet.flaad.quotation' in self.env:
+            flaad_partner_ids = self.env['banquet.flaad.quotation'].search([]).mapped('partner_id').ids
+        all_partner_ids = list(set(order_partner_ids + flaad_partner_ids))
+        positive = (operator in ('=', '!=') and ((operator == '=' and bool(value)) or (operator == '!=' and not bool(value))))
+        if positive:
+            return [('id', 'in', all_partner_ids)]
+        else:
+            return [('id', 'not in', all_partner_ids)]
 
     def action_view_banquet_orders(self):
         self.ensure_one()
