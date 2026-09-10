@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- List View -->
+    <record id="view_laundry_task_list" model="ir.ui.view">
+        <field name="name">laundry.task.list</field>
+        <field name="model">laundry.task</field>
+        <field name="arch" type="xml">
+            <list string="Laundry Tasks"
+                  decoration-warning="state == 'in_process'"
+                  decoration-success="state == 'done'">
+                <field name="name"/>
+                <field name="order_id"/>
+                <field name="customer_id"/>
+                <field name="assigned_to"/>
+                <field name="state" widget="badge"
+                    decoration-muted="state == 'new'"
+                    decoration-warning="state == 'in_process'"
+                    decoration-success="state == 'done'"/>
+                <field name="progress" widget="progressbar"/>
+                <field name="spent_hours"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="view_laundry_task_form" model="ir.ui.view">
+        <field name="name">laundry.task.form</field>
+        <field name="model">laundry.task</field>
+        <field name="arch" type="xml">
+            <form string="Laundry Task">
+                <header>
+                    <button name="action_start" string="Start" type="object"
+                        class="btn-primary"
+                        invisible="state != 'new'"/>
+                    <button name="action_done" string="Done" type="object"
+                        class="btn-success"
+                        invisible="state != 'in_process'"/>
+                    <button name="action_reset" string="Reset" type="object"
+                        invisible="state == 'new'"/>
+                    <field name="state" widget="statusbar"
+                        statusbar_visible="new,in_process,done"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name" placeholder="Task Name"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="order_id"/>
+                            <field name="customer_id" readonly="1"/>
+                            <field name="assigned_to"/>
+                        </group>
+                        <group>
+                            <field name="progress" widget="percentpie"/>
+                            <field name="date_start"/>
+                            <field name="date_end"/>
+                            <field name="spent_hours"/>
+                        </group>
+                    </group>
+                    <group string="Description">
+                        <field name="description" nolabel="1" placeholder="Task description..."/>
+                    </group>
+                    <group string="Notes">
+                        <field name="notes" nolabel="1" placeholder="Additional notes..."/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- Kanban View -->
+    <record id="view_laundry_task_kanban" model="ir.ui.view">
+        <field name="name">laundry.task.kanban</field>
+        <field name="model">laundry.task</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="state">
+                <field name="name"/>
+                <field name="order_id"/>
+                <field name="customer_id"/>
+                <field name="assigned_to"/>
+                <field name="state"/>
+                <field name="progress"/>
+                <templates>
+                    <t t-name="card">
+                        <div class="oe_kanban_global_click">
+                            <div class="fw-bold"><field name="name"/></div>
+                            <div class="text-muted"><field name="order_id"/></div>
+                            <div><field name="customer_id"/></div>
+                            <div><field name="assigned_to"/></div>
+                            <div class="mt-2">
+                                <field name="progress" widget="progressbar"/>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="view_laundry_task_search" model="ir.ui.view">
+        <field name="name">laundry.task.search</field>
+        <field name="model">laundry.task</field>
+        <field name="arch" type="xml">
+            <search string="Search Tasks">
+                <field name="name"/>
+                <field name="order_id"/>
+                <field name="assigned_to"/>
+                <separator/>
+                <filter string="New" name="new" domain="[('state','=','new')]"/>
+                <filter string="In Process" name="in_process" domain="[('state','=','in_process')]"/>
+                <filter string="Done" name="done" domain="[('state','=','done')]"/>
+                <group>
+                    <filter string="Status" name="group_state" context="{'group_by': 'state'}"/>
+                    <filter string="Assigned To" name="group_assigned" context="{'group_by': 'assigned_to'}"/>
+                    <filter string="Order" name="group_order" context="{'group_by': 'order_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_laundry_task" model="ir.actions.act_window">
+        <field name="name">Tasks</field>
+        <field name="res_model">laundry.task</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="search_view_id" ref="view_laundry_task_search"/>
+        <field name="context">{'search_default_in_process': 1}</field>
+    </record>
+</odoo>

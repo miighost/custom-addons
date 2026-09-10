@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_report_laundry_order" model="ir.actions.report">
+        <field name="name">Laundry Order</field>
+        <field name="model">laundry.order</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">leapai_laundry_management.report_laundry_order_template</field>
+        <field name="report_file">leapai_laundry_management.report_laundry_order_template</field>
+        <field name="binding_model_id" ref="model_laundry_order"/>
+        <field name="binding_type">report</field>
+        <field name="paperformat_id" ref="base.paperformat_euro"/>
+    </record>
+</odoo>

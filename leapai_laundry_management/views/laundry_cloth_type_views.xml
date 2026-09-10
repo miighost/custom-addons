@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_laundry_cloth_type_list" model="ir.ui.view">
+        <field name="name">laundry.cloth.type.list</field>
+        <field name="model">laundry.cloth.type</field>
+        <field name="arch" type="xml">
+            <list string="Cloth Types">
+                <field name="sequence" widget="handle"/>
+                <field name="image" widget="image" options="{'size': [32, 32]}"/>
+                <field name="name"/>
+                <field name="default_size_id"/>
+                <field name="active"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_laundry_cloth_type_form" model="ir.ui.view">
+        <field name="name">laundry.cloth.type.form</field>
+        <field name="model">laundry.cloth.type</field>
+        <field name="arch" type="xml">
+            <form string="Cloth Type">
+                <sheet>
+                    <field name="image" widget="image" class="oe_avatar" options="{'size': [128, 128]}"/>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name" placeholder="Cloth Type Name"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="sequence"/>
+                            <field name="default_size_id"/>
+                        </group>
+                        <group>
+                            <field name="active"/>
+                        </group>
+                    </group>
+                    <group string="Notes">
+                        <field name="notes" nolabel="1" placeholder="Additional notes..."/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_laundry_cloth_type" model="ir.actions.act_window">
+        <field name="name">Cloth Types</field>
+        <field name="res_model">laundry.cloth.type</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

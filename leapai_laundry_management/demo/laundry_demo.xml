@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Demo Order 1 - Draft -->
+    <record id="demo_order_1" model="laundry.order">
+        <field name="customer_id" ref="base.res_partner_1"/>
+        <field name="order_type">pickup</field>
+        <field name="date" eval="DateTime.now()"/>
+        <field name="deadline" eval="(DateTime.now() + timedelta(days=3)).strftime('%Y-%m-%d')"/>
+        <field name="state">draft</field>
+        <field name="delivery_charge">0.0</field>
+    </record>
+
+    <record id="demo_order_1_line_1" model="laundry.order.line">
+        <field name="order_id" ref="demo_order_1"/>
+        <field name="cloth_type_id" ref="leapai_laundry_management.cloth_shirt"/>
+        <field name="size_id" ref="leapai_laundry_management.size_m"/>
+        <field name="service_id" ref="leapai_laundry_management.service_regular_wash"/>
+        <field name="qty">3</field>
+        <field name="washing_price">5.00</field>
+    </record>
+
+    <record id="demo_order_1_line_2" model="laundry.order.line">
+        <field name="order_id" ref="demo_order_1"/>
+        <field name="cloth_type_id" ref="leapai_laundry_management.cloth_trousers"/>
+        <field name="size_id" ref="leapai_laundry_management.size_l"/>
+        <field name="service_id" ref="leapai_laundry_management.service_delicate_wash"/>
+        <field name="qty">2</field>
+        <field name="washing_price">8.00</field>
+        <field name="notes">Handle with care - delicate material</field>
+    </record>
+
+    <!-- Demo Order 2 - In Process -->
+    <record id="demo_order_2" model="laundry.order">
+        <field name="customer_id" ref="base.res_partner_2"/>
+        <field name="order_type">delivery</field>
+        <field name="date" eval="DateTime.now() - timedelta(days=1)"/>
+        <field name="deadline" eval="(DateTime.now() + timedelta(days=2)).strftime('%Y-%m-%d')"/>
+        <field name="state">in_process</field>
+        <field name="delivery_charge">5.00</field>
+    </record>
+
+    <record id="demo_order_2_line_1" model="laundry.order.line">
+        <field name="order_id" ref="demo_order_2"/>
+        <field name="cloth_type_id" ref="leapai_laundry_management.cloth_dress"/>
+        <field name="size_id" ref="leapai_laundry_management.size_s"/>
+        <field name="service_id" ref="leapai_laundry_management.service_delicate_wash"/>
+        <field name="qty">1</field>
+        <field name="washing_price">8.00</field>
+    </record>
+
+    <record id="demo_order_2_line_2" model="laundry.order.line">
+        <field name="order_id" ref="demo_order_2"/>
+        <field name="cloth_type_id" ref="leapai_laundry_management.cloth_jacket"/>
+        <field name="size_id" ref="leapai_laundry_management.size_l"/>
+        <field name="service_id" ref="leapai_laundry_management.service_chemical_wash"/>
+        <field name="qty">1</field>
+        <field name="washing_price">12.00</field>
+    </record>
+
+    <record id="demo_order_2_line_3" model="laundry.order.line">
+        <field name="order_id" ref="demo_order_2"/>
+        <field name="cloth_type_id" ref="leapai_laundry_management.cloth_bedsheet"/>
+        <field name="service_id" ref="leapai_laundry_management.service_warm_wash"/>
+        <field name="qty">2</field>
+        <field name="washing_price">7.00</field>
+    </record>
+
+    <!-- Demo Tasks for Order 2 -->
+    <record id="demo_task_1" model="laundry.task">
+        <field name="name">Dress - Delicate Wash</field>
+        <field name="order_id" ref="demo_order_2"/>
+        <field name="order_line_id" ref="demo_order_2_line_1"/>
+        <field name="state">in_process</field>
+        <field name="progress">50</field>
+        <field name="description">Delicate wash for dress - size S</field>
+    </record>
+
+    <record id="demo_task_2" model="laundry.task">
+        <field name="name">Jacket - Chemical Wash</field>
+        <field name="order_id" ref="demo_order_2"/>
+        <field name="order_line_id" ref="demo_order_2_line_2"/>
+        <field name="state">new</field>
+        <field name="progress">0</field>
+        <field name="description">Chemical wash for jacket - size L</field>
+    </record>
+
+    <!-- Demo Order 3 - Ready -->
+    <record id="demo_order_3" model="laundry.order">
+        <field name="customer_id" ref="base.res_partner_3"/>
+        <field name="order_type">pickup</field>
+        <field name="date" eval="DateTime.now() - timedelta(days=2)"/>
+        <field name="deadline" eval="DateTime.now().strftime('%Y-%m-%d')"/>
+        <field name="state">ready</field>
+        <field name="delivery_charge">0.0</field>
+    </record>
+
+    <record id="demo_order_3_line_1" model="laundry.order.line">
+        <field name="order_id" ref="demo_order_3"/>
+        <field name="cloth_type_id" ref="leapai_laundry_management.cloth_towel"/>
+        <field name="service_id" ref="leapai_laundry_management.service_regular_wash"/>
+        <field name="qty">4</field>
+        <field name="washing_price">5.00</field>
+    </record>
+
+    <record id="demo_order_3_line_2" model="laundry.order.line">
+        <field name="order_id" ref="demo_order_3"/>
+        <field name="cloth_type_id" ref="leapai_laundry_management.cloth_curtain"/>
+        <field name="service_id" ref="leapai_laundry_management.service_chemical_wash"/>
+        <field name="qty">2</field>
+        <field name="washing_price">12.00</field>
+        <field name="notes">Heavy curtains, need extra care</field>
+    </record>
+</odoo>

@@ -1,0 +1,252 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Form View -->
+    <record id="view_laundry_order_form" model="ir.ui.view">
+        <field name="name">laundry.order.form</field>
+        <field name="model">laundry.order</field>
+        <field name="arch" type="xml">
+            <form string="Laundry Order">
+                <header>
+                    <button name="action_collect" string="Collect" type="object"
+                        class="btn-primary"
+                        invisible="state != 'draft'"
+                        groups="leapai_laundry_management.laundry_manager_group"/>
+                    <button name="action_start_process" string="Start Processing" type="object"
+                        class="btn-primary"
+                        invisible="state != 'collected'"/>
+                    <button name="action_ready" string="Mark Ready" type="object"
+                        class="btn-primary"
+                        invisible="state != 'in_process'"/>
+                    <button name="action_pickup_delivery" string="Pickup / Deliver" type="object"
+                        class="btn-primary"
+                        invisible="state != 'ready'"/>
+                    <button name="action_done" string="Complete" type="object"
+                        class="btn-primary"
+                        invisible="state != 'picked_up'"/>
+                    <button name="action_generate_invoice" string="Generate Invoice" type="object"
+                        invisible="state not in ['picked_up', 'done']"/>
+                    <button name="action_cancel" string="Cancel" type="object"
+                        class="btn-danger"
+                        invisible="state in ['done', 'cancel']"/>
+                    <button name="action_reset_draft" string="Reset to Draft" type="object"
+                        invisible="state != 'cancel'"/>
+                    <field name="state" widget="statusbar"
+                        statusbar_visible="draft,collected,in_process,ready,picked_up,done"/>
+                </header>
+                <sheet>
+                    <!-- Smart Buttons -->
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_tasks" type="object" class="oe_stat_button" icon="fa-tasks">
+                            <field name="task_count" widget="statinfo" string="Tasks"/>
+                        </button>
+                        <button name="action_view_invoices" type="object" class="oe_stat_button" icon="fa-file-text-o">
+                            <field name="invoice_count" widget="statinfo" string="Invoices"/>
+                        </button>
+                        <button type="object" class="oe_stat_button" icon="fa-list-ol">
+                            <field name="line_count" widget="statinfo" string="Items"/>
+                        </button>
+                        <button type="object" class="oe_stat_button" icon="fa-star"
+                            invisible="not rating_id">
+                            <field name="rating" widget="statinfo" string="Rating"/>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Customer Information">
+                            <field name="customer_id"/>
+                            <field name="customer_ref"/>
+                            <field name="order_type" widget="radio"/>
+                        </group>
+                        <group string="Order Details">
+                            <field name="date"/>
+                            <field name="deadline"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Cloth Items" name="cloth_items">
+                            <field name="cloth_line_ids" widget="one2many">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="cloth_type_id"/>
+                                    <field name="size_id"/>
+                                    <field name="service_id"/>
+                                    <field name="extra_service_ids" widget="many2many_tags"/>
+                                    <field name="qty"/>
+                                    <field name="washing_price"/>
+                                    <field name="extra_price" readonly="1"/>
+                                    <field name="subtotal" readonly="1"/>
+                                    <field name="notes" optional="show"/>
+                                    <field name="currency_id" column_invisible="1"/>
+                                </list>
+                                <form>
+                                    <group>
+                                        <group>
+                                            <field name="cloth_type_id"/>
+                                            <field name="size_id"/>
+                                            <field name="service_id"/>
+                                            <field name="extra_service_ids" widget="many2many_tags"/>
+                                        </group>
+                                        <group>
+                                            <field name="qty"/>
+                                            <field name="washing_price"/>
+                                            <field name="extra_price" readonly="1"/>
+                                            <field name="washing_subtotal" readonly="1"/>
+                                            <field name="extra_subtotal" readonly="1"/>
+                                            <field name="subtotal" readonly="1"/>
+                                            <field name="currency_id" invisible="1"/>
+                                        </group>
+                                    </group>
+                                    <group string="Special Instructions">
+                                        <field name="notes" nolabel="1"/>
+                                    </group>
+                                </form>
+                            </field>
+                        </page>
+                        <page string="Charges" name="charges">
+                            <group>
+                                <group>
+                                    <field name="washing_charge" readonly="1"/>
+                                    <field name="extra_charge" readonly="1"/>
+                                    <field name="delivery_charge"/>
+                                </group>
+                                <group>
+                                    <field name="total_amount" readonly="1"
+                                        widget="monetary"
+                                        class="fw-bold fs-4"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Staff &amp; Notes" name="staff_notes">
+                            <group>
+                                <group string="Staff Information">
+                                    <field name="staff_name"/>
+                                    <field name="staff_phone"/>
+                                    <field name="picked_up_date" readonly="1"/>
+                                </group>
+                            </group>
+                            <group string="Internal Notes">
+                                <field name="notes" nolabel="1" placeholder="Internal notes..."/>
+                            </group>
+                            <group string="Terms &amp; Conditions">
+                                <field name="terms" nolabel="1" placeholder="Terms and conditions..."/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- List View -->
+    <record id="view_laundry_order_list" model="ir.ui.view">
+        <field name="name">laundry.order.list</field>
+        <field name="model">laundry.order</field>
+        <field name="arch" type="xml">
+            <list string="Laundry Orders" decoration-info="state == 'draft'"
+                  decoration-warning="state in ['collected', 'in_process']"
+                  decoration-success="state == 'done'"
+                  decoration-muted="state == 'cancel'">
+                <field name="name"/>
+                <field name="customer_id"/>
+                <field name="order_type"/>
+                <field name="date"/>
+                <field name="deadline"/>
+                <field name="line_count" string="Items"/>
+                <field name="total_amount"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="state" widget="badge"
+                    decoration-muted="state == 'draft'"
+                    decoration-warning="state in ['collected', 'in_process']"
+                    decoration-primary="state == 'ready'"
+                    decoration-success="state in ['picked_up', 'done']"
+                    decoration-danger="state == 'cancel'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Kanban View -->
+    <record id="view_laundry_order_kanban" model="ir.ui.view">
+        <field name="name">laundry.order.kanban</field>
+        <field name="model">laundry.order</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="state" class="o_kanban_mobile">
+                <field name="name"/>
+                <field name="customer_id"/>
+                <field name="date"/>
+                <field name="total_amount"/>
+                <field name="state"/>
+                <field name="line_count"/>
+                <field name="currency_id"/>
+                <templates>
+                    <t t-name="card">
+                        <div class="oe_kanban_global_click">
+                            <div class="fw-bold"><field name="name"/></div>
+                            <div><field name="customer_id"/></div>
+                            <div class="text-muted"><field name="date" widget="date"/></div>
+                            <div>
+                                <span class="badge bg-secondary"><field name="line_count"/> items</span>
+                                <span class="fw-bold float-end">
+                                    <field name="total_amount" widget="monetary"/>
+                                </span>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="view_laundry_order_search" model="ir.ui.view">
+        <field name="name">laundry.order.search</field>
+        <field name="model">laundry.order</field>
+        <field name="arch" type="xml">
+            <search string="Search Laundry Orders">
+                <field name="name" string="Order Reference"/>
+                <field name="customer_id"/>
+                <field name="customer_ref"/>
+                <separator/>
+                <filter string="Draft" name="draft" domain="[('state','=','draft')]"/>
+                <filter string="In Process" name="in_process" domain="[('state','=','in_process')]"/>
+                <filter string="Ready" name="ready" domain="[('state','=','ready')]"/>
+                <filter string="Done" name="done" domain="[('state','=','done')]"/>
+                <filter string="Cancelled" name="cancel" domain="[('state','=','cancel')]"/>
+                <separator/>
+                <filter string="My Orders" name="my_orders" domain="[('create_uid','=',uid)]"/>
+                <separator/>
+                <filter string="Pick Up" name="pickup" domain="[('order_type','=','pickup')]"/>
+                <filter string="Home Delivery" name="delivery" domain="[('order_type','=','delivery')]"/>
+                <group>
+                    <filter string="Customer" name="group_customer" context="{'group_by': 'customer_id'}"/>
+                    <filter string="Order Type" name="group_type" context="{'group_by': 'order_type'}"/>
+                    <filter string="Order Date" name="group_date" context="{'group_by': 'date:month'}"/>
+                    <filter string="Status" name="group_state" context="{'group_by': 'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Actions -->
+    <record id="action_laundry_order_all" model="ir.actions.act_window">
+        <field name="name">All Orders</field>
+        <field name="res_model">laundry.order</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="search_view_id" ref="view_laundry_order_search"/>
+        <field name="context">{}</field>
+    </record>
+
+    <record id="action_laundry_order_my" model="ir.actions.act_window">
+        <field name="name">My Orders</field>
+        <field name="res_model">laundry.order</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="search_view_id" ref="view_laundry_order_search"/>
+        <field name="context">{'search_default_my_orders': 1}</field>
+    </record>
+</odoo>

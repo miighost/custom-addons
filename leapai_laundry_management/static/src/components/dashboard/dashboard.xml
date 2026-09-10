@@ -1,0 +1,284 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates xml:space="preserve">
+    <t t-name="leapai_laundry_management.Dashboard">
+        <div class="laundry-dashboard o_action">
+            <!-- Loading Overlay -->
+            <div t-if="state.loading" class="laundry-loading-overlay">
+                <div class="laundry-spinner">
+                    <i class="fa fa-spinner fa-spin fa-3x"/>
+                    <p>Loading Dashboard...</p>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div t-if="!state.loading" class="laundry-dashboard-content">
+                <!-- Header -->
+                <div class="laundry-dashboard-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h2 class="mb-0">🧺 Laundry Dashboard</h2>
+                        <button class="btn btn-primary btn-sm" t-on-click="() => this._loadData()">
+                            <i class="fa fa-refresh me-1"/> Refresh
+                        </button>
+                    </div>
+                </div>
+
+                <!-- KPI Cards -->
+                <div class="row laundry-kpi-row g-3 mb-4">
+                    <div class="col-md-3 col-sm-6">
+                        <div class="laundry-kpi-card kpi-total" t-on-click="() => this.openOrders([])">
+                            <div class="kpi-icon"><i class="fa fa-shopping-basket"/></div>
+                            <div class="kpi-body">
+                                <div class="kpi-value"><t t-esc="state.data.total_orders"/></div>
+                                <div class="kpi-label">Total Orders</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-sm-6">
+                        <div class="laundry-kpi-card kpi-month" t-on-click="() => this.openOrders([])">
+                            <div class="kpi-icon"><i class="fa fa-calendar"/></div>
+                            <div class="kpi-body">
+                                <div class="kpi-value"><t t-esc="state.data.orders_this_month"/></div>
+                                <div class="kpi-label">Orders This Month</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-sm-6">
+                        <div class="laundry-kpi-card kpi-revenue">
+                            <div class="kpi-icon"><i class="fa fa-money"/></div>
+                            <div class="kpi-body">
+                                <div class="kpi-value">
+                                    <t t-esc="state.data.currency_symbol"/>
+                                    <t t-esc="state.data.revenue_this_month.toFixed(2)"/>
+                                </div>
+                                <div class="kpi-label">Revenue This Month</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-sm-6">
+                        <div class="laundry-kpi-card kpi-tasks"
+                             t-on-click="() => this.openTasks([['state','=','in_process']])">
+                            <div class="kpi-icon"><i class="fa fa-tasks"/></div>
+                            <div class="kpi-body">
+                                <div class="kpi-value"><t t-esc="state.data.tasks_in_process"/></div>
+                                <div class="kpi-label">Tasks In Progress</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Status Panels -->
+                <div class="row g-3 mb-4">
+                    <!-- Order Status Panel -->
+                    <div class="col-md-4">
+                        <div class="laundry-panel">
+                            <div class="panel-header">
+                                <i class="fa fa-list-alt me-2"/>Order Status
+                            </div>
+                            <div class="panel-body">
+                                <div class="status-row" t-on-click="() => this.openOrders([['state','=','draft']])">
+                                    <span class="status-label">
+                                        <span class="badge badge-draft">Draft</span>
+                                    </span>
+                                    <span class="status-count"><t t-esc="state.data.orders_draft"/></span>
+                                </div>
+                                <div class="status-row" t-on-click="() => this.openOrders([['state','=','collected']])">
+                                    <span class="status-label">
+                                        <span class="badge badge-collected">Collected</span>
+                                    </span>
+                                    <span class="status-count"><t t-esc="state.data.orders_collected"/></span>
+                                </div>
+                                <div class="status-row" t-on-click="() => this.openOrders([['state','=','in_process']])">
+                                    <span class="status-label">
+                                        <span class="badge badge-in-process">In Process</span>
+                                    </span>
+                                    <span class="status-count"><t t-esc="state.data.orders_in_process"/></span>
+                                </div>
+                                <div class="status-row" t-on-click="() => this.openOrders([['state','=','ready']])">
+                                    <span class="status-label">
+                                        <span class="badge badge-ready">Ready</span>
+                                    </span>
+                                    <span class="status-count"><t t-esc="state.data.orders_ready"/></span>
+                                </div>
+                                <div class="status-row" t-on-click="() => this.openOrders([['state','=','picked_up']])">
+                                    <span class="status-label">
+                                        <span class="badge badge-picked-up">Picked Up</span>
+                                    </span>
+                                    <span class="status-count"><t t-esc="state.data.orders_picked_up"/></span>
+                                </div>
+                                <div class="status-row" t-on-click="() => this.openOrders([['state','=','done']])">
+                                    <span class="status-label">
+                                        <span class="badge badge-done">Done</span>
+                                    </span>
+                                    <span class="status-count"><t t-esc="state.data.orders_done"/></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Task Status Panel -->
+                    <div class="col-md-4">
+                        <div class="laundry-panel">
+                            <div class="panel-header">
+                                <i class="fa fa-tasks me-2"/>Task Status
+                            </div>
+                            <div class="panel-body">
+                                <div class="status-row" t-on-click="() => this.openTasks([['state','=','new']])">
+                                    <span class="status-label">
+                                        <span class="badge bg-secondary">New</span>
+                                    </span>
+                                    <span class="status-count"><t t-esc="state.data.tasks_new"/></span>
+                                </div>
+                                <div class="status-row" t-on-click="() => this.openTasks([['state','=','in_process']])">
+                                    <span class="status-label">
+                                        <span class="badge bg-warning">In Process</span>
+                                    </span>
+                                    <span class="status-count"><t t-esc="state.data.tasks_in_process"/></span>
+                                </div>
+                                <div class="status-row" t-on-click="() => this.openTasks([['state','=','done']])">
+                                    <span class="status-label">
+                                        <span class="badge bg-success">Done</span>
+                                    </span>
+                                    <span class="status-count"><t t-esc="state.data.tasks_done"/></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Order Type Panel -->
+                    <div class="col-md-4">
+                        <div class="laundry-panel">
+                            <div class="panel-header">
+                                <i class="fa fa-truck me-2"/>Order Types
+                            </div>
+                            <div class="panel-body">
+                                <div class="status-row" t-on-click="() => this.openOrders([['order_type','=','pickup']])">
+                                    <span class="status-label">
+                                        <span class="badge badge-pickup">Pick Up</span>
+                                    </span>
+                                    <span class="status-count"><t t-esc="state.data.pickup_count"/></span>
+                                </div>
+                                <div class="status-row" t-on-click="() => this.openOrders([['order_type','=','delivery']])">
+                                    <span class="status-label">
+                                        <span class="badge badge-delivery">Home Delivery</span>
+                                    </span>
+                                    <span class="status-count"><t t-esc="state.data.delivery_count"/></span>
+                                </div>
+                                <div class="status-row">
+                                    <span class="status-label">
+                                        <span class="badge bg-success">Tasks Completed</span>
+                                    </span>
+                                    <span class="status-count"><t t-esc="state.data.tasks_done"/></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Orders Table -->
+                <div class="laundry-panel mb-4">
+                    <div class="panel-header">
+                        <i class="fa fa-clock-o me-2"/>Recent Orders
+                    </div>
+                    <div class="panel-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover laundry-table mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Reference</th>
+                                        <th>Customer</th>
+                                        <th>Date</th>
+                                        <th>Type</th>
+                                        <th class="text-center">Items</th>
+                                        <th class="text-end">Total</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="state.data.recent_orders" t-as="order" t-key="order.id">
+                                        <tr class="cursor-pointer" t-on-click="() => this.openOrder(order.id)">
+                                            <td class="fw-bold text-primary"><t t-esc="order.name"/></td>
+                                            <td><t t-esc="order.customer"/></td>
+                                            <td><t t-esc="order.date"/></td>
+                                            <td>
+                                                <span t-if="order.order_type === 'pickup'" class="badge badge-pickup">Pick Up</span>
+                                                <span t-else="" class="badge badge-delivery">Home Delivery</span>
+                                            </td>
+                                            <td class="text-center">
+                                                <span class="badge bg-secondary"><t t-esc="order.items"/></span>
+                                            </td>
+                                            <td class="text-end fw-bold">
+                                                <t t-esc="order.currency_symbol"/>
+                                                <t t-esc="order.total.toFixed(2)"/>
+                                            </td>
+                                            <td>
+                                                <span t-attf-class="badge badge-state-#{order.state}">
+                                                    <t t-esc="this.stateLabel(order.state)"/>
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    </t>
+                                    <tr t-if="!state.data.recent_orders or state.data.recent_orders.length === 0">
+                                        <td colspan="7" class="text-center text-muted py-4">No orders found</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Tasks Table -->
+                <div class="laundry-panel mb-4">
+                    <div class="panel-header">
+                        <i class="fa fa-wrench me-2"/>Recent Tasks
+                    </div>
+                    <div class="panel-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover laundry-table mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Task</th>
+                                        <th>Order</th>
+                                        <th>Customer</th>
+                                        <th>Assigned To</th>
+                                        <th>Progress</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="state.data.recent_tasks" t-as="task" t-key="task.id">
+                                        <tr class="cursor-pointer" t-on-click="() => this.openTask(task.id)">
+                                            <td class="fw-bold"><t t-esc="task.name"/></td>
+                                            <td class="text-primary"><t t-esc="task.order_name"/></td>
+                                            <td><t t-esc="task.customer"/></td>
+                                            <td>
+                                                <span t-if="task.assigned !== 'Unassigned'"><t t-esc="task.assigned"/></span>
+                                                <span t-else="" class="text-muted fst-italic">Unassigned</span>
+                                            </td>
+                                            <td>
+                                                <div class="progress laundry-progress-bar">
+                                                    <div class="progress-bar"
+                                                         t-attf-style="width: #{task.progress}%"
+                                                         t-attf-class="progress-bar #{task.state === 'done' ? 'bg-success' : 'bg-primary'}">
+                                                        <t t-esc="task.progress"/>%
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span t-attf-class="badge #{task.state === 'new' ? 'bg-secondary' : task.state === 'in_process' ? 'bg-warning' : 'bg-success'}">
+                                                    <t t-esc="this.taskStateLabel(task.state)"/>
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    </t>
+                                    <tr t-if="!state.data.recent_tasks or state.data.recent_tasks.length === 0">
+                                        <td colspan="6" class="text-center text-muted py-4">No tasks found</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+</templates>

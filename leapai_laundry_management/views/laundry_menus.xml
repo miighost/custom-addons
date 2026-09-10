@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Root Menu -->
+    <menuitem id="menu_laundry_root"
+        name="Laundry"
+        sequence="85"
+        web_icon="leapai_laundry_management,static/description/icon.png"/>
+
+    <!-- Dashboard -->
+    <menuitem id="menu_laundry_dashboard"
+        name="Dashboard"
+        parent="menu_laundry_root"
+        action="action_laundry_dashboard"
+        sequence="1"/>
+
+    <!-- Orders Menu -->
+    <menuitem id="menu_laundry_orders"
+        name="Orders"
+        parent="menu_laundry_root"
+        sequence="2"/>
+
+    <menuitem id="menu_laundry_order_all"
+        name="All Orders"
+        parent="menu_laundry_orders"
+        action="action_laundry_order_all"
+        sequence="1"
+        groups="leapai_laundry_management.laundry_manager_group"/>
+
+    <menuitem id="menu_laundry_order_my"
+        name="My Orders"
+        parent="menu_laundry_orders"
+        action="action_laundry_order_my"
+        sequence="2"/>
+
+    <!-- Tasks -->
+    <menuitem id="menu_laundry_tasks"
+        name="Tasks"
+        parent="menu_laundry_root"
+        action="action_laundry_task"
+        sequence="3"/>
+
+    <!-- Ratings -->
+    <menuitem id="menu_laundry_ratings"
+        name="Ratings"
+        parent="menu_laundry_root"
+        action="action_laundry_rating"
+        sequence="4"/>
+
+    <!-- Configuration -->
+    <menuitem id="menu_laundry_config"
+        name="Configuration"
+        parent="menu_laundry_root"
+        sequence="10"
+        groups="leapai_laundry_management.laundry_manager_group"/>
+
+    <menuitem id="menu_laundry_cloth_type"
+        name="Cloth Types"
+        parent="menu_laundry_config"
+        action="action_laundry_cloth_type"
+        sequence="1"/>
+
+    <menuitem id="menu_laundry_cloth_size"
+        name="Cloth Sizes"
+        parent="menu_laundry_config"
+        action="action_laundry_cloth_size"
+        sequence="2"/>
+
+    <menuitem id="menu_laundry_service"
+        name="Services"
+        parent="menu_laundry_config"
+        action="action_laundry_service"
+        sequence="3"/>
+</odoo>

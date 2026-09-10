@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="seq_laundry_order" model="ir.sequence">
+        <field name="name">Laundry Order</field>
+        <field name="code">laundry.order</field>
+        <field name="prefix">WASH/%(year)s/</field>
+        <field name="padding">4</field>
+        <field name="company_id" eval="False"/>
+    </record>
+</odoo>

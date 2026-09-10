@@ -1,0 +1,263 @@
+// Laundry Dashboard Styles
+// Color theme: Blue #0066cc, Teal #17a2b8
+
+.laundry-dashboard {
+    background: #f4f6f9;
+    min-height: 100vh;
+    padding: 0;
+
+    .laundry-loading-overlay {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 400px;
+
+        .laundry-spinner {
+            text-align: center;
+            color: #0066cc;
+
+            p {
+                margin-top: 1rem;
+                font-size: 1rem;
+                color: #666;
+            }
+        }
+    }
+
+    .laundry-dashboard-content {
+        padding: 1.5rem;
+    }
+
+    .laundry-dashboard-header {
+        background: linear-gradient(135deg, #0066cc, #17a2b8);
+        color: white;
+        padding: 1.25rem 1.5rem;
+        border-radius: 8px;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0, 102, 204, 0.3);
+
+        h2 {
+            color: white;
+            font-size: 1.5rem;
+        }
+
+        .btn-primary {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.5);
+            color: white;
+
+            &:hover {
+                background: rgba(255, 255, 255, 0.35);
+            }
+        }
+    }
+
+    // KPI Cards
+    .laundry-kpi-row {
+        .laundry-kpi-card {
+            background: white;
+            border-radius: 8px;
+            padding: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+            transition: transform 0.2s, box-shadow 0.2s;
+            border-left: 4px solid #0066cc;
+
+            &:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            }
+
+            .kpi-icon {
+                width: 48px;
+                height: 48px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 1.25rem;
+                color: white;
+                flex-shrink: 0;
+            }
+
+            .kpi-body {
+                .kpi-value {
+                    font-size: 1.75rem;
+                    font-weight: 700;
+                    line-height: 1.2;
+                    color: #2c3e50;
+                }
+
+                .kpi-label {
+                    font-size: 0.8rem;
+                    color: #6c757d;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                }
+            }
+
+            &.kpi-total {
+                border-left-color: #0066cc;
+                .kpi-icon { background: #0066cc; }
+            }
+
+            &.kpi-month {
+                border-left-color: #17a2b8;
+                .kpi-icon { background: #17a2b8; }
+            }
+
+            &.kpi-revenue {
+                border-left-color: #28a745;
+                .kpi-icon { background: #28a745; }
+            }
+
+            &.kpi-tasks {
+                border-left-color: #ffc107;
+                .kpi-icon { background: #ffc107; color: #2c3e50; }
+            }
+        }
+    }
+
+    // Panels
+    .laundry-panel {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+
+        .panel-header {
+            background: linear-gradient(135deg, #0066cc, #0052a3);
+            color: white;
+            padding: 0.75rem 1.25rem;
+            font-weight: 600;
+            font-size: 0.95rem;
+
+            i { opacity: 0.85; }
+        }
+
+        .panel-body {
+            padding: 0.75rem 1.25rem;
+        }
+    }
+
+    // Status Rows
+    .status-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #f0f0f0;
+        cursor: pointer;
+        transition: background 0.15s;
+        margin: 0 -1.25rem;
+        padding: 0.5rem 1.25rem;
+
+        &:last-child {
+            border-bottom: none;
+        }
+
+        &:hover {
+            background: #f8f9fa;
+        }
+
+        .status-label {
+            font-size: 0.85rem;
+        }
+
+        .status-count {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+    }
+
+    // Tables
+    .laundry-table {
+        font-size: 0.875rem;
+
+        thead {
+            background: #f8f9fa;
+
+            th {
+                color: #495057;
+                font-weight: 600;
+                border-bottom: 2px solid #dee2e6;
+                padding: 0.75rem 1rem;
+                white-space: nowrap;
+            }
+        }
+
+        tbody {
+            tr {
+                transition: background 0.15s;
+
+                &:hover {
+                    background: #f0f7ff;
+                    cursor: pointer;
+                }
+
+                td {
+                    padding: 0.625rem 1rem;
+                    vertical-align: middle;
+                }
+            }
+        }
+    }
+
+    // Progress Bars
+    .laundry-progress-bar {
+        height: 18px;
+        border-radius: 9px;
+        background: #e9ecef;
+        min-width: 80px;
+
+        .progress-bar {
+            border-radius: 9px;
+            font-size: 0.7rem;
+            line-height: 18px;
+            min-width: 30px;
+        }
+    }
+
+    // State Badges
+    .badge {
+        font-size: 0.75rem;
+        padding: 0.35em 0.65em;
+    }
+
+    .badge-draft { background-color: #6c757d !important; color: white; }
+    .badge-collected { background-color: #17a2b8 !important; color: white; }
+    .badge-in-process { background-color: #ffc107 !important; color: #2c3e50; }
+    .badge-ready { background-color: #0066cc !important; color: white; }
+    .badge-picked-up { background-color: #20c997 !important; color: white; }
+    .badge-done { background-color: #28a745 !important; color: white; }
+    .badge-cancel { background-color: #dc3545 !important; color: white; }
+
+    // State badges for table rows
+    .badge-state-draft { @extend .badge-draft; }
+    .badge-state-collected { @extend .badge-collected; }
+    .badge-state-in_process { @extend .badge-in-process; }
+    .badge-state-ready { @extend .badge-ready; }
+    .badge-state-picked_up { @extend .badge-picked-up; }
+    .badge-state-done { @extend .badge-done; }
+    .badge-state-cancel { @extend .badge-cancel; }
+
+    // Type Badges
+    .badge-pickup {
+        background-color: #0066cc !important;
+        color: white;
+    }
+
+    .badge-delivery {
+        background-color: #6f42c1 !important;
+        color: white;
+    }
+
+    // Cursor
+    .cursor-pointer {
+        cursor: pointer;
+    }
+}

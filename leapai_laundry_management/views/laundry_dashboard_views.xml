@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_laundry_dashboard" model="ir.actions.client">
+        <field name="name">Laundry Dashboard</field>
+        <field name="tag">laundry_dashboard</field>
+    </record>
+</odoo>

@@ -1,0 +1,17 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_laundry_order_manager,laundry.order manager,model_laundry_order,leapai_laundry_management.laundry_manager_group,1,1,1,1
+access_laundry_order_user,laundry.order user,model_laundry_order,leapai_laundry_management.laundry_user_group,1,1,1,0
+access_laundry_order_line_manager,laundry.order.line manager,model_laundry_order_line,leapai_laundry_management.laundry_manager_group,1,1,1,1
+access_laundry_order_line_user,laundry.order.line user,model_laundry_order_line,leapai_laundry_management.laundry_user_group,1,1,1,0
+access_laundry_service_manager,laundry.service manager,model_laundry_service,leapai_laundry_management.laundry_manager_group,1,1,1,1
+access_laundry_service_user,laundry.service user,model_laundry_service,leapai_laundry_management.laundry_user_group,1,0,0,0
+access_laundry_cloth_type_manager,laundry.cloth.type manager,model_laundry_cloth_type,leapai_laundry_management.laundry_manager_group,1,1,1,1
+access_laundry_cloth_type_user,laundry.cloth.type user,model_laundry_cloth_type,leapai_laundry_management.laundry_user_group,1,0,0,0
+access_laundry_cloth_size_manager,laundry.cloth.size manager,model_laundry_cloth_size,leapai_laundry_management.laundry_manager_group,1,1,1,1
+access_laundry_cloth_size_user,laundry.cloth.size user,model_laundry_cloth_size,leapai_laundry_management.laundry_user_group,1,0,0,0
+access_laundry_task_manager,laundry.task manager,model_laundry_task,leapai_laundry_management.laundry_manager_group,1,1,1,1
+access_laundry_task_user,laundry.task user,model_laundry_task,leapai_laundry_management.laundry_user_group,1,1,1,0
+access_laundry_rating_manager,laundry.rating manager,model_laundry_rating,leapai_laundry_management.laundry_manager_group,1,1,1,1
+access_laundry_rating_user,laundry.rating user,model_laundry_rating,leapai_laundry_management.laundry_user_group,1,1,1,0
+access_laundry_pickup_wizard_all,laundry.pickup.wizard all,model_laundry_pickup_wizard,base.group_user,1,1,1,1
+access_laundry_dashboard_all,laundry.dashboard all,model_laundry_dashboard,base.group_user,1,0,0,0

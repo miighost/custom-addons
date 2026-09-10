@@ -1,0 +1,385 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# * leapai_laundry_management
+#
+# Translators:
+# LeapAI <info@leapai.ai>, 2025
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-01-01 00:00+0000\n"
+"PO-Revision-Date: 2025-01-01 00:00+0000\n"
+"Last-Translator: LeapAI <info@leapai.ai>\n"
+"Language-Team: Arabic\n"
+"Language: ar\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 ? 4 : 5;\n"
+
+#. module: leapai_laundry_management
+#: model:ir.model,model_description:leapai_laundry_management.model_laundry_order
+msgid "Laundry Order"
+msgstr "طلب غسيل"
+
+#. module: leapai_laundry_management
+#: model:ir.model.fields,field_description:leapai_laundry_management.field_laundry_order__name
+msgid "Order Reference"
+msgstr "رقم الطلب"
+
+#. module: leapai_laundry_management
+#: model:ir.model.fields,field_description:leapai_laundry_management.field_laundry_order__customer_id
+msgid "Customer"
+msgstr "العميل"
+
+#. module: leapai_laundry_management
+#: model:ir.model.fields,field_description:leapai_laundry_management.field_laundry_order__order_type
+msgid "Order Type"
+msgstr "نوع الطلب"
+
+#. module: leapai_laundry_management
+#: model:ir.model.fields,field_description:leapai_laundry_management.field_laundry_order__date
+msgid "Order Date"
+msgstr "تاريخ الطلب"
+
+#. module: leapai_laundry_management
+#: model:ir.model.fields,field_description:leapai_laundry_management.field_laundry_order__deadline
+msgid "Customer Deadline"
+msgstr "الموعد النهائي للعميل"
+
+#. module: leapai_laundry_management
+#: model:ir.model.fields,field_description:leapai_laundry_management.field_laundry_order__state
+msgid "Status"
+msgstr "الحالة"
+
+#. module: leapai_laundry_management
+#: model:ir.model.fields.selection,name:leapai_laundry_management.selection__laundry_order__state__draft
+msgid "Draft"
+msgstr "مسودة"
+
+#. module: leapai_laundry_management
+#: model:ir.model.fields.selection,name:leapai_laundry_management.selection__laundry_order__state__collected
+msgid "Collected"
+msgstr "تم التجميع"
+
+#. module: leapai_laundry_management
+#: model:ir.model.fields.selection,name:leapai_laundry_management.selection__laundry_order__state__in_process
+msgid "In Process"
+msgstr "قيد المعالجة"
+
+#. module: leapai_laundry_management
+#: model:ir.model.fields.selection,name:leapai_laundry_management.selection__laundry_order__state__ready
+msgid "Ready"
+msgstr "جاهز"
+
+#. module: leapai_laundry_management
+#: model:ir.model.fields.selection,name:leapai_laundry_management.selection__laundry_order__state__picked_up
+msgid "Picked Up / Delivered"
+msgstr "تم الاستلام / التسليم"
+
+#. module: leapai_laundry_management
+#: model:ir.model.fields.selection,name:leapai_laundry_management.selection__laundry_order__state__done
+msgid "Complete"
+msgstr "مكتمل"
+
+#. module: leapai_laundry_management
+#: model:ir.model.fields.selection,name:leapai_laundry_management.selection__laundry_order__state__cancel
+msgid "Cancelled"
+msgstr "ملغى"
+
+#. module: leapai_laundry_management
+#: model:ir.model.fields.selection,name:leapai_laundry_management.selection__laundry_order__order_type__pickup
+msgid "Pick Up"
+msgstr "استلام"
+
+#. module: leapai_laundry_management
+#: model:ir.model.fields.selection,name:leapai_laundry_management.selection__laundry_order__order_type__delivery
+msgid "Home Delivery"
+msgstr "توصيل منزلي"
+
+#. module: leapai_laundry_management
+#: model:ir.model.fields,field_description:leapai_laundry_management.field_laundry_order__washing_charge
+msgid "Washing Charge"
+msgstr "رسوم الغسيل"
+
+#. module: leapai_laundry_management
+#: model:ir.model.fields,field_description:leapai_laundry_management.field_laundry_order__extra_charge
+msgid "Extra Service Charge"
+msgstr "رسوم الخدمة الإضافية"
+
+#. module: leapai_laundry_management
+#: model:ir.model.fields,field_description:leapai_laundry_management.field_laundry_order__delivery_charge
+msgid "Delivery Charge"
+msgstr "رسوم التوصيل"
+
+#. module: leapai_laundry_management
+#: model:ir.model.fields,field_description:leapai_laundry_management.field_laundry_order__total_amount
+msgid "Total Amount"
+msgstr "المبلغ الإجمالي"
+
+#. module: leapai_laundry_management
+#: model:ir.model.fields,field_description:leapai_laundry_management.field_laundry_order__notes
+msgid "Internal Notes"
+msgstr "ملاحظات داخلية"
+
+#. module: leapai_laundry_management
+#: model:ir.model.fields,field_description:leapai_laundry_management.field_laundry_order__terms
+msgid "Terms & Conditions"
+msgstr "الشروط والأحكام"
+
+#. module: leapai_laundry_management
+#: model:ir.model.fields,field_description:leapai_laundry_management.field_laundry_order__staff_name
+msgid "Staff Name"
+msgstr "اسم الموظف"
+
+#. module: leapai_laundry_management
+#: model:ir.model.fields,field_description:leapai_laundry_management.field_laundry_order__staff_phone
+msgid "Staff Phone"
+msgstr "هاتف الموظف"
+
+#. module: leapai_laundry_management
+#: code:addons/leapai_laundry_management/models/laundry_order.py:0
+msgid "Clothes collected from customer."
+msgstr "تم جمع الملابس من العميل."
+
+#. module: leapai_laundry_management
+#: code:addons/leapai_laundry_management/models/laundry_order.py:0
+msgid "Laundry processing started."
+msgstr "بدأت معالجة الغسيل."
+
+#. module: leapai_laundry_management
+#: code:addons/leapai_laundry_management/models/laundry_order.py:0
+msgid "Laundry is ready for pickup/delivery."
+msgstr "الغسيل جاهز للاستلام/التسليم."
+
+#. module: leapai_laundry_management
+#: code:addons/leapai_laundry_management/models/laundry_order.py:0
+msgid "Order completed."
+msgstr "اكتمل الطلب."
+
+#. module: leapai_laundry_management
+#: code:addons/leapai_laundry_management/models/laundry_order.py:0
+msgid "Order cancelled."
+msgstr "تم إلغاء الطلب."
+
+#. module: leapai_laundry_management
+#: code:addons/leapai_laundry_management/models/laundry_order.py:0
+msgid "Cannot cancel a completed order."
+msgstr "لا يمكن إلغاء طلب مكتمل."
+
+#. module: leapai_laundry_management
+#: code:addons/leapai_laundry_management/models/laundry_order.py:0
+msgid "Add cloth lines before generating invoice."
+msgstr "أضف أسطر الملابس قبل إنشاء الفاتورة."
+
+#. module: leapai_laundry_management
+#: model:ir.model,model_description:leapai_laundry_management.model_laundry_task
+msgid "Laundry Task"
+msgstr "مهمة غسيل"
+
+#. module: leapai_laundry_management
+#: model:ir.model.fields,field_description:leapai_laundry_management.field_laundry_task__name
+msgid "Task"
+msgstr "مهمة"
+
+#. module: leapai_laundry_management
+#: model:ir.model.fields,field_description:leapai_laundry_management.field_laundry_task__assigned_to
+msgid "Assigned To"
+msgstr "مسند إلى"
+
+#. module: leapai_laundry_management
+#: model:ir.model.fields,field_description:leapai_laundry_management.field_laundry_task__progress
+msgid "Progress %"
+msgstr "نسبة الإنجاز %"
+
+#. module: leapai_laundry_management
+#: model:ir.model.fields,field_description:leapai_laundry_management.field_laundry_task__spent_hours
+msgid "Time Spent (hrs)"
+msgstr "الوقت المستغرق (ساعات)"
+
+#. module: leapai_laundry_management
+#: model:ir.model.fields.selection,name:leapai_laundry_management.selection__laundry_task__state__new
+msgid "New"
+msgstr "جديد"
+
+#. module: leapai_laundry_management
+#: model:ir.model.fields.selection,name:leapai_laundry_management.selection__laundry_task__state__done
+msgid "Done"
+msgstr "تم"
+
+#. module: leapai_laundry_management
+#: model:ir.model.fields,field_description:leapai_laundry_management.field_laundry_task__description
+msgid "Description"
+msgstr "الوصف"
+
+#. module: leapai_laundry_management
+#: model:ir.model.fields,field_description:leapai_laundry_management.field_laundry_task__notes
+msgid "Notes"
+msgstr "ملاحظات"
+
+#. module: leapai_laundry_management
+#: model:ir.model.fields,field_description:leapai_laundry_management.field_laundry_task__date_start
+msgid "Start Date"
+msgstr "تاريخ البداية"
+
+#. module: leapai_laundry_management
+#: model:ir.model.fields,field_description:leapai_laundry_management.field_laundry_task__date_end
+msgid "End Date"
+msgstr "تاريخ الانتهاء"
+
+#. module: leapai_laundry_management
+#: model:ir.model,model_description:leapai_laundry_management.model_laundry_service
+msgid "Laundry Service"
+msgstr "خدمة غسيل"
+
+#. module: leapai_laundry_management
+#: model:ir.model.fields,field_description:leapai_laundry_management.field_laundry_service__name
+msgid "Service Name"
+msgstr "اسم الخدمة"
+
+#. module: leapai_laundry_management
+#: model:ir.model.fields.selection,name:leapai_laundry_management.selection__laundry_service__service_type__wash
+msgid "Washing Service"
+msgstr "خدمة الغسيل"
+
+#. module: leapai_laundry_management
+#: model:ir.model.fields.selection,name:leapai_laundry_management.selection__laundry_service__service_type__extra
+msgid "Extra Service"
+msgstr "خدمة إضافية"
+
+#. module: leapai_laundry_management
+#: model:ir.model.fields,field_description:leapai_laundry_management.field_laundry_service__price
+msgid "Default Price"
+msgstr "السعر الافتراضي"
+
+#. module: leapai_laundry_management
+#: model:ir.model.fields,field_description:leapai_laundry_management.field_laundry_service__product_id
+msgid "Invoice Product"
+msgstr "منتج الفاتورة"
+
+#. module: leapai_laundry_management
+#: model:ir.model,model_description:leapai_laundry_management.model_laundry_cloth_type
+msgid "Cloth Type"
+msgstr "نوع الملابس"
+
+#. module: leapai_laundry_management
+#: model:ir.model.fields,field_description:leapai_laundry_management.field_laundry_cloth_type__default_size_id
+msgid "Default Size"
+msgstr "الحجم الافتراضي"
+
+#. module: leapai_laundry_management
+#: model:ir.model,model_description:leapai_laundry_management.model_laundry_cloth_size
+msgid "Cloth Size"
+msgstr "حجم الملابس"
+
+#. module: leapai_laundry_management
+#: model:ir.model.fields,field_description:leapai_laundry_management.field_laundry_cloth_size__name
+msgid "Size"
+msgstr "الحجم"
+
+#. module: leapai_laundry_management
+#: model:ir.model.fields,field_description:leapai_laundry_management.field_laundry_cloth_size__code
+msgid "Code"
+msgstr "الرمز"
+
+#. module: leapai_laundry_management
+#: model:ir.model,model_description:leapai_laundry_management.model_laundry_rating
+msgid "Laundry Rating"
+msgstr "تقييم الغسيل"
+
+#. module: leapai_laundry_management
+#: model:ir.model.fields,field_description:leapai_laundry_management.field_laundry_rating__rating
+msgid "Rating"
+msgstr "التقييم"
+
+#. module: leapai_laundry_management
+#: model:ir.model.fields.selection,name:leapai_laundry_management.selection__laundry_rating__rating__good
+msgid "Good"
+msgstr "جيد"
+
+#. module: leapai_laundry_management
+#: model:ir.model.fields.selection,name:leapai_laundry_management.selection__laundry_rating__rating__average
+msgid "Average"
+msgstr "متوسط"
+
+#. module: leapai_laundry_management
+#: model:ir.model.fields.selection,name:leapai_laundry_management.selection__laundry_rating__rating__bad
+msgid "Bad"
+msgstr "سيء"
+
+#. module: leapai_laundry_management
+#: model:ir.model.fields,field_description:leapai_laundry_management.field_laundry_rating__review
+msgid "Customer Review"
+msgstr "تقييم العميل"
+
+#. module: leapai_laundry_management
+#: model:ir.ui.menu,name:leapai_laundry_management.menu_laundry_root
+msgid "Laundry"
+msgstr "المغسلة"
+
+#. module: leapai_laundry_management
+#: model:ir.ui.menu,name:leapai_laundry_management.menu_laundry_dashboard
+msgid "Dashboard"
+msgstr "لوحة التحكم"
+
+#. module: leapai_laundry_management
+#: model:ir.ui.menu,name:leapai_laundry_management.menu_laundry_orders
+msgid "Orders"
+msgstr "الطلبات"
+
+#. module: leapai_laundry_management
+#: model:ir.ui.menu,name:leapai_laundry_management.menu_laundry_order_all
+msgid "All Orders"
+msgstr "جميع الطلبات"
+
+#. module: leapai_laundry_management
+#: model:ir.ui.menu,name:leapai_laundry_management.menu_laundry_order_my
+msgid "My Orders"
+msgstr "طلباتي"
+
+#. module: leapai_laundry_management
+#: model:ir.ui.menu,name:leapai_laundry_management.menu_laundry_tasks
+msgid "Tasks"
+msgstr "المهام"
+
+#. module: leapai_laundry_management
+#: model:ir.ui.menu,name:leapai_laundry_management.menu_laundry_ratings
+msgid "Ratings"
+msgstr "التقييمات"
+
+#. module: leapai_laundry_management
+#: model:ir.ui.menu,name:leapai_laundry_management.menu_laundry_config
+msgid "Configuration"
+msgstr "الإعدادات"
+
+#. module: leapai_laundry_management
+#: model:ir.ui.menu,name:leapai_laundry_management.menu_laundry_cloth_type
+msgid "Cloth Types"
+msgstr "أنواع الملابس"
+
+#. module: leapai_laundry_management
+#: model:ir.ui.menu,name:leapai_laundry_management.menu_laundry_cloth_size
+msgid "Cloth Sizes"
+msgstr "أحجام الملابس"
+
+#. module: leapai_laundry_management
+#: model:ir.ui.menu,name:leapai_laundry_management.menu_laundry_service
+msgid "Services"
+msgstr "الخدمات"
+
+#. module: leapai_laundry_management
+#: model:res.groups,name:leapai_laundry_management.laundry_manager_group
+msgid "Manager"
+msgstr "مدير"
+
+#. module: leapai_laundry_management
+#: model:res.groups,name:leapai_laundry_management.laundry_user_group
+msgid "User"
+msgstr "مستخدم"
+
+#. module: leapai_laundry_management
+#: model:res.groups.privilege,name:leapai_laundry_management.res_groups_privilege_leapai_laundry_management
+msgid "Laundry Management"
+msgstr "إدارة المغسلة"

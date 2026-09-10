@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_laundry_service_list" model="ir.ui.view">
+        <field name="name">laundry.service.list</field>
+        <field name="model">laundry.service</field>
+        <field name="arch" type="xml">
+            <list string="Laundry Services">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="service_type"/>
+                <field name="price"/>
+                <field name="product_id"/>
+                <field name="active"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_laundry_service_form" model="ir.ui.view">
+        <field name="name">laundry.service.form</field>
+        <field name="model">laundry.service</field>
+        <field name="arch" type="xml">
+            <form string="Laundry Service">
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name" placeholder="Service Name"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="service_type"/>
+                            <field name="price"/>
+                            <field name="sequence"/>
+                        </group>
+                        <group>
+                            <field name="product_id"/>
+                            <field name="color"/>
+                            <field name="active"/>
+                        </group>
+                    </group>
+                    <group string="Description">
+                        <field name="description" nolabel="1" placeholder="Service description..."/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_laundry_service_search" model="ir.ui.view">
+        <field name="name">laundry.service.search</field>
+        <field name="model">laundry.service</field>
+        <field name="arch" type="xml">
+            <search string="Search Services">
+                <field name="name"/>
+                <filter string="Washing Services" name="washing" domain="[('service_type','=','wash')]"/>
+                <filter string="Extra Services" name="extra" domain="[('service_type','=','extra')]"/>
+                <separator/>
+                <filter string="Active" name="active" domain="[('active','=',True)]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_laundry_service" model="ir.actions.act_window">
+        <field name="name">Services</field>
+        <field name="res_model">laundry.service</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

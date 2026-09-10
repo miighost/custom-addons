@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- List View -->
+    <record id="view_laundry_rating_list" model="ir.ui.view">
+        <field name="name">laundry.rating.list</field>
+        <field name="model">laundry.rating</field>
+        <field name="arch" type="xml">
+            <list string="Customer Ratings">
+                <field name="date"/>
+                <field name="order_id"/>
+                <field name="customer_id"/>
+                <field name="rating" widget="badge"
+                    decoration-success="rating == 'good'"
+                    decoration-warning="rating == 'average'"
+                    decoration-danger="rating == 'bad'"/>
+                <field name="review"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="view_laundry_rating_form" model="ir.ui.view">
+        <field name="name">laundry.rating.form</field>
+        <field name="model">laundry.rating</field>
+        <field name="arch" type="xml">
+            <form string="Customer Rating">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="order_id"/>
+                            <field name="customer_id" readonly="1"/>
+                            <field name="date"/>
+                        </group>
+                        <group>
+                            <field name="rating" widget="radio"/>
+                        </group>
+                    </group>
+                    <group string="Customer Review">
+                        <field name="review" nolabel="1" placeholder="Customer review..."/>
+                    </group>
+                    <group string="Internal Notes">
+                        <field name="notes" nolabel="1" placeholder="Internal notes..."/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="view_laundry_rating_search" model="ir.ui.view">
+        <field name="name">laundry.rating.search</field>
+        <field name="model">laundry.rating</field>
+        <field name="arch" type="xml">
+            <search string="Search Ratings">
+                <field name="customer_id"/>
+                <field name="order_id"/>
+                <separator/>
+                <filter string="Good" name="good" domain="[('rating','=','good')]"/>
+                <filter string="Average" name="average" domain="[('rating','=','average')]"/>
+                <filter string="Bad" name="bad" domain="[('rating','=','bad')]"/>
+                <group>
+                    <filter string="Customer" name="group_customer" context="{'group_by': 'customer_id'}"/>
+                    <filter string="Rating" name="group_rating" context="{'group_by': 'rating'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_laundry_rating" model="ir.actions.act_window">
+        <field name="name">Customer Ratings</field>
+        <field name="res_model">laundry.rating</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_laundry_rating_search"/>
+    </record>
+</odoo>

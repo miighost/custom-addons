@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_laundry_cloth_size_list" model="ir.ui.view">
+        <field name="name">laundry.cloth.size.list</field>
+        <field name="model">laundry.cloth.size</field>
+        <field name="arch" type="xml">
+            <list string="Cloth Sizes" editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="code"/>
+                <field name="active"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_laundry_cloth_size_form" model="ir.ui.view">
+        <field name="name">laundry.cloth.size.form</field>
+        <field name="model">laundry.cloth.size</field>
+        <field name="arch" type="xml">
+            <form string="Cloth Size">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="code"/>
+                        </group>
+                        <group>
+                            <field name="sequence"/>
+                            <field name="active"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_laundry_cloth_size" model="ir.actions.act_window">
+        <field name="name">Cloth Sizes</field>
+        <field name="res_model">laundry.cloth.size</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

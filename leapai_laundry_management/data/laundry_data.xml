@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- Cloth Sizes -->
+    <record id="size_xs" model="laundry.cloth.size">
+        <field name="name">XS</field>
+        <field name="code">XS</field>
+        <field name="sequence">1</field>
+    </record>
+    <record id="size_s" model="laundry.cloth.size">
+        <field name="name">S</field>
+        <field name="code">S</field>
+        <field name="sequence">2</field>
+    </record>
+    <record id="size_m" model="laundry.cloth.size">
+        <field name="name">M</field>
+        <field name="code">M</field>
+        <field name="sequence">3</field>
+    </record>
+    <record id="size_l" model="laundry.cloth.size">
+        <field name="name">L</field>
+        <field name="code">L</field>
+        <field name="sequence">4</field>
+    </record>
+    <record id="size_xl" model="laundry.cloth.size">
+        <field name="name">XL</field>
+        <field name="code">XL</field>
+        <field name="sequence">5</field>
+    </record>
+    <record id="size_xxl" model="laundry.cloth.size">
+        <field name="name">XXL</field>
+        <field name="code">XXL</field>
+        <field name="sequence">6</field>
+    </record>
+
+    <!-- Cloth Types -->
+    <record id="cloth_shirt" model="laundry.cloth.type">
+        <field name="name">Shirt</field>
+        <field name="sequence">1</field>
+        <field name="default_size_id" ref="size_m"/>
+    </record>
+    <record id="cloth_trousers" model="laundry.cloth.type">
+        <field name="name">Trousers</field>
+        <field name="sequence">2</field>
+        <field name="default_size_id" ref="size_m"/>
+    </record>
+    <record id="cloth_dress" model="laundry.cloth.type">
+        <field name="name">Dress</field>
+        <field name="sequence">3</field>
+        <field name="default_size_id" ref="size_m"/>
+    </record>
+    <record id="cloth_jacket" model="laundry.cloth.type">
+        <field name="name">Jacket</field>
+        <field name="sequence">4</field>
+        <field name="default_size_id" ref="size_l"/>
+    </record>
+    <record id="cloth_bedsheet" model="laundry.cloth.type">
+        <field name="name">Bedsheet</field>
+        <field name="sequence">5</field>
+    </record>
+    <record id="cloth_towel" model="laundry.cloth.type">
+        <field name="name">Towel</field>
+        <field name="sequence">6</field>
+    </record>
+    <record id="cloth_saree" model="laundry.cloth.type">
+        <field name="name">Saree</field>
+        <field name="sequence">7</field>
+    </record>
+    <record id="cloth_curtain" model="laundry.cloth.type">
+        <field name="name">Curtain</field>
+        <field name="sequence">8</field>
+    </record>
+
+    <!-- Washing Services -->
+    <record id="service_regular_wash" model="laundry.service">
+        <field name="name">Regular Wash</field>
+        <field name="service_type">wash</field>
+        <field name="price">5.00</field>
+        <field name="sequence">1</field>
+        <field name="description">Standard washing cycle for everyday garments.</field>
+    </record>
+    <record id="service_delicate_wash" model="laundry.service">
+        <field name="name">Delicate Wash</field>
+        <field name="service_type">wash</field>
+        <field name="price">8.00</field>
+        <field name="sequence">2</field>
+        <field name="description">Gentle cycle for delicate fabrics.</field>
+    </record>
+    <record id="service_warm_wash" model="laundry.service">
+        <field name="name">Warm Wash</field>
+        <field name="service_type">wash</field>
+        <field name="price">7.00</field>
+        <field name="sequence">3</field>
+        <field name="description">Warm water wash for deeper cleaning.</field>
+    </record>
+    <record id="service_chemical_wash" model="laundry.service">
+        <field name="name">Chemical Wash</field>
+        <field name="service_type">wash</field>
+        <field name="price">12.00</field>
+        <field name="sequence">4</field>
+        <field name="description">Chemical wash for heavily soiled items.</field>
+    </record>
+
+    <!-- Extra Services -->
+    <record id="service_ironing" model="laundry.service">
+        <field name="name">Ironing</field>
+        <field name="service_type">extra</field>
+        <field name="price">3.00</field>
+        <field name="sequence">10</field>
+        <field name="description">Professional ironing service.</field>
+    </record>
+    <record id="service_dry_cleaning" model="laundry.service">
+        <field name="name">Dry Cleaning</field>
+        <field name="service_type">extra</field>
+        <field name="price">10.00</field>
+        <field name="sequence">11</field>
+        <field name="description">Dry cleaning for special garments.</field>
+    </record>
+    <record id="service_stain_removal" model="laundry.service">
+        <field name="name">Stain Removal</field>
+        <field name="service_type">extra</field>
+        <field name="price">6.00</field>
+        <field name="sequence">12</field>
+        <field name="description">Targeted stain removal treatment.</field>
+    </record>
+    <record id="service_pressing" model="laundry.service">
+        <field name="name">Pressing</field>
+        <field name="service_type">extra</field>
+        <field name="price">4.00</field>
+        <field name="sequence">13</field>
+        <field name="description">Steam pressing for a crisp finish.</field>
+    </record>
+</odoo>
