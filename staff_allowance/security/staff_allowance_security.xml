@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Ordinary users only ever see their own consumption. HR Officers and
+         Managers see everything (rules on the same model are OR'ed). -->
+
+    <record id="rule_allowance_order_own" model="ir.rule">
+        <field name="name">Allowance Orders: own only</field>
+        <field name="model_id" ref="model_staff_allowance_order"/>
+        <field name="domain_force">['|',
+            ('employee_id.user_id', '=', user.id),
+            ('partner_id', '=', user.partner_id.id)]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+
+    <record id="rule_allowance_order_officer" model="ir.rule">
+        <field name="name">Allowance Orders: all</field>
+        <field name="model_id" ref="model_staff_allowance_order"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('hr.group_hr_user'))]"/>
+    </record>
+
+    <record id="rule_allowance_line_own" model="ir.rule">
+        <field name="name">Allowances: own only</field>
+        <field name="model_id" ref="model_staff_allowance_line"/>
+        <field name="domain_force">['|',
+            ('employee_id.user_id', '=', user.id),
+            ('partner_id', '=', user.partner_id.id)]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+
+    <record id="rule_allowance_line_officer" model="ir.rule">
+        <field name="name">Allowances: all</field>
+        <field name="model_id" ref="model_staff_allowance_line"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('hr.group_hr_user'))]"/>
+    </record>
+
+    <record id="rule_allowance_attempt_own" model="ir.rule">
+        <field name="name">Blocked Attempts: own only</field>
+        <field name="model_id" ref="model_staff_allowance_attempt"/>
+        <field name="domain_force">['|',
+            ('employee_id.user_id', '=', user.id),
+            ('partner_id', '=', user.partner_id.id)]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+
+    <record id="rule_allowance_attempt_officer" model="ir.rule">
+        <field name="name">Blocked Attempts: all</field>
+        <field name="model_id" ref="model_staff_allowance_attempt"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+        <field name="groups" eval="[(4, ref('hr.group_hr_user'))]"/>
+    </record>
+
+</odoo>

@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_allowance_order_list" model="ir.ui.view">
+        <field name="name">staff.allowance.order.list</field>
+        <field name="model">staff.allowance.order</field>
+        <field name="arch" type="xml">
+            <list string="Allowance Orders" sample="1"
+                  decoration-danger="is_over_limit and state == 'done'"
+                  decoration-warning="state == 'draft'"
+                  decoration-muted="state in ('cancel', 'refused')">
+                <field name="name"/>
+                <field name="order_datetime"/>
+                <field name="order_date" optional="hide"/>
+                <field name="beneficiary_name" string="Beneficiary"/>
+                <field name="beneficiary_type" optional="hide"/>
+                <field name="category_id"/>
+                <field name="product_id" optional="show"/>
+                <field name="qty" sum="Total"/>
+                <field name="is_over_limit" string="Over" optional="show"/>
+                <field name="over_by" optional="hide" sum="Over By"/>
+                <field name="source" optional="hide"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'done'"
+                       decoration-warning="state == 'draft'"
+                       decoration-danger="state == 'refused'"
+                       decoration-muted="state == 'cancel'"/>
+                <button name="action_approve" type="object" string="Approve"
+                        icon="fa-check" invisible="state != 'draft'"
+                        groups="hr.group_hr_user"/>
+                <button name="action_refuse" type="object" string="Refuse"
+                        icon="fa-times" invisible="state != 'draft'"
+                        groups="hr.group_hr_user"/>
+                <field name="company_id" groups="base.group_multi_company"
+                       optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_allowance_order_form" model="ir.ui.view">
+        <field name="name">staff.allowance.order.form</field>
+        <field name="model">staff.allowance.order</field>
+        <field name="arch" type="xml">
+            <form string="Allowance Order">
+                <header>
+                    <button name="action_approve" type="object" string="Approve"
+                            class="btn-primary" invisible="state != 'draft'"
+                            groups="hr.group_hr_user"/>
+                    <button name="action_refuse" type="object" string="Refuse"
+                            invisible="state != 'draft'" groups="hr.group_hr_user"/>
+                    <button name="action_cancel" type="object" string="Cancel"
+                            invisible="state in ('cancel', 'refused')"/>
+                    <button name="action_reset_to_draft" type="object"
+                            string="Reset to To Approve"
+                            invisible="state not in ('cancel', 'refused')"
+                            groups="hr.group_hr_user"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,done"/>
+                </header>
+                <sheet>
+                    <widget name="web_ribbon" title="Over Limit"
+                            bg_color="text-bg-danger" invisible="not is_over_limit"/>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="Beneficiary">
+                            <field name="employee_id"
+                                   readonly="partner_id != False"/>
+                            <field name="partner_id"
+                                   readonly="employee_id != False"/>
+                            <field name="beneficiary_type" invisible="1"/>
+                        </group>
+                        <group string="What">
+                            <field name="category_id"/>
+                            <field name="product_id"/>
+                            <field name="qty"/>
+                            <field name="note"/>
+                        </group>
+                        <group string="When">
+                            <field name="order_datetime"/>
+                            <field name="order_date"/>
+                            <field name="source"/>
+                        </group>
+                        <group string="Limit">
+                            <field name="is_over_limit"/>
+                            <field name="over_by" invisible="not is_over_limit"/>
+                            <field name="approver_id" invisible="not approver_id"/>
+                            <field name="approval_date" invisible="not approver_id"/>
+                        </group>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_allowance_order_search" model="ir.ui.view">
+        <field name="name">staff.allowance.order.search</field>
+        <field name="model">staff.allowance.order</field>
+        <field name="arch" type="xml">
+            <search string="Allowance Orders">
+                <field name="name"/>
+                <field name="beneficiary_name" string="Beneficiary"
+                       filter_domain="[('beneficiary_name', 'ilike', self)]"/>
+                <field name="employee_id"/>
+                <field name="partner_id"/>
+                <field name="category_id"/>
+                <field name="product_id"/>
+                <filter name="today" string="Today"
+                        domain="[('order_date', '=', context_today().strftime('%Y-%m-%d'))]"/>
+                <filter name="this_month" string="This Month"
+                        domain="[('order_date', '&gt;=', (context_today().replace(day=1)).strftime('%Y-%m-%d'))]"/>
+                <separator/>
+                <filter name="to_approve" string="To Approve"
+                        domain="[('state', '=', 'draft')]"/>
+                <filter name="done" string="Done" domain="[('state', '=', 'done')]"/>
+                <filter name="over_limit" string="Over Limit"
+                        domain="[('is_over_limit', '=', True)]"/>
+                <separator/>
+                <filter name="employees" string="Employees"
+                        domain="[('beneficiary_type', '=', 'employee')]"/>
+                <filter name="partners" string="Contacts"
+                        domain="[('beneficiary_type', '=', 'partner')]"/>
+                <filter name="from_app" string="From Mobile App"
+                        domain="[('source', '=', 'app')]"/>
+                <group expand="0" string="Group By">
+                    <filter name="group_beneficiary" string="Beneficiary"
+                            context="{'group_by': 'beneficiary_name'}"/>
+                    <filter name="group_category" string="Category"
+                            context="{'group_by': 'category_id'}"/>
+                    <filter name="group_state" string="Status"
+                            context="{'group_by': 'state'}"/>
+                    <filter name="group_date" string="Day"
+                            context="{'group_by': 'order_date'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_allowance_order_pivot" model="ir.ui.view">
+        <field name="name">staff.allowance.order.pivot</field>
+        <field name="model">staff.allowance.order</field>
+        <field name="arch" type="xml">
+            <pivot string="Consumption" sample="1">
+                <field name="beneficiary_name" type="row"/>
+                <field name="category_id" type="col"/>
+                <field name="qty" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_allowance_order_graph" model="ir.ui.view">
+        <field name="name">staff.allowance.order.graph</field>
+        <field name="model">staff.allowance.order</field>
+        <field name="arch" type="xml">
+            <graph string="Consumption" sample="1">
+                <field name="order_date"/>
+                <field name="category_id"/>
+                <field name="qty" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="action_allowance_order" model="ir.actions.act_window">
+        <field name="name">Orders</field>
+        <field name="res_model">staff.allowance.order</field>
+        <field name="view_mode">list,pivot,graph,form</field>
+        <field name="context">{'search_default_today': 1}</field>
+    </record>
+
+    <record id="action_allowance_order_to_approve" model="ir.actions.act_window">
+        <field name="name">To Approve</field>
+        <field name="res_model">staff.allowance.order</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('state', '=', 'draft')]</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Nothing waiting for approval</p>
+            <p>Orders placed beyond the daily limit land here when the category
+               policy is set to "Allow, but require approval".</p>
+        </field>
+    </record>
+
+    <record id="action_allowance_order_over" model="ir.actions.act_window">
+        <field name="name">Over Limit</field>
+        <field name="res_model">staff.allowance.order</field>
+        <field name="view_mode">list,pivot,form</field>
+        <field name="domain">[('is_over_limit', '=', True)]</field>
+        <field name="context">{'search_default_group_beneficiary': 1}</field>
+    </record>
+
+</odoo>

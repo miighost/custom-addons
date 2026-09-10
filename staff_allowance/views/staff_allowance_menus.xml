@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <menuitem id="menu_allowance_root" name="Allowances" sequence="95"
+              groups="hr.group_hr_user"/>
+
+    <!-- Operations -->
+    <menuitem id="menu_allowance_operations" name="Operations"
+              parent="menu_allowance_root" sequence="10"/>
+    <menuitem id="menu_allowance_order" name="Orders"
+              parent="menu_allowance_operations" action="action_allowance_order"
+              sequence="10"/>
+    <menuitem id="menu_allowance_to_approve" name="To Approve"
+              parent="menu_allowance_operations"
+              action="action_allowance_order_to_approve" sequence="20"/>
+
+    <!-- Monitoring -->
+    <menuitem id="menu_allowance_monitoring" name="Monitoring"
+              parent="menu_allowance_root" sequence="20"/>
+    <menuitem id="menu_allowance_reached" name="At or Over Limit"
+              parent="menu_allowance_monitoring"
+              action="action_allowance_line_reached" sequence="10"/>
+    <menuitem id="menu_allowance_over" name="Over-Limit Orders"
+              parent="menu_allowance_monitoring"
+              action="action_allowance_order_over" sequence="20"/>
+    <menuitem id="menu_allowance_attempt" name="Blocked Attempts"
+              parent="menu_allowance_monitoring"
+              action="action_allowance_attempt" sequence="30"/>
+
+    <!-- Configuration -->
+    <menuitem id="menu_allowance_config" name="Configuration"
+              parent="menu_allowance_root" sequence="90"
+              groups="hr.group_hr_manager"/>
+    <menuitem id="menu_allowance_category" name="Categories"
+              parent="menu_allowance_config" action="action_allowance_category"
+              sequence="10"/>
+    <menuitem id="menu_allowance_plan" name="Plans"
+              parent="menu_allowance_config" action="action_allowance_plan"
+              sequence="20"/>
+    <menuitem id="menu_allowance_assignment" name="Assignments"
+              parent="menu_allowance_config" action="action_allowance_line"
+              sequence="30"/>
+
+</odoo>

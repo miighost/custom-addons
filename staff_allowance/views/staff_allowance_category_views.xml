@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_allowance_category_kanban" model="ir.ui.view">
+        <field name="name">staff.allowance.category.kanban</field>
+        <field name="model">staff.allowance.category</field>
+        <field name="arch" type="xml">
+            <kanban sample="1">
+                <field name="today_over_count"/>
+                <field name="color"/>
+                <templates>
+                    <t t-name="card">
+                        <div class="d-flex justify-content-between">
+                            <strong class="fs-5"><field name="name"/></strong>
+                            <span class="badge text-bg-secondary">
+                                <field name="code"/>
+                            </span>
+                        </div>
+                        <div class="text-muted mt-1">
+                            <field name="daily_limit"/> per day ·
+                            <field name="count_mode"/>
+                        </div>
+                        <div class="mt-2">
+                            <span class="badge text-bg-info">
+                                <field name="today_order_count"/> today
+                            </span>
+                            <span class="badge text-bg-danger ms-1"
+                                  t-if="record.today_over_count.raw_value">
+                                <field name="today_over_count"/>
+                <field name="color"/> over limit
+                            </span>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="view_allowance_category_list" model="ir.ui.view">
+        <field name="name">staff.allowance.category.list</field>
+        <field name="model">staff.allowance.category</field>
+        <field name="arch" type="xml">
+            <list string="Categories">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="code"/>
+                <field name="applies_to"/>
+                <field name="daily_limit"/>
+                <field name="count_mode"/>
+                <field name="overdraft_policy"/>
+                <field name="assigned_only" optional="show"/>
+                <field name="today_order_count" string="Today"/>
+                <field name="today_over_count" string="Over Limit"
+                       decoration-danger="today_over_count &gt; 0"/>
+                <field name="company_id" groups="base.group_multi_company"
+                       optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_allowance_category_form" model="ir.ui.view">
+        <field name="name">staff.allowance.category.form</field>
+        <field name="model">staff.allowance.category</field>
+        <field name="arch" type="xml">
+            <form string="Allowance Category">
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_open_orders" type="object"
+                                class="oe_stat_button" icon="fa-list">
+                            <field name="today_order_count" widget="statinfo"
+                                   string="Orders Today"/>
+                        </button>
+                        <button name="action_open_lines" type="object"
+                                class="oe_stat_button" icon="fa-users">
+                            <field name="line_count" widget="statinfo"
+                                   string="Assignments"/>
+                        </button>
+                    </div>
+                    <widget name="web_ribbon" title="Archived"
+                            bg_color="text-bg-danger" invisible="active"/>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name" placeholder="e.g. Coffee"/></h1>
+                    </div>
+                    <group>
+                        <group string="Daily Quota">
+                            <field name="code" placeholder="e.g. coffee"/>
+                            <field name="daily_limit"/>
+                            <field name="count_mode" widget="radio"/>
+                        </group>
+                        <group string="Who Can Use It">
+                            <field name="applies_to"/>
+                            <field name="assigned_only"/>
+                            <field name="sequence"/>
+                            <field name="active" invisible="1"/>
+                            <field name="color" widget="color_picker"/>
+                            <field name="company_id"
+                                   groups="base.group_multi_company"/>
+                        </group>
+                    </group>
+                    <group string="When the Limit Is Reached">
+                        <group>
+                            <field name="overdraft_policy" widget="radio"/>
+                        </group>
+                        <group>
+                            <field name="overdraft_limit"
+                                   invisible="overdraft_policy == 'block'"/>
+                            <div class="text-muted"
+                                 invisible="overdraft_policy != 'block'">
+                                The order is refused and the app receives a clear
+                                error message. The attempt is logged under
+                                Blocked Attempts so you can see who ran out.
+                            </div>
+                            <div class="text-muted"
+                                 invisible="overdraft_policy != 'approval'">
+                                The order is created as <b>To Approve</b> and
+                                flagged over limit. A manager approves or refuses
+                                it from the Orders list.
+                            </div>
+                            <div class="text-muted"
+                                 invisible="overdraft_policy != 'allow'">
+                                The order goes through but is flagged over limit,
+                                so it shows up in the Over Limit report.
+                            </div>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Allowed Products" name="products">
+                            <field name="product_ids" widget="many2many_tags"/>
+                            <div class="text-muted">
+                                Leave empty to allow any product.
+                            </div>
+                        </page>
+                        <page string="Assignments" name="assignments">
+                            <field name="line_ids" context="{'default_category_id': id}">
+                                <list editable="bottom">
+                                    <field name="employee_id"/>
+                                    <field name="partner_id"/>
+                                    <field name="daily_limit"/>
+                                    <field name="used_today"/>
+                                    <field name="remaining_today"/>
+                                    <field name="status" widget="badge"
+                                           decoration-success="status == 'ok'"
+                                           decoration-warning="status == 'near'"
+                                           decoration-danger="status in ('reached', 'over', 'blocked')"/>
+                                    <field name="allowed" widget="boolean_toggle"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_allowance_category_search" model="ir.ui.view">
+        <field name="name">staff.allowance.category.search</field>
+        <field name="model">staff.allowance.category</field>
+        <field name="arch" type="xml">
+            <search string="Categories">
+                <field name="name"/>
+                <field name="code"/>
+                <filter name="for_employees" string="For Employees"
+                        domain="[('applies_to', 'in', ('all', 'employee'))]"/>
+                <filter name="for_partners" string="For Contacts"
+                        domain="[('applies_to', 'in', ('all', 'partner'))]"/>
+                <separator/>
+                <filter name="blocking" string="Blocks at Limit"
+                        domain="[('overdraft_policy', '=', 'block')]"/>
+                <filter name="archived" string="Archived"
+                        domain="[('active', '=', False)]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_allowance_category" model="ir.actions.act_window">
+        <field name="name">Categories</field>
+        <field name="res_model">staff.allowance.category</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Create your first category</p>
+            <p>For example Coffee, limited to 10 per day. Quotas reset by
+               themselves at each beneficiary's local midnight.</p>
+        </field>
+    </record>
+
+</odoo>

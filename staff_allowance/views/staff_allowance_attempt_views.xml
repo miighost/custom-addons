@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_allowance_attempt_list" model="ir.ui.view">
+        <field name="name">staff.allowance.attempt.list</field>
+        <field name="model">staff.allowance.attempt</field>
+        <field name="arch" type="xml">
+            <list string="Blocked Attempts" sample="1" create="false"
+                  decoration-danger="1">
+                <field name="attempt_datetime"/>
+                <field name="attempt_date" optional="hide"/>
+                <field name="beneficiary_name" string="Beneficiary"/>
+                <field name="category_id"/>
+                <field name="qty"/>
+                <field name="used_at_attempt"/>
+                <field name="limit_at_attempt"/>
+                <field name="reason"/>
+                <field name="message" optional="show"/>
+                <field name="source" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_allowance_attempt_form" model="ir.ui.view">
+        <field name="name">staff.allowance.attempt.form</field>
+        <field name="model">staff.allowance.attempt</field>
+        <field name="arch" type="xml">
+            <form string="Blocked Attempt" create="false" edit="false">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="employee_id"/>
+                            <field name="partner_id"/>
+                            <field name="category_id"/>
+                            <field name="product_id"/>
+                            <field name="qty"/>
+                        </group>
+                        <group>
+                            <field name="attempt_datetime"/>
+                            <field name="attempt_date"/>
+                            <field name="used_at_attempt"/>
+                            <field name="limit_at_attempt"/>
+                            <field name="reason"/>
+                            <field name="source"/>
+                        </group>
+                    </group>
+                    <group string="Message Returned to the App">
+                        <field name="message" nolabel="1" readonly="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_allowance_attempt_search" model="ir.ui.view">
+        <field name="name">staff.allowance.attempt.search</field>
+        <field name="model">staff.allowance.attempt</field>
+        <field name="arch" type="xml">
+            <search string="Blocked Attempts">
+                <field name="beneficiary_name" string="Beneficiary"
+                       filter_domain="[('beneficiary_name', 'ilike', self)]"/>
+                <field name="category_id"/>
+                <filter name="today" string="Today"
+                        domain="[('attempt_date', '=', context_today().strftime('%Y-%m-%d'))]"/>
+                <filter name="limit_reached" string="Limit Reached"
+                        domain="[('reason', 'in', ('limit_reached', 'overdraft_exceeded'))]"/>
+                <filter name="not_allowed" string="Not Allowed"
+                        domain="[('reason', '=', 'not_allowed')]"/>
+                <group expand="0" string="Group By">
+                    <filter name="group_beneficiary" string="Beneficiary"
+                            context="{'group_by': 'beneficiary_name'}"/>
+                    <filter name="group_category" string="Category"
+                            context="{'group_by': 'category_id'}"/>
+                    <filter name="group_reason" string="Reason"
+                            context="{'group_by': 'reason'}"/>
+                    <filter name="group_day" string="Day"
+                            context="{'group_by': 'attempt_date'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_allowance_attempt" model="ir.actions.act_window">
+        <field name="name">Blocked Attempts</field>
+        <field name="res_model">staff.allowance.attempt</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_today': 1, 'search_default_group_beneficiary': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No blocked attempts today</p>
+            <p>Every order the app refused is logged here with the exact message
+               that was sent back, so you can see who ran out and adjust their
+               limit if needed.</p>
+        </field>
+    </record>
+
+</odoo>
