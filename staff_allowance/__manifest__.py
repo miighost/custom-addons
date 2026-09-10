@@ -1,6 +1,6 @@
 {
     "name": "Staff Allowance",
-    "version": "19.0.2.0.0",
+    "version": "19.0.2.1.0",
     "category": "Human Resources",
     "summary": "Daily per-category allowances for employees and contacts, with "
                "plans, over-limit handling and a REST API for mobile apps",
@@ -35,6 +35,7 @@ Blocked attempts are logged so you can see who ran out.
         "views/staff_allowance_plan_views.xml",
         "views/staff_allowance_line_views.xml",
         "views/staff_allowance_order_views.xml",
+        "views/staff_allowance_usage_views.xml",
         "views/staff_allowance_attempt_views.xml",
         "views/hr_employee_views.xml",
         "views/res_partner_views.xml",

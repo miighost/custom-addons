@@ -14,3 +14,6 @@ access_allowance_order_manager,order manager,model_staff_allowance_order,hr.grou
 access_allowance_attempt_user,attempt user,model_staff_allowance_attempt,base.group_user,1,0,1,0
 access_allowance_attempt_officer,attempt officer,model_staff_allowance_attempt,hr.group_hr_user,1,1,1,0
 access_allowance_attempt_manager,attempt manager,model_staff_allowance_attempt,hr.group_hr_manager,1,1,1,1
+access_allowance_usage_user,usage user,model_staff_allowance_usage,base.group_user,1,0,0,0
+access_allowance_usage_officer,usage officer,model_staff_allowance_usage,hr.group_hr_user,1,1,1,0
+access_allowance_usage_manager,usage manager,model_staff_allowance_usage,hr.group_hr_manager,1,1,1,1

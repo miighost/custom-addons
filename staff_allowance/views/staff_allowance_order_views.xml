@@ -101,8 +101,7 @@
         <field name="arch" type="xml">
             <search string="Allowance Orders">
                 <field name="name"/>
-                <field name="beneficiary_name" string="Beneficiary"
-                       filter_domain="[('beneficiary_name', 'ilike', self)]"/>
+                <field name="beneficiary_name" string="Beneficiary"/>
                 <field name="employee_id"/>
                 <field name="partner_id"/>
                 <field name="category_id"/>
@@ -110,7 +109,7 @@
                 <filter name="today" string="Today"
                         domain="[('order_date', '=', context_today().strftime('%Y-%m-%d'))]"/>
                 <filter name="this_month" string="This Month"
-                        domain="[('order_date', '&gt;=', (context_today().replace(day=1)).strftime('%Y-%m-%d'))]"/>
+                        domain="[('order_date', '&gt;=', context_today().strftime('%Y-%m-01'))]"/>
                 <separator/>
                 <filter name="to_approve" string="To Approve"
                         domain="[('state', '=', 'draft')]"/>

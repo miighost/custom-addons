@@ -6,7 +6,7 @@
         <field name="model">staff.allowance.attempt</field>
         <field name="arch" type="xml">
             <list string="Blocked Attempts" sample="1" create="false"
-                  decoration-danger="1">
+                  decoration-danger="True">
                 <field name="attempt_datetime"/>
                 <field name="attempt_date" optional="hide"/>
                 <field name="beneficiary_name" string="Beneficiary"/>
@@ -57,8 +57,7 @@
         <field name="model">staff.allowance.attempt</field>
         <field name="arch" type="xml">
             <search string="Blocked Attempts">
-                <field name="beneficiary_name" string="Beneficiary"
-                       filter_domain="[('beneficiary_name', 'ilike', self)]"/>
+                <field name="beneficiary_name" string="Beneficiary"/>
                 <field name="category_id"/>
                 <filter name="today" string="Today"
                         domain="[('attempt_date', '=', context_today().strftime('%Y-%m-%d'))]"/>

@@ -1,5 +1,5 @@
 from odoo import _, api, fields, models
-from odoo.exceptions import UserError, ValidationError
+from odoo.exceptions import ValidationError
 
 
 class StaffAllowanceLine(models.Model):
@@ -37,7 +37,6 @@ class StaffAllowanceLine(models.Model):
          ("reached", "Limit Reached"),
          ("over", "Over Limit")],
         compute="_compute_usage",
-        search="_search_status",
         string="Today",
     )
     overdraft_today = fields.Integer(compute="_compute_usage", string="Over By")
@@ -74,17 +73,6 @@ class StaffAllowanceLine(models.Model):
                 line.status = "near"
             else:
                 line.status = "ok"
-
-    def _search_status(self, operator, value):
-        """`status` is live, so it cannot be stored -- filter in memory."""
-        if operator not in ("=", "!=", "in", "not in"):
-            raise UserError(_("Unsupported operator on Status."))
-        values = value if isinstance(value, (list, tuple)) else [value]
-        lines = self.with_context(active_test=False).search([])
-        matched = lines.filtered(lambda l: l.status in values)
-        if operator in ("!=", "not in"):
-            matched = lines - matched
-        return [("id", "in", matched.ids)]
 
     # ------------------------------------------------------------------
     @api.onchange("category_id")
@@ -130,6 +118,38 @@ class StaffAllowanceLine(models.Model):
             line.display_name = "%s / %s" % (
                 line.beneficiary_name or "", line.category_id.name or ""
             )
+
+    # ------------------------------------------------------------------
+    # Keep the stored usage rows aligned when a limit is edited
+    # ------------------------------------------------------------------
+    @api.model_create_multi
+    def create(self, vals_list):
+        lines = super().create(vals_list)
+        lines._refresh_usage()
+        return lines
+
+    def write(self, vals):
+        result = super().write(vals)
+        self._refresh_usage()
+        return result
+
+    def unlink(self):
+        keys = self._usage_keys()
+        result = super().unlink()
+        self.env["staff.allowance.usage"]._refresh_keys(keys)
+        return result
+
+    def _usage_keys(self):
+        keys = set()
+        for line in self:
+            beneficiary = line._beneficiary()
+            if beneficiary and line.category_id:
+                keys.add((beneficiary._name, beneficiary.id,
+                          line.category_id.id, line._local_today(beneficiary)))
+        return keys
+
+    def _refresh_usage(self):
+        self.env["staff.allowance.usage"]._refresh_keys(self._usage_keys())
 
     # ------------------------------------------------------------------
     def action_view_today_orders(self):

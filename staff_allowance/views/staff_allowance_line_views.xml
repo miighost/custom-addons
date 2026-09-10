@@ -66,18 +66,15 @@
         <field name="model">staff.allowance.line</field>
         <field name="arch" type="xml">
             <search string="Allowances">
-                <field name="beneficiary_name" string="Beneficiary"
-                       filter_domain="[('beneficiary_name', 'ilike', self)]"/>
+                <field name="beneficiary_name" string="Beneficiary"/>
+                <field name="employee_id"/>
+                <field name="partner_id"/>
                 <field name="category_id"/>
                 <filter name="employees" string="Employees"
                         domain="[('beneficiary_type', '=', 'employee')]"/>
                 <filter name="partners" string="Contacts"
                         domain="[('beneficiary_type', '=', 'partner')]"/>
                 <separator/>
-                <filter name="reached" string="Limit Reached Today"
-                        domain="[('status', 'in', ('reached', 'over'))]"/>
-                <filter name="over" string="Over Limit Today"
-                        domain="[('status', '=', 'over')]"/>
                 <filter name="blocked" string="Blocked"
                         domain="[('allowed', '=', False)]"/>
                 <group expand="0" string="Group By">
@@ -95,18 +92,6 @@
         <field name="res_model">staff.allowance.line</field>
         <field name="view_mode">list,form</field>
         <field name="context">{'search_default_group_category': 1}</field>
-    </record>
-
-    <record id="action_allowance_line_reached" model="ir.actions.act_window">
-        <field name="name">At or Over Limit Today</field>
-        <field name="res_model">staff.allowance.line</field>
-        <field name="view_mode">list,form</field>
-        <field name="domain">[('status', 'in', ('reached', 'over'))]</field>
-        <field name="help" type="html">
-            <p class="o_view_nocontent_smiling_face">Nobody has hit their limit today</p>
-            <p>This list shows everyone who has used up their daily allowance,
-               and by how much they went over where that is permitted.</p>
-        </field>
     </record>
 
 </odoo>

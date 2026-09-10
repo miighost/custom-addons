@@ -17,9 +17,12 @@
     <!-- Monitoring -->
     <menuitem id="menu_allowance_monitoring" name="Monitoring"
               parent="menu_allowance_root" sequence="20"/>
+    <menuitem id="menu_allowance_usage" name="Daily Usage"
+              parent="menu_allowance_monitoring"
+              action="action_allowance_usage" sequence="5"/>
     <menuitem id="menu_allowance_reached" name="At or Over Limit"
               parent="menu_allowance_monitoring"
-              action="action_allowance_line_reached" sequence="10"/>
+              action="action_allowance_usage_reached" sequence="10"/>
     <menuitem id="menu_allowance_over" name="Over-Limit Orders"
               parent="menu_allowance_monitoring"
               action="action_allowance_order_over" sequence="20"/>

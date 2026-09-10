@@ -88,7 +88,36 @@ class StaffAllowanceOrder(models.Model):
         # Lock the beneficiary rows before the constraint runs, so two
         # simultaneous taps in the app cannot both slip past the limit.
         self._lock_beneficiaries(vals_list)
-        return super().create(vals_list)
+        orders = super().create(vals_list)
+        orders._sync_usage()
+        return orders
+
+    def write(self, vals):
+        before = self._usage_keys()
+        result = super().write(vals)
+        self.env["staff.allowance.usage"]._refresh_keys(
+            before | self._usage_keys()
+        )
+        return result
+
+    def unlink(self):
+        keys = self._usage_keys()
+        result = super().unlink()
+        self.env["staff.allowance.usage"]._refresh_keys(keys)
+        return result
+
+    def _usage_keys(self):
+        """(model, id, category, day) triples this recordset touches."""
+        keys = set()
+        for order in self:
+            beneficiary = order._beneficiary()
+            if beneficiary and order.category_id and order.order_date:
+                keys.add((beneficiary._name, beneficiary.id,
+                          order.category_id.id, order.order_date))
+        return keys
+
+    def _sync_usage(self):
+        self.env["staff.allowance.usage"]._refresh_keys(self._usage_keys())
 
     def _lock_beneficiaries(self, vals_list):
         employee_ids = {v["employee_id"] for v in vals_list if v.get("employee_id")}
