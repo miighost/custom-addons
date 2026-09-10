@@ -15,53 +15,83 @@
     <template id="report_room_status">
         <t t-call="web.html_container">
             <t t-call="web.external_layout">
-                <div class="page">
+                <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 12px; color: #111;">
                     <!-- Top Right Printed Date -->
                     <div class="row" style="margin-bottom: 8px;">
-                        <div class="col-12 text-end text-right" style="font-size: 14px; font-weight: bold; color: #000;">
+                        <div class="col-12 text-end text-right" style="font-size: 13px; color: #333;">
                             Print Date: <span t-esc="context_timestamp(datetime.datetime.now()).strftime('%d-%b-%Y %I:%M %p')"/>
                         </div>
                     </div>
 
-                    <div class="row mt16 mb16">
+                    <div class="row mt8 mb16">
                         <div class="col-12 text-center">
-                            <h2 style="font-weight: bold; color: #111;">Room Status Report</h2>
+                            <h2 style="font-weight: bold; color: #000; margin-bottom: 4px;">Room Status Report</h2>
+                            <p style="font-size: 12px; color: #555; margin-bottom: 0;">Active In-House Guests &amp; Confirmed Reservations</p>
                         </div>
                     </div>
-                    <table class="table table-sm table-bordered mt16" style="width: 100%; font-size: 13px;">
+
+                    <table class="table table-sm table-bordered mt16" style="width: 100%; font-size: 12px; border-collapse: collapse;">
                         <thead>
-                            <tr style="background-color: #f2f2f2; text-align: center;">
-                                <th style="border: 1px solid #000; padding: 6px;">SN</th>
-                                <th style="border: 1px solid #000; padding: 6px;">Guest Name</th>
-                                <th style="border: 1px solid #000; padding: 6px;">Room No</th>
-                                <th style="border: 1px solid #000; padding: 6px;">Date &amp; Time</th>
-                                <th style="border: 1px solid #000; padding: 6px;" class="text-right">Amount</th>
-                                <th style="border: 1px solid #000; padding: 6px;" class="text-right">Balance</th>
-                                <th style="border: 1px solid #000; padding: 6px;">Booking No</th>
-                                <th style="border: 1px solid #000; padding: 6px;">Nationality</th>
+                            <tr style="background-color: #f2f2f2; text-align: center; font-weight: bold;">
+                                <th style="border: 1px solid #000; padding: 6px; width: 5%;">SN</th>
+                                <th style="border: 1px solid #000; padding: 6px; width: 18%; text-align: left;">Guest Name</th>
+                                <th style="border: 1px solid #000; padding: 6px; width: 9%;">Room No</th>
+                                <th style="border: 1px solid #000; padding: 6px; width: 10%;">Check In</th>
+                                <th style="border: 1px solid #000; padding: 6px; width: 10%;">Dep Date</th>
+                                <th style="border: 1px solid #000; padding: 6px; width: 11%; text-align: right;">Rate</th>
+                                <th style="border: 1px solid #000; padding: 6px; width: 12%; text-align: right;">Balance</th>
+                                <th style="border: 1px solid #000; padding: 6px; width: 11%;">Status</th>
+                                <th style="border: 1px solid #000; padding: 6px; width: 14%;">Booking No</th>
                             </tr>
                         </thead>
                         <tbody>
                             <t t-set="i" t-value="0"/>
+                            <t t-set="total_rate" t-value="0.0"/>
+                            <t t-set="total_balance" t-value="0.0"/>
                             <t t-foreach="docs" t-as="o">
                                 <t t-set="i" t-value="i+1"/>
+                                <t t-set="d_rate" t-value="sum(o.room_line_ids.mapped('price_unit'))"/>
+                                <t t-set="total_rate" t-value="total_rate + d_rate"/>
+                                <t t-set="total_balance" t-value="total_balance + o.today_balance"/>
                                 <tr>
-                                    <td class="text-center" style="border: 1px solid #000; padding: 6px;"><t t-esc="i"/></td>
-                                    <td style="border: 1px solid #000; padding: 6px;"><span t-field="o.partner_id.name"/></td>
-                                    <td style="border: 1px solid #000; padding: 6px;"><span t-esc="o.room_name or ', '.join(o.room_line_ids.mapped('room_id.name')) or '-'"/></td>
-                                    <td class="text-center" style="border: 1px solid #000; padding: 6px;"><span t-field="o.date_order" t-options='{"widget": "datetime"}'/></td>
-                                    <td class="text-right" style="border: 1px solid #000; padding: 6px;">
-                                        <span t-field="o.amount_total" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                    <td class="text-center" style="border: 1px solid #000; padding: 5px;"><t t-esc="i"/></td>
+                                    <td style="border: 1px solid #000; padding: 5px; font-weight: bold;"><span t-field="o.partner_id.name"/></td>
+                                    <td class="text-center" style="border: 1px solid #000; padding: 5px; font-weight: bold;"><span t-esc="o.room_name or ', '.join(o.room_line_ids.mapped('room_id.name')) or '-'"/></td>
+                                    <td class="text-center" style="border: 1px solid #000; padding: 5px;"><span t-field="o.checkin_date" t-options='{"widget": "date"}'/></td>
+                                    <td class="text-center" style="border: 1px solid #000; padding: 5px;"><span t-field="o.checkout_date" t-options='{"widget": "date"}'/></td>
+                                    <td class="text-right" style="border: 1px solid #000; padding: 5px; font-weight: bold;">
+                                        <span t-esc="d_rate" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
                                     </td>
-                                    <td class="text-right" style="border: 1px solid #000; padding: 6px;">
-                                        <t t-set="bal" t-value="o.hotel_invoice_id.amount_residual if o.hotel_invoice_id else o.amount_total"/>
-                                        <span t-esc="bal" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                    <td class="text-right" style="border: 1px solid #000; padding: 5px; font-weight: bold;">
+                                        <span t-field="o.today_balance" t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
                                     </td>
-                                    <td style="border: 1px solid #000; padding: 6px;"><span t-field="o.name"/></td>
-                                    <td style="border: 1px solid #000; padding: 6px;"><span t-esc="o.partner_id.country_id.name or '-'"/></td>
+                                    <td class="text-center" style="border: 1px solid #000; padding: 5px;">
+                                        <t t-if="o.state == 'check_in'">Checked In</t>
+                                        <t t-elif="o.state == 'reserved'">Reserved</t>
+                                        <t t-elif="o.state == 'check_out'">Checked Out</t>
+                                        <t t-elif="o.state == 'done'">Done</t>
+                                        <t t-else=""><span t-field="o.state"/></t>
+                                    </td>
+                                    <td class="text-center" style="border: 1px solid #000; padding: 5px; font-weight: bold;">
+                                        <span t-esc="(o.name or '').replace('BOOKING/', '').replace('Booking/', '').replace('FOLIO/', '').replace('FOL/', '').strip()"/>
+                                    </td>
                                 </tr>
                             </t>
                         </tbody>
+                        <tfoot>
+                            <tr style="background-color: #f2f2f2; font-weight: bold; font-size: 12px;">
+                                <td colspan="5" style="border: 1px solid #000; padding: 6px; text-align: left;">
+                                    Total Active Bookings: <t t-esc="i"/>
+                                </td>
+                                <td class="text-right" style="border: 1px solid #000; padding: 6px;">
+                                    <span t-esc="total_rate" t-options='{"widget": "monetary", "display_currency": (docs and docs[0].currency_id) or False}'/>
+                                </td>
+                                <td class="text-right" style="border: 1px solid #000; padding: 6px;">
+                                    <span t-esc="total_balance" t-options='{"widget": "monetary", "display_currency": (docs and docs[0].currency_id) or False}'/>
+                                </td>
+                                <td colspan="2" style="border: 1px solid #000; padding: 6px;"></td>
+                            </tr>
+                        </tfoot>
                     </table>
                 </div>
             </t>

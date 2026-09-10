@@ -80,11 +80,13 @@ class SaleOrderWizard(models.TransientModel):
                                                             fields=[
                                                                 'partner_id',
                                                                 'name',
+                                                                'folio_no',
                                                                 'checkin_date',
                                                                 'checkout_date',
                                                                 'amount_total'])
         for rec in room_booking:
-            rec['partner_id'] = rec['partner_id'][1]
+            rec['name'] = rec.get('folio_no') or (rec['name'] or '').replace('BOOKING/', '').strip()
+            rec['partner_id'] = rec['partner_id'][1] if isinstance(rec['partner_id'], (list, tuple)) else (rec['partner_id'] or '-')
         return room_booking
 
     def _format_datetime(self, value):

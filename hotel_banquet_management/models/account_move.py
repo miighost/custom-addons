@@ -20,6 +20,7 @@ class AccountMove(models.Model):
     is_banquet = fields.Boolean(
         string='Is Banquet',
         compute='_compute_is_banquet',
+        search='_search_is_banquet',
         store=False,
     )
 
@@ -27,13 +28,22 @@ class AccountMove(models.Model):
         for move in self:
             move.is_banquet = any(so.is_banquet for so in move.invoice_line_ids.sale_line_ids.order_id) or any((l.number_of_days or 1.0) > 1.0 for l in move.invoice_line_ids)
 
+    def _search_is_banquet(self, operator, value):
+        order_moves = self.env['sale.order'].search([('is_banquet', '=', True)]).invoice_ids.ids
+        positive = (operator in ('=', '!=') and ((operator == '=' and bool(value)) or (operator == '!=' and not bool(value))))
+        if positive:
+            return ['|', ('id', 'in', order_moves), ('invoice_line_ids.number_of_days', '>', 1.0)]
+        else:
+            return ['&', ('id', 'not in', order_moves), ('invoice_line_ids.number_of_days', '<=', 1.0)]
+
     @api.depends(
         'invoice_line_ids.price_subtotal',
         'invoice_line_ids.price_total',
         'invoice_line_ids.number_of_days',
     )
     def _compute_amount(self):
-        super()._compute_amount()
+        if hasattr(super(), '_compute_amount'):
+            super()._compute_amount()
         for move in self:
             if move.is_sale_document(include_receipts=True) and (move.is_banquet or any((l.number_of_days or 1.0) > 1.0 for l in move.invoice_line_ids)):
                 lines = move.invoice_line_ids.filtered(lambda l: not l.display_type)
@@ -51,7 +61,8 @@ class AccountMove(models.Model):
     )
     def _compute_tax_totals(self):
         """Ensure invoice tax totals widget reflects multi-day banquet calculations."""
-        super()._compute_tax_totals()
+        if hasattr(super(), '_compute_tax_totals'):
+            super()._compute_tax_totals()
         for move in self:
             if move.is_sale_document(include_receipts=True) and (move.is_banquet or any((l.number_of_days or 1.0) > 1.0 for l in move.invoice_line_ids)) and move.tax_totals:
                 lines = move.invoice_line_ids.filtered(lambda l: not l.display_type)
@@ -113,12 +124,14 @@ class AccountMoveLine(models.Model):
         for line in self:
             if (line.move_id.is_banquet or ((line.number_of_days or 1.0) > 1.0)) and line.price_unit and line.product_id:
                 continue
-            super(AccountMoveLine, line)._compute_price_unit()
+            if hasattr(super(AccountMoveLine, line), '_compute_price_unit'):
+                super(AccountMoveLine, line)._compute_price_unit()
 
     @api.depends('quantity', 'number_of_days', 'price_unit', 'discount', 'tax_ids')
     def _compute_totals(self):
         """Calculate line amounts including Number of Days: Qty * No of Days * Unit Price."""
-        super()._compute_totals()
+        if hasattr(super(), '_compute_totals'):
+            super()._compute_totals()
         for line in self:
             days = line.number_of_days if line.number_of_days and line.number_of_days > 0 else 1.0
             if line.move_id.is_sale_document(include_receipts=True) and days > 1.0:
@@ -138,9 +151,29 @@ class AccountMoveLine(models.Model):
                     line.price_subtotal = price * effective_qty
                     line.price_total = price * effective_qty
 
+    def _convert_to_tax_base_line_dict(self, **kwargs):
+        """Pass effective quantity (Qty * No of Days) and subtotal to Odoo tax engine."""
+        res = super()._convert_to_tax_base_line_dict(**kwargs) if hasattr(super(), '_convert_to_tax_base_line_dict') else {}
+        days = self.number_of_days if self.number_of_days and self.number_of_days > 0 else 1.0
+        if self.move_id.is_sale_document(include_receipts=True) and days > 1.0:
+            res['quantity'] = (self.quantity or 0.0) * days
+            if 'price_subtotal' in res:
+                res['price_subtotal'] = self.price_subtotal
+        return res
+
     def _prepare_tax_base_line_dict(self, **kwargs):
         """Pass effective quantity to Odoo native tax computation."""
         res = super()._prepare_tax_base_line_dict(**kwargs) if hasattr(super(), '_prepare_tax_base_line_dict') else {}
+        days = self.number_of_days if self.number_of_days and self.number_of_days > 0 else 1.0
+        if self.move_id.is_sale_document(include_receipts=True) and days > 1.0:
+            res['quantity'] = (self.quantity or 0.0) * days
+            if 'price_subtotal' in res:
+                res['price_subtotal'] = self.price_subtotal
+        return res
+
+    def _prepare_base_line_for_taxes_computation(self, **kwargs):
+        """Pass effective quantity to Odoo 18/19 tax calculation engine."""
+        res = super()._prepare_base_line_for_taxes_computation(**kwargs) if hasattr(super(), '_prepare_base_line_for_taxes_computation') else {}
         days = self.number_of_days if self.number_of_days and self.number_of_days > 0 else 1.0
         if self.move_id.is_sale_document(include_receipts=True) and days > 1.0:
             res['quantity'] = (self.quantity or 0.0) * days

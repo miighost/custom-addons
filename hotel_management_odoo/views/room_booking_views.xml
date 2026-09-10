@@ -56,7 +56,8 @@
                     </div>
                     <div>
                         <h1>
-                            <field name="name" colspan="4"/>
+                            <field name="folio_no" readonly="1"/>
+                            <field name="name" invisible="1"/>
                         </h1>
                     </div>
                     <group>
@@ -77,13 +78,16 @@
                                    domain="[('parent_id','=',partner_id)]"
                                    context="{'default_type':'invoice'}"
                                    options="{'always_reload': True}"/>
+                            <field name="is_long_stay" string="Long Stay (LSR)" widget="boolean_toggle"/>
+                            <field name="is_private_reserved" string="Reserved (RR)" widget="boolean_toggle"/>
+                            <field name="is_cr" string="Complimentary (CR)" widget="boolean_toggle"/>
                         </group>
                         <group>
                             <field name="checkin_date"/>
                             <field name="checkout_date"/>
                             <field name="date_order"/>
                             <field name="pricelist_id"/>
-                            <field name="plan"/>
+                            <field name="meal_plan_id" options="{'no_quick_create': False}"/>
                             <field name="need_service"
                                    invisible=" state not in ['check_in']"/>
                             <field name="need_fleet"
@@ -100,8 +104,10 @@
                                    string="Room Lines"
                                    context="{'default_checkin_date':checkin_date, 'default_checkout_date':checkout_date, 'default_uom_qty':duration}">
                                 <list editable="bottom">
+                                    <field name="is_special" column_invisible="True"/>
                                     <field name="room_id" string="Room"
                                            required="1"
+                                           decoration-info="is_special"
                                            options="{'no_open': True, 'no_create': True}"/>
                                     <field name="checkin_date"/>
                                     <field name="booking_line_visible"
@@ -127,6 +133,7 @@
                                     <field name="today_accrued_rent"
                                            string="Today's Balance"
                                            widget="monetary"
+                                           sum="Total Today's Balance"
                                            readonly="1"/>
                                     <field groups="account.group_account_manager"
                                            name="price_total" widget="monetary"
@@ -161,6 +168,7 @@
                                 <field name="amount_total" nolabel="1"
                                        sum="Total amount" widget="monetary"/>
                                 <field name="amount_accrued_today" widget="monetary" string="Accrued (Today)"/>
+                                <field name="room_rate" widget="monetary" string="Daily Rate"/>
                                 <field name="amount_paid" widget="monetary" string="Amount Paid" invisible="amount_paid == 0"/>
                                 <div class="oe_subtotal_footer_separator oe_inline o_td_label">
                                     <label for="today_balance" string="Today's Due Balance" style="font-weight: bold; font-size: 14px; color: #0056b3;"/>
@@ -334,24 +342,74 @@
         <field name="model">room.booking</field>
         <field name="arch" type="xml">
             <list default_order="name desc" class="table-hover">
-                <field name="name" string="Folio Number" class="fw-bold text-dark"/>
-                <field name="room_name" string="Room No" class="fw-bold text-primary text-center"/>
+                <field name="is_special" column_invisible="True"/>
+                <field name="folio_no" string="Folio Number" class="fw-bold text-dark text-center" optional="hide"/>
+                <field name="room_name" string="Room No" class="fw-bold text-primary text-center" decoration-info="is_special"/>
                 <field name="partner_id" string="Customer" class="fw-bold"/>
-                <field name="date_order" string="Order Date" class="text-center"/>
+                <field name="stay_type" string="Category" widget="badge"
+                       decoration-info="stay_type == 'lsr'"
+                       decoration-danger="stay_type == 'prr'"
+                       decoration-warning="stay_type == 'cr'"
+                       decoration-success="stay_type == 'normal'"
+                       class="text-center" optional="hide"/>
+                <field name="date_order" string="Order Date" class="text-center" optional="hide"/>
                 <field name="checkin_date" string="Check In" class="text-center" optional="show"/>
                 <field name="checkout_date" string="Check Out" class="text-center" optional="show"/>
-                <field name="today_balance" string="Today's Balance" widget="monetary" decoration-bf="1" class="text-end"/>
-                <field name="amount_total" string="Total Expected" widget="monetary" class="text-end" optional="show"/>
-                <field name="state" string="Status" widget="badge" decoration-info="state == 'draft'" decoration-warning="state == 'reserved'" decoration-success="state == 'check_in'" decoration-muted="state == 'check_out'" class="text-center"/>
+                <field name="amount_paid" string="Paid Revenue" widget="monetary" sum="Total Paid" class="text-end text-success fw-bold"/>
+                <field name="room_rate" string="Rate" widget="monetary" sum="Total Rate" class="text-end text-primary fw-bold"/>
+                <field name="today_balance" string="Today's Balance" widget="monetary" sum="Total Balance" decoration-bf="1" class="text-end"/>
+                <field name="amount_total" string="Total Revenue" widget="monetary" sum="Grand Total" class="text-end fw-bold"/>
+                <field name="state" string="Status" widget="badge"
+                       decoration-info="is_special or state == 'draft'"
+                       decoration-warning="not is_special and state == 'reserved'"
+                       decoration-success="not is_special and state == 'check_in'"
+                       decoration-muted="not is_special and state == 'check_out'"
+                       class="text-center"/>
             </list>
         </field>
     </record>
+
+    <!--     Room Booking Search View -->
+    <record id="room_booking_view_search" model="ir.ui.view">
+        <field name="name">room.booking.view.search</field>
+        <field name="model">room.booking</field>
+        <field name="arch" type="xml">
+            <search string="Search Room Bookings">
+                <field name="folio_no" string="Folio Number"/>
+                <field name="name" string="Folio Reference"/>
+                <field name="partner_id" string="Customer"/>
+                <field name="room_name" string="Room No"/>
+                <field name="stay_type" string="Category"/>
+                <field name="meal_plan_id" string="Meal Plan"/>
+                <separator/>
+                <filter name="filter_draft" string="Draft" domain="[('state', '=', 'draft')]"/>
+                <filter name="filter_reserved" string="Reserved" domain="[('state', '=', 'reserved')]"/>
+                <filter name="filter_check_in" string="Checked In" domain="[('state', '=', 'check_in')]"/>
+                <filter name="filter_check_out" string="Checked Out" domain="[('state', '=', 'check_out')]"/>
+                <filter name="filter_done" string="Done" domain="[('state', '=', 'done')]"/>
+                <separator/>
+                <filter name="filter_special" string="Special Rooms (Sea View)" domain="[('is_special', '=', True)]"/>
+                <filter name="filter_lsr" string="Long Stay (LSR)" domain="[('is_long_stay', '=', True)]"/>
+                <filter name="filter_prr" string="Reserved (RR)" domain="[('is_private_reserved', '=', True)]"/>
+                <filter name="filter_cr" string="Complimentary (CR)" domain="[('is_cr', '=', True)]"/>
+                <filter name="filter_nr" string="Normal (NR)" domain="[('is_long_stay', '=', False), ('is_private_reserved', '=', False), ('is_cr', '=', False)]"/>
+                <separator/>
+                <filter name="group_by_partner" string="Customer" context="{'group_by': 'partner_id'}"/>
+                <filter name="group_by_stay_type" string="Stay Category" context="{'group_by': 'stay_type'}"/>
+                <filter name="group_by_meal_plan" string="Meal Plan" context="{'group_by': 'meal_plan_id'}"/>
+                <filter name="group_by_state" string="Status" context="{'group_by': 'state'}"/>
+                <filter name="group_by_date" string="Order Date" context="{'group_by': 'date_order:month'}"/>
+            </search>
+        </field>
+    </record>
+
     <!--     Room Booking Menu action -->
     <record id="room_booking_action" model="ir.actions.act_window">
         <field name="name">Room Booking</field>
         <field name="type">ir.actions.act_window</field>
         <field name="res_model">room.booking</field>
         <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="room_booking_view_search"/>
         <field name="help" type="html">
             <p class="oe_view_nocontent_create">
                 Book your rooms here!

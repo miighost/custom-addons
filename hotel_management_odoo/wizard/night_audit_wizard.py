@@ -155,7 +155,7 @@ class NightAuditWizard(models.TransientModel):
         i_idx = 1
         for ih in inhouse_bookings:
             room_names = ih.room_name or ", ".join(ih.room_line_ids.mapped("room_id.name")) or "-"
-            rate = sum(ih.room_line_ids.mapped("price_total"))
+            rate = sum(ih.room_line_ids.mapped("price_unit"))
             cin_str = ih.checkin_date.strftime("%d/%m/%Y") if ih.checkin_date else "-"
             cout_str = ih.checkout_date.strftime("%d/%m/%Y") if ih.checkout_date else "-"
             inhouse_list.append({
@@ -190,7 +190,7 @@ class NightAuditWizard(models.TransientModel):
                 "in_time": arr_rec.checkin_date.strftime("%I:%M %p") if arr_rec.checkin_date else "-",
                 "out_date": arr_rec.checkout_date.strftime("%d/%m/%Y") if arr_rec.checkout_date else "-",
                 "booking_no": arr_rec.name or "-",
-                "plan": arr_rec.plan.upper() if arr_rec.plan else "BB",
+                "plan": arr_rec.meal_plan_id.code or (arr_rec.plan.upper() if arr_rec.plan else "BB"),
             })
             a_idx += 1
 

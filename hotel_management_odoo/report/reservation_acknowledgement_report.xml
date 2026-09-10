@@ -59,7 +59,7 @@
                                         <tr>
                                             <td style="font-weight: 600; color: #444;">Reservation No</td>
                                             <td style="font-weight: 600;">:</td>
-                                            <td style="font-weight: 700; color: #111;"><t t-esc="o.name"/></td>
+                                            <td style="font-weight: 700; color: #111;"><t t-esc="o.folio_no or (o.name or '').replace('BOOKING/', '').strip()"/></td>
                                         </tr>
                                         <tr>
                                             <td style="font-weight: 600; color: #444;">Reservation Date</td>
@@ -120,7 +120,7 @@
                                         <tr>
                                             <td style="font-weight: 600; color: #444;">Plan</td>
                                             <td style="font-weight: 600;">:</td>
-                                            <td style="font-weight: 700; color: #000;"><t t-esc="plan_labels.get(o.plan, o.plan or 'BB')"/></td>
+                                            <td style="font-weight: 700; color: #000;"><t t-esc="o.meal_plan_id.name or plan_labels.get(o.plan, o.plan or 'Bed &amp; Breakfast (BB)')"/></td>
                                         </tr>
                                     </table>
                                 </div>

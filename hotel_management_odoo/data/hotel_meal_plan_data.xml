@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Room Only (RO) -->
+        <record id="meal_plan_ro" model="hotel.meal.plan">
+            <field name="name">Room Only (RO)</field>
+            <field name="code">RO</field>
+            <field name="sequence">1</field>
+            <field name="include_breakfast" eval="False"/>
+            <field name="include_lunch" eval="False"/>
+            <field name="include_dinner" eval="False"/>
+            <field name="include_snacks" eval="False"/>
+            <field name="include_beverages" eval="False"/>
+            <field name="dining_type">a_la_carte</field>
+            <field name="serving_venue">Room Only / All Dining Outlets (Charges Apply)</field>
+            <field name="description"><![CDATA[
+                <p>Standard European Plan offering luxury accommodation only. Meals and beverages are not included and are billed on consumption.</p>
+            ]]></field>
+        </record>
+
+        <!-- Bed & Breakfast (BB) -->
+        <record id="meal_plan_bb" model="hotel.meal.plan">
+            <field name="name">Bed &amp; Breakfast (BB)</field>
+            <field name="code">BB</field>
+            <field name="sequence">2</field>
+            <field name="include_breakfast" eval="True"/>
+            <field name="include_lunch" eval="False"/>
+            <field name="include_dinner" eval="False"/>
+            <field name="include_snacks" eval="False"/>
+            <field name="include_beverages" eval="False"/>
+            <field name="dining_type">buffet</field>
+            <field name="breakfast_timing">06:30 AM - 10:30 AM</field>
+            <field name="serving_venue">Main Buffet Restaurant &amp; Garden Terrace</field>
+            <field name="description"><![CDATA[
+                <p>Includes gourmet international buffet breakfast with live cooking stations, fresh bakeries, artisanal coffee, and fresh pressed juices.</p>
+            ]]></field>
+        </record>
+
+        <!-- Continental Plan (CP) -->
+        <record id="meal_plan_cp" model="hotel.meal.plan">
+            <field name="name">Continental Plan (CP)</field>
+            <field name="code">CP</field>
+            <field name="sequence">3</field>
+            <field name="include_breakfast" eval="True"/>
+            <field name="include_lunch" eval="False"/>
+            <field name="include_dinner" eval="False"/>
+            <field name="include_snacks" eval="False"/>
+            <field name="include_beverages" eval="False"/>
+            <field name="dining_type">buffet</field>
+            <field name="breakfast_timing">07:00 AM - 10:30 AM</field>
+            <field name="serving_venue">Executive Lounge &amp; Cafe</field>
+            <field name="description"><![CDATA[
+                <p>Continental breakfast featuring fresh oven-baked croissants, artisanal breads, tropical fruits, yogurts, cheeses, and fine tea/coffee selection.</p>
+            ]]></field>
+        </record>
+
+        <!-- Half Board (HB) -->
+        <record id="meal_plan_hb" model="hotel.meal.plan">
+            <field name="name">Half Board (HB)</field>
+            <field name="code">HB</field>
+            <field name="sequence">4</field>
+            <field name="include_breakfast" eval="True"/>
+            <field name="include_lunch" eval="False"/>
+            <field name="include_dinner" eval="True"/>
+            <field name="include_snacks" eval="False"/>
+            <field name="include_beverages" eval="False"/>
+            <field name="dining_type">buffet</field>
+            <field name="breakfast_timing">06:30 AM - 10:30 AM</field>
+            <field name="dinner_timing">07:00 PM - 10:30 PM</field>
+            <field name="serving_venue">The Grand Palm Dining Room</field>
+            <field name="description"><![CDATA[
+                <p>Includes daily lavish buffet breakfast and luxury 5-course evening buffet dinner with international chef specialties.</p>
+            ]]></field>
+        </record>
+
+        <!-- Full Board (FB) -->
+        <record id="meal_plan_fb" model="hotel.meal.plan">
+            <field name="name">Full Board (FB)</field>
+            <field name="code">FB</field>
+            <field name="sequence">5</field>
+            <field name="include_breakfast" eval="True"/>
+            <field name="include_lunch" eval="True"/>
+            <field name="include_dinner" eval="True"/>
+            <field name="include_snacks" eval="False"/>
+            <field name="include_beverages" eval="False"/>
+            <field name="dining_type">buffet</field>
+            <field name="breakfast_timing">06:30 AM - 10:30 AM</field>
+            <field name="lunch_timing">12:30 PM - 03:30 PM</field>
+            <field name="dinner_timing">07:00 PM - 11:00 PM</field>
+            <field name="serving_venue">The Grand Palm Dining Room &amp; Beach Restaurant</field>
+            <field name="description"><![CDATA[
+                <p>Complete 3-meal dining package: gourmet breakfast, three-course lunch, and lavish international themed dinner daily.</p>
+            ]]></field>
+        </record>
+
+        <!-- Luxury All Inclusive (AI) -->
+        <record id="meal_plan_ai" model="hotel.meal.plan">
+            <field name="name">Luxury All Inclusive (AI)</field>
+            <field name="code">AI</field>
+            <field name="sequence">6</field>
+            <field name="include_breakfast" eval="True"/>
+            <field name="include_lunch" eval="True"/>
+            <field name="include_dinner" eval="True"/>
+            <field name="include_snacks" eval="True"/>
+            <field name="include_beverages" eval="True"/>
+            <field name="dining_type">all_venues</field>
+            <field name="breakfast_timing">06:30 AM - 10:30 AM</field>
+            <field name="lunch_timing">12:30 PM - 03:30 PM</field>
+            <field name="dinner_timing">07:00 PM - 11:00 PM</field>
+            <field name="serving_venue">All Resort Restaurants, Lounges &amp; Pool Bars</field>
+            <field name="description"><![CDATA[
+                <p>Comprehensive 5-star all-inclusive experience including breakfast, lunch, dinner, afternoon tea &amp; pastries, plus unlimited premium beverages across all hotel outlets.</p>
+            ]]></field>
+        </record>
+
+        <!-- Ultra All Inclusive (UAI) -->
+        <record id="meal_plan_uai" model="hotel.meal.plan">
+            <field name="name">Ultra All Inclusive &amp; VIP Club (UAI)</field>
+            <field name="code">UAI</field>
+            <field name="sequence">7</field>
+            <field name="include_breakfast" eval="True"/>
+            <field name="include_lunch" eval="True"/>
+            <field name="include_dinner" eval="True"/>
+            <field name="include_snacks" eval="True"/>
+            <field name="include_beverages" eval="True"/>
+            <field name="dining_type">all_venues</field>
+            <field name="serving_venue">All Specialty Restaurants, VIP Executive Club &amp; 24h In-Room Dining</field>
+            <field name="description"><![CDATA[
+                <p>The pinnacle of luxury: 24-hour in-room gourmet dining, unlimited à la carte fine dining at all specialty restaurants, sommelier wine pairings, premium spirits, and VIP Club lounge privileges.</p>
+            ]]></field>
+        </record>
+    </data>
+</odoo>

@@ -57,9 +57,10 @@ class RoomBookingLine(models.Model):
                              help="This will set the unit of measure used",
                              readonly=True)
     board_type = fields.Selection(related='booking_id.board_type', string="Board Type", store=True, readonly=False)
-    price_unit = fields.Float(related='room_id.list_price', string='Rent',
+    price_unit = fields.Float(string='Rent',
                               digits='Product Price',
-                              help="The rent price of the selected room.")
+                              compute='_compute_price_unit', store=True, readonly=False,
+                              help="The rent price of the selected room for this booking.")
     tax_ids = fields.Many2many('account.tax',
                                related='room_id.taxes_ids',
                                string='Taxes',
@@ -84,7 +85,8 @@ class RoomBookingLine(models.Model):
                                 help="Elapsed days from check-in up to today")
     today_accrued_rent = fields.Monetary(string="Today's Balance", compute="_compute_today_accrued",
                                          currency_field='currency_id',
-                                         help="Accrued room charge up to today")
+                                         help="Accrued room charge up to today",
+                                         store=True)
     state = fields.Selection(related='booking_id.state',
                              string="Order Status",
                              help="Status of the Order",
@@ -92,6 +94,19 @@ class RoomBookingLine(models.Model):
     booking_line_visible = fields.Boolean(default=False,
                                           string="Booking Line Visible",
                                           help="If True, then Booking Line will be visible")
+
+    @api.depends('room_id')
+    def _compute_price_unit(self):
+        """Default rent price from room's standard rate when room is selected, while allowing custom booking overrides."""
+        for line in self:
+            if line.room_id and not line.price_unit:
+                line.price_unit = line.room_id.list_price
+
+    @api.onchange('room_id')
+    def _onchange_room_id(self):
+        """When room is selected in UI, auto-populate standard rent and taxes."""
+        if self.room_id:
+            self.price_unit = self.room_id.list_price
 
     @api.depends('checkin_date', 'checkout_date')
     def _compute_uom_qty(self):

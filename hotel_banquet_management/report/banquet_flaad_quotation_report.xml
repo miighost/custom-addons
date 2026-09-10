@@ -51,10 +51,6 @@
                                 <strong>Event Date:</strong>
                                 <p class="m-0" t-field="doc.event_start_date" t-options='{"widget": "datetime", "format": "dd/MM/yyyy HH:mm"}'/>
                             </div>
-                            <div t-if="doc.date_order" class="col-auto col-3 mw-100 mb-2">
-                                <strong>Quote Date:</strong>
-                                <p class="m-0" t-field="doc.date_order" t-options='{"widget": "date", "format": "dd/MM/yyyy"}'/>
-                            </div>
                         </div>
 
                         <!-- Standard Lines Table -->

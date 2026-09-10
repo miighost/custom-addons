@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Hotel Meal Plan Form View -->
+    <record id="hotel_meal_plan_view_form" model="ir.ui.view">
+        <field name="name">hotel.meal.plan.view.form</field>
+        <field name="model">hotel.meal.plan</field>
+        <field name="arch" type="xml">
+            <form string="Meal Plan">
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_bookings" type="object"
+                                class="oe_stat_button" icon="fa-calendar-check-o">
+                            <field name="booking_count" widget="statinfo" string="Reservations"/>
+                        </button>
+                    </div>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger"
+                            invisible="active == True"/>
+                    <div class="oe_title mb-3">
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <span class="badge text-bg-primary fs-6 px-3 py-1">
+                                <field name="code" placeholder="Code (e.g. BB, FB, AI)"/>
+                            </span>
+                            <field name="active" invisible="1"/>
+                        </div>
+                        <h1 class="mt-1">
+                            <field name="name" placeholder="e.g. Bed &amp; Breakfast, Luxury All Inclusive"/>
+                        </h1>
+                    </div>
+
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <group string="PACKAGE PRICING &amp; STYLE">
+                                <field name="sequence" string="Display Order"/>
+                                <field name="currency_id" invisible="1"/>
+                                <field name="price" widget="monetary" string="Extra Surcharge / Person"/>
+                                <field name="dining_type" string="Dining Service Style"/>
+                                <field name="serving_venue" string="Designated Restaurant / Venue"
+                                       placeholder="e.g. Main Restaurant &amp; Poolside Terrace"/>
+                            </group>
+                        </div>
+                        <div class="col-md-6">
+                            <group string="MEAL INCLUSIONS &amp; SERVICE HOURS">
+                                <field name="include_breakfast" widget="boolean_toggle"/>
+                                <field name="breakfast_timing" invisible="include_breakfast == False"
+                                       placeholder="e.g. 06:30 AM - 10:30 AM"/>
+                                <field name="include_lunch" widget="boolean_toggle"/>
+                                <field name="lunch_timing" invisible="include_lunch == False"
+                                       placeholder="e.g. 12:30 PM - 03:30 PM"/>
+                                <field name="include_dinner" widget="boolean_toggle"/>
+                                <field name="dinner_timing" invisible="include_dinner == False"
+                                       placeholder="e.g. 07:00 PM - 11:00 PM"/>
+                                <field name="include_snacks" widget="boolean_toggle"/>
+                                <field name="include_beverages" widget="boolean_toggle"/>
+                            </group>
+                        </div>
+                    </div>
+
+                    <notebook class="mt-3">
+                        <page name="description" string="Package Inclusions &amp; Terms">
+                            <field name="description" placeholder="Provide full luxury guest package description, chef inclusions, dietary accommodations, and fine dining privileges..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Hotel Meal Plan List View -->
+    <record id="hotel_meal_plan_view_tree" model="ir.ui.view">
+        <field name="name">hotel.meal.plan.view.tree</field>
+        <field name="model">hotel.meal.plan</field>
+        <field name="arch" type="xml">
+            <list string="Meal Plans" class="table-hover">
+                <field name="sequence" widget="handle"/>
+                <field name="code" string="Code" class="fw-bold text-primary text-center"/>
+                <field name="name" string="Meal Plan Name" class="fw-bold text-dark"/>
+                <field name="price" widget="monetary" string="Surcharge / Person" class="text-end fw-bold"/>
+                <field name="include_breakfast" string="Breakfast" widget="boolean"/>
+                <field name="include_lunch" string="Lunch" widget="boolean"/>
+                <field name="include_dinner" string="Dinner" widget="boolean"/>
+                <field name="include_snacks" string="High Tea / Snacks" widget="boolean" optional="show"/>
+                <field name="include_beverages" string="Open Bar / Drinks" widget="boolean" optional="show"/>
+                <field name="dining_type" string="Dining Style" widget="badge"
+                       decoration-info="dining_type == 'buffet'"
+                       decoration-success="dining_type == 'all_venues'"
+                       decoration-warning="dining_type == 'fine_dining'"/>
+                <field name="serving_venue" string="Designated Venue" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Hotel Meal Plan Search View -->
+    <record id="hotel_meal_plan_view_search" model="ir.ui.view">
+        <field name="name">hotel.meal.plan.view.search</field>
+        <field name="model">hotel.meal.plan</field>
+        <field name="arch" type="xml">
+            <search string="Search Meal Plans">
+                <field name="name" string="Meal Plan"/>
+                <field name="code" string="Code"/>
+                <field name="serving_venue" string="Venue"/>
+                <separator/>
+                <filter name="filter_breakfast" string="Breakfast Included" domain="[('include_breakfast', '=', True)]"/>
+                <filter name="filter_lunch" string="Lunch Included" domain="[('include_lunch', '=', True)]"/>
+                <filter name="filter_dinner" string="Dinner Included" domain="[('include_dinner', '=', True)]"/>
+                <filter name="filter_beverages" string="Beverages / Drinks" domain="[('include_beverages', '=', True)]"/>
+                <separator/>
+                <filter name="filter_archived" string="Archived" domain="[('active', '=', False)]"/>
+                <separator/>
+                <filter name="group_by_dining_type" string="Dining Style" context="{'group_by': 'dining_type'}"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- Hotel Meal Plan Action -->
+    <record id="hotel_meal_plan_action" model="ir.actions.act_window">
+        <field name="name">Meal Plans</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">hotel.meal.plan</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="hotel_meal_plan_view_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Define your hotel's 5-star meal plans (BB, HB, FB, All-Inclusive, etc.)!
+            </p>
+        </field>
+    </record>
+
+    <!-- Meal Plan Menu under Configuration -->
+    <menuitem id="hotel_meal_plan_menu"
+              name="Meal Plans"
+              action="hotel_meal_plan_action"
+              parent="hotel_config_menu"
+              sequence="25"/>
+</odoo>

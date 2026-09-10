@@ -58,7 +58,7 @@ class BanquetCustomerStatementWizard(models.TransientModel):
         # 1. Fetch Banquet Orders
         orders = self.env['sale.order'].search([
             ('is_banquet', '=', True),
-            ('partner_id', '=', partner.id),
+            ('partner_id', 'child_of', partner.id),
             ('company_id', '=', company_id),
             ('date_order', '>=', datetime.combine(date_from, datetime.min.time())),
             ('date_order', '<=', datetime.combine(date_to, datetime.max.time())),
@@ -67,7 +67,7 @@ class BanquetCustomerStatementWizard(models.TransientModel):
 
         # 2. Fetch Customer Invoices
         invoices = self.env['account.move'].search([
-            ('partner_id', '=', partner.id),
+            ('partner_id', 'child_of', partner.id),
             ('company_id', '=', company_id),
             ('move_type', '=', 'out_invoice'),
             ('invoice_date', '>=', date_from),
@@ -88,10 +88,11 @@ class BanquetCustomerStatementWizard(models.TransientModel):
             total_paid += paid_amt
             running_balance += due_amt
 
+            first_line_desc = inv.invoice_line_ids.filtered(lambda l: l.name and not l.display_type)[:1].name if inv.invoice_line_ids else ''
             statement_lines.append({
                 'date': inv.invoice_date.strftime('%d/%m/%Y') if inv.invoice_date else '',
                 'ref': inv.name or '',
-                'desc': inv.ref or (inv.invoice_line_ids[0].name if inv.invoice_line_ids else 'Banquet Invoice'),
+                'desc': inv.ref or first_line_desc or 'Banquet Invoice',
                 'due_date': inv.invoice_date_due.strftime('%d/%m/%Y') if inv.invoice_date_due else '',
                 'invoiced': invoiced_amt,
                 'paid': paid_amt,

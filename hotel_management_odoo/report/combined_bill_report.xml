@@ -37,7 +37,7 @@
                         <div class="row mt16">
                             <div class="col-12">
                                 <h3 style="font-size: 24px;">
-                                    Booking # <span t-field="o.booking_id.name"/>
+                                    Booking # <span t-esc="o.booking_id.folio_no or (o.booking_id.name or '').replace('BOOKING/', '').strip()"/>
                                 </h3>
                             </div>
                         </div>

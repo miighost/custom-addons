@@ -87,9 +87,10 @@ class RoomBookingWizard(models.TransientModel):
             )
         room_booking = self.env["room.booking"].search_read(
             domain=domain,
-            fields=["partner_id", "name", "checkin_date", "checkout_date"],
+            fields=["partner_id", "name", "folio_no", "checkin_date", "checkout_date"],
         )
         for rec in room_booking:
+            rec["name"] = rec.get("folio_no") or (rec["name"] or "").replace("BOOKING/", "").strip()
             rooms = (
                 self.env["room.booking"]
                 .browse(rec["id"])

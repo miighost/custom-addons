@@ -26,7 +26,7 @@ class ReportRoomBookingOrder(models.AbstractModel):
                             'room': room,
                             'checkin_date': rec.checkin_date,
                             'checkout_date': rec.checkout_date,
-                            'name': rec.name,
+                            'name': rec.folio_no or rec.name.replace('BOOKING/', '').strip(),
                         })
                 else:
                     booking_lines.append({
@@ -34,7 +34,7 @@ class ReportRoomBookingOrder(models.AbstractModel):
                         'room': rec.room_name or '-',
                         'checkin_date': rec.checkin_date,
                         'checkout_date': rec.checkout_date,
-                        'name': rec.name,
+                        'name': rec.folio_no or rec.name.replace('BOOKING/', '').strip(),
                     })
 
         return {

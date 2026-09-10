@@ -94,7 +94,8 @@ class BanquetSaleOrder(models.Model):
     @api.depends('order_line.price_subtotal', 'order_line.price_tax', 'order_line.price_total', 'order_line.number_of_days')
     def _compute_amounts(self):
         """Synchronize Untaxed Amount, Taxes and Total Amount with Banquet multi-day line subtotals."""
-        super()._compute_amounts()
+        if hasattr(super(), '_compute_amounts'):
+            super()._compute_amounts()
         for order in self:
             is_banquet = order.is_banquet or self.env.context.get('default_is_banquet') or any((l.number_of_days or 1.0) > 1.0 for l in order.order_line)
             if is_banquet:
@@ -106,7 +107,8 @@ class BanquetSaleOrder(models.Model):
     @api.depends('order_line.price_subtotal', 'order_line.price_tax', 'order_line.price_total', 'order_line.number_of_days', 'order_line.product_uom_qty', 'order_line.price_unit')
     def _compute_tax_totals(self):
         """Ensure the tax_totals widget on the form displays the exact multi-day calculation."""
-        super()._compute_tax_totals()
+        if hasattr(super(), '_compute_tax_totals'):
+            super()._compute_tax_totals()
         for order in self:
             is_banquet = order.is_banquet or self.env.context.get('default_is_banquet') or any((l.number_of_days or 1.0) > 1.0 for l in order.order_line)
             if is_banquet and order.tax_totals:
@@ -150,7 +152,7 @@ class BanquetSaleOrder(models.Model):
         """Prevent synchronous SMTP network delays when confirming banquet orders."""
         banquet_orders = self.filtered(lambda o: o.is_banquet or self.env.context.get('default_is_banquet'))
         other_orders = self - banquet_orders
-        if other_orders:
+        if other_orders and hasattr(super(BanquetSaleOrder, other_orders), '_send_order_confirmation_mail'):
             super(BanquetSaleOrder, other_orders)._send_order_confirmation_mail()
         return True
 
@@ -179,6 +181,11 @@ class BanquetSaleOrder(models.Model):
         self.ensure_one()
         return self.env.ref('hotel_banquet_management.action_report_banquet_order').report_action(self)
 
+    def _get_order_lines_to_report(self):
+        if hasattr(super(), '_get_order_lines_to_report'):
+            return super()._get_order_lines_to_report()
+        return self.order_line.filtered(lambda l: not l.display_type or l.display_type in ('line_section', 'line_note'))
+
 
 class BanquetSaleOrderLine(models.Model):
     _inherit = 'sale.order.line'
@@ -202,12 +209,14 @@ class BanquetSaleOrderLine(models.Model):
             is_banquet = line.order_id.is_banquet or self.env.context.get('default_is_banquet') or ((line.number_of_days or 1.0) > 1.0)
             if is_banquet and line.price_unit and line.product_id:
                 continue
-            super(BanquetSaleOrderLine, line)._compute_price_unit()
+            if hasattr(super(BanquetSaleOrderLine, line), '_compute_price_unit'):
+                super(BanquetSaleOrderLine, line)._compute_price_unit()
 
     @api.depends('product_uom_qty', 'number_of_days', 'discount', 'price_unit', 'tax_ids')
     def _compute_amount(self):
         """Calculate line amounts including Number of Days: Qty * No of Days * Unit Price"""
-        super()._compute_amount()
+        if hasattr(super(), '_compute_amount'):
+            super()._compute_amount()
         for line in self:
             days = line.number_of_days if (line.number_of_days and line.number_of_days > 0) else 1.0
             is_banquet = line.order_id.is_banquet or self.env.context.get('default_is_banquet') or (days > 1.0)
@@ -232,9 +241,31 @@ class BanquetSaleOrderLine(models.Model):
                     line.price_total = subtotal
                     line.price_subtotal = subtotal
 
+    def _convert_to_tax_base_line_dict(self, **kwargs):
+        """Pass effective quantity (Qty * No of Days) and subtotal to Odoo tax engine."""
+        res = super()._convert_to_tax_base_line_dict(**kwargs) if hasattr(super(), '_convert_to_tax_base_line_dict') else {}
+        days = self.number_of_days if (self.number_of_days and self.number_of_days > 0) else 1.0
+        is_banquet = self.order_id.is_banquet or self.env.context.get('default_is_banquet') or (days > 1.0)
+        if is_banquet and days > 1.0:
+            res['quantity'] = (self.product_uom_qty or 0.0) * days
+            if 'price_subtotal' in res:
+                res['price_subtotal'] = self.price_subtotal
+        return res
+
     def _prepare_tax_base_line_dict(self, **kwargs):
         """Pass effective quantity to Odoo native tax computation."""
         res = super()._prepare_tax_base_line_dict(**kwargs) if hasattr(super(), '_prepare_tax_base_line_dict') else {}
+        days = self.number_of_days if (self.number_of_days and self.number_of_days > 0) else 1.0
+        is_banquet = self.order_id.is_banquet or self.env.context.get('default_is_banquet') or (days > 1.0)
+        if is_banquet and days > 1.0:
+            res['quantity'] = (self.product_uom_qty or 0.0) * days
+            if 'price_subtotal' in res:
+                res['price_subtotal'] = self.price_subtotal
+        return res
+
+    def _prepare_base_line_for_taxes_computation(self, **kwargs):
+        """Pass effective quantity to Odoo 18/19 tax calculation engine."""
+        res = super()._prepare_base_line_for_taxes_computation(**kwargs) if hasattr(super(), '_prepare_base_line_for_taxes_computation') else {}
         days = self.number_of_days if (self.number_of_days and self.number_of_days > 0) else 1.0
         is_banquet = self.order_id.is_banquet or self.env.context.get('default_is_banquet') or (days > 1.0)
         if is_banquet and days > 1.0:
@@ -247,7 +278,7 @@ class BanquetSaleOrderLine(models.Model):
         """Banquet service orders should not trigger warehouse delivery pickings or reservation delays."""
         banquet_lines = self.filtered(lambda l: l.order_id.is_banquet or self.env.context.get('default_is_banquet'))
         other_lines = self - banquet_lines
-        if other_lines:
+        if other_lines and hasattr(super(BanquetSaleOrderLine, other_lines), '_action_launch_stock_rule'):
             return super(BanquetSaleOrderLine, other_lines)._action_launch_stock_rule(previous_product_uom_qty=previous_product_uom_qty)
         return True
 

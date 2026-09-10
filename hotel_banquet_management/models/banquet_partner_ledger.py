@@ -62,7 +62,7 @@ class BanquetPartnerLedgerWizard(models.TransientModel):
 
         # Find receivable accounts for the partner
         domain_base = [
-            ('partner_id', '=', partner.id),
+            ('partner_id', 'child_of', partner.id),
             ('company_id', '=', company.id),
             ('move_id.state', '=', 'posted'),
             ('account_id.account_type', '=', 'asset_receivable'),
