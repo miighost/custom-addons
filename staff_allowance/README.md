@@ -245,5 +245,17 @@ one2many subviews), that nothing in a `domain` is a non-stored field without a
 cd staff_allowance && python3 tools/check_views.py
 ```
 
-That last rule is the one that caused the original install failure — worth
-running in CI before pushing to the server.
+It also checks that any model with a search view has a resolvable `_rec_name`.
+Both install failures this module hit were caught by these rules, so it is
+worth running before pushing to the server.
+
+### If a view still fails to load
+
+`ParseError: Invalid view ... definition` is a wrapper. The real message is
+logged by `ir.ui.view` just before it. To see it:
+
+```bash
+./odoo-bin -d YOUR_DB -u staff_allowance --stop-after-init \
+    --log-handler odoo.addons.base.models.ir_ui_view:DEBUG \
+    --log-handler odoo.tools.convert:DEBUG
+```

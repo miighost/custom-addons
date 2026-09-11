@@ -8,6 +8,7 @@ class StaffAllowanceLine(models.Model):
     _name = "staff.allowance.line"
     _description = "Allowance"
     _inherit = ["staff.allowance.beneficiary.mixin"]
+    _rec_name = "beneficiary_name"
     _order = "beneficiary_name, category_id"
 
     category_id = fields.Many2one(

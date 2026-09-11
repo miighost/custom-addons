@@ -19,6 +19,7 @@ class StaffAllowanceUsage(models.Model):
     _name = "staff.allowance.usage"
     _description = "Daily Allowance Usage"
     _inherit = ["staff.allowance.beneficiary.mixin"]
+    _rec_name = "beneficiary_name"
     _order = "day desc, beneficiary_name"
 
     category_id = fields.Many2one(

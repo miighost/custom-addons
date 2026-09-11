@@ -15,6 +15,9 @@ BASE = {"id", "display_name", "create_date", "create_uid", "write_date",
 EXTERNAL = {"hr.employee", "res.partner"}
 
 
+REC_NAME = {}
+
+
 def parse_models(paths):
     """-> {model_name: {field: {'store': bool, 'search': bool}}}, {model: [parents]}"""
     fields, parents = {}, {}
@@ -26,11 +29,14 @@ def parse_models(paths):
             name = inherit = None
             inherits = []
             own = {}
+            rec_name = None
             for stmt in node.body:
                 if isinstance(stmt, ast.Assign) and len(stmt.targets) == 1 \
                         and isinstance(stmt.targets[0], ast.Name):
                     target = stmt.targets[0].id
-                    if target == "_name" and isinstance(stmt.value, ast.Constant):
+                    if target == "_rec_name" and isinstance(stmt.value, ast.Constant):
+                        rec_name = stmt.value.value
+                    elif target == "_name" and isinstance(stmt.value, ast.Constant):
                         name = stmt.value.value
                     elif target == "_inherit":
                         if isinstance(stmt.value, ast.Constant):
@@ -71,6 +77,8 @@ def parse_models(paths):
             if not model:
                 continue
             fields.setdefault(model, {}).update(own)
+            if rec_name:
+                REC_NAME[model] = rec_name
             parents.setdefault(model, []).extend(
                 i for i in inherits if i != model)
     return fields, parents
@@ -157,6 +165,22 @@ def main():
             arch = block.split('type="xml"', 1)[-1]
             check_arch(path, model, arch, fields, parents, problems,
                        external=model in EXTERNAL)
+
+            if "<search" in arch and model not in EXTERNAL:
+                known = resolve(model, fields, parents)
+                if known:
+                    rec = REC_NAME.get(model)
+                    for parent in parents.get(model, []):
+                        rec = rec or REC_NAME.get(parent)
+                    if not rec and "name" not in known:
+                        problems.append(
+                            f"{path}: {model} has a search view but no `name` "
+                            f"field and no _rec_name -- Odoo cannot build the "
+                            f"implicit search field")
+                    elif rec and rec not in known:
+                        problems.append(
+                            f"{path}: {model}._rec_name = '{rec}' is not a "
+                            f"field on the model")
 
     # actions carry domains too
     for path in sorted(glob.glob("views/*.xml")):

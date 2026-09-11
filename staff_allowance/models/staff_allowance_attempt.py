@@ -14,6 +14,7 @@ class StaffAllowanceAttempt(models.Model):
     _name = "staff.allowance.attempt"
     _description = "Blocked Allowance Attempt"
     _inherit = ["staff.allowance.beneficiary.mixin"]
+    _rec_name = "beneficiary_name"
     _order = "attempt_datetime desc, id desc"
 
     category_id = fields.Many2one(

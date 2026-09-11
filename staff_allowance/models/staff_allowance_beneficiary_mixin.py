@@ -16,6 +16,9 @@ class AllowanceBeneficiaryMixin(models.AbstractModel):
 
     _name = "staff.allowance.beneficiary.mixin"
     _description = "Allowance Beneficiary Mixin"
+    # These models have no `name` field. Without this, _rec_name falls back to
+    # `id` and Odoo cannot build the implicit search field for a search view.
+    _rec_name = "beneficiary_name"
 
     employee_id = fields.Many2one(
         "hr.employee", string="Employee", index=True, ondelete="cascade"
