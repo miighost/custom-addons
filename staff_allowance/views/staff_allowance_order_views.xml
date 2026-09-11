@@ -19,7 +19,8 @@
                 <field name="qty" sum="Total"/>
                 <field name="is_over_limit" string="Over" optional="show"/>
                 <field name="over_by" optional="hide" sum="Over By"/>
-                <field name="source" optional="hide"/>
+                <field name="source" optional="show"/>
+                <field name="pos_order_id" optional="hide"/>
                 <field name="state" widget="badge"
                        decoration-success="state == 'done'"
                        decoration-warning="state == 'draft'"
@@ -79,6 +80,8 @@
                             <field name="order_datetime"/>
                             <field name="order_date"/>
                             <field name="source"/>
+                            <field name="pos_order_id"
+                                   invisible="not pos_order_id"/>
                         </group>
                         <group string="Limit">
                             <field name="is_over_limit"/>

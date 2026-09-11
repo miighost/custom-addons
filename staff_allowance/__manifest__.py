@@ -1,6 +1,6 @@
 {
     "name": "Staff Allowance",
-    "version": "19.0.4.0.0",
+    "version": "19.0.5.0.0",
     "category": "Human Resources",
     "summary": "Daily POS-category limits for individual employees and contacts "
                "— free by default, capped only where you say so",
@@ -34,6 +34,17 @@ consumption is derived from that day's order records — no counter, no cron.
         "views/res_partner_views.xml",
         "views/staff_allowance_menus.xml",
     ],
+    # --- Cashier warning in the POS screen -------------------------------
+    # Server-side recording works without this. The popup needs a patch to
+    # the POS frontend, and a wrong import path there breaks the POS UI
+    # (not the install). Enable it once the rest is confirmed working:
+    #
+    # "assets": {
+    #     "point_of_sale._assets_pos": [
+    #         "staff_allowance/static/src/js/pos_allowance_warning.js",
+    #     ],
+    # },
+    # ---------------------------------------------------------------------
     "installable": True,
     "application": True,
     "auto_install": False,

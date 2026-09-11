@@ -49,6 +49,9 @@ class StaffAllowanceOrder(models.Model):
                                    readonly=True, index=True, copy=False)
     over_by = fields.Integer(string="Over By", compute="_compute_over_limit",
                              store=True, readonly=True)
+    pos_order_id = fields.Many2one("pos.order", string="POS Order",
+                                   ondelete="set null", index=True, copy=False,
+                                   readonly=True)
     approver_id = fields.Many2one("res.users", string="Approved By",
                                   readonly=True, copy=False)
     approval_date = fields.Datetime(readonly=True, copy=False)
@@ -147,6 +150,11 @@ class StaffAllowanceOrder(models.Model):
     @api.constrains("employee_id", "partner_id", "pos_category_id", "qty",
                     "order_date", "state")
     def _check_allowance(self):
+        if self.env.context.get("allowance_force"):
+            # A POS sale already happened. Recording it must never fail --
+            # the over-limit flag is what reports it. Only the POS bridge
+            # sets this flag.
+            return
         Rule = self.env["staff.allowance.rule"].sudo()
         for order in self:
             if order.state not in ("draft", "done"):

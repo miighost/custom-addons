@@ -6,3 +6,4 @@ from . import staff_allowance_usage
 from . import staff_allowance_attempt
 from . import hr_employee
 from . import res_partner
+from . import pos_order

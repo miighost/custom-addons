@@ -16,13 +16,30 @@ and every other employee, and every other category, is untouched.
 - A rule with limit 0 → that category is blocked for that person
 - Archive the rule → they are free again, and the setting is kept
 
-## 2. Built on your real POS data
+## 2. Where consumption comes from
+
+Two sources, both feeding the same ledger:
+
+| Source | How | Enforcement |
+|---|---|---|
+| **Odoo POS** | `pos.order` is hooked. On every sale with a customer set, each line is recorded against that customer's allowance. | Always recorded, even over limit — a sale that happened is a fact. Over-limit sales are flagged. |
+| **FlutterFlow app** | The app calls `POST /api/allowance/order`. | Blocked or sent for approval per the rule. |
+
+**A POS sale with no customer on the ticket charges nobody.** There is no
+rule to apply without a partner, so the sale is ignored by the allowance
+system entirely. If a staff member's coffee should count, their contact has
+to be selected on the order.
+
+Refund and zero-quantity lines do not consume an allowance. Changing the
+customer or the lines on a ticket rewrites its allowance entries.
+
+## 3. Built on your real POS data
 
 Categories are `pos.category` records — the ones your POS already uses. There
 is no parallel category list to maintain. An order's category is taken from
 the product's own POS category, so the app can just send a `product_id`.
 
-## 3. The quota resets itself
+## 4. The quota resets itself
 
 ```
 remaining = limit − consumed on that person's local day
@@ -33,9 +50,20 @@ to reset, no cron job to fail overnight, and the history stays queryable.
 The day boundary is the beneficiary's own timezone; `order_date` is stamped
 at creation, so a 23:58 order stays on its own day.
 
-## 4. What happens at the limit
+## 5. What happens at the limit
 
-Set per rule:
+### In the POS
+
+Warn the cashier, allow the sale. A popup names the customer, the category
+and how far over they are, then the sale continues. The entry is recorded and
+flagged, and the POS ticket itself carries an **Over Allowance** flag.
+
+The popup is a patch to the POS frontend and is **not enabled by default** —
+see section 13. Server-side recording and flagging work without it.
+
+### In the app
+
+Set per rule, and applies to app orders:
 
 | Policy | Behaviour |
 |---|---|
@@ -49,14 +77,14 @@ The message the person sees:
 
 > Daily Coffee limit reached: 10 of 10 items used today. It resets tomorrow.
 
-## 5. Plans
+## 6. Plans
 
 A plan is a reusable set of rules — *Kitchen Staff*, *Managers* — assigned in
 one click. A plan only covers the categories listed in it; anything else stays
 free. A personal rule always wins over the plan. **Copy Plan Into Rules**
 turns the plan into personal rules when you need to tune one individual.
 
-## 6. Seeing who is over
+## 7. Seeing who is over
 
 | Where | Shows |
 |---|---|
@@ -75,7 +103,7 @@ a rule changes. Enforcement always reads the order rows directly, so the table
 can never let a bad number through. `env["staff.allowance.usage"].action_rebuild()`
 rebuilds it if it ever drifts.
 
-## 7. Enforcement
+## 8. Enforcement
 
 - `staff.allowance.rule._place_order()` is the single decision point; the API,
   the backend and any POS hook all call it.
@@ -87,7 +115,7 @@ rebuilds it if it ever drifts.
   refusal is logged as an attempt instead of failing the request.
 - `@api.constrains` is the final net for direct writes and imports.
 
-## 8. REST API
+## 9. REST API
 
 `type='http'`, flat JSON, no JSON-RPC envelope.
 
@@ -146,7 +174,7 @@ Routes are `auth="user"`. Resolve your token in `_beneficiary()` in
 `controllers/main.py`, call `request.update_env(user=uid)`, switch the routes
 to `auth="public"`. Nothing downstream changes.
 
-## 9. FlutterFlow notes
+## 10. FlutterFlow notes
 
 1. Call `/api/allowance/rules` on login. An empty list means the person is
    capped in nothing — show no counters at all.
@@ -156,7 +184,7 @@ to `auth="public"`. Nothing downstream changes.
 4. Branch on `error`, not the status code.
 5. If `requires_approval` is true, show the order as pending, not confirmed.
 
-## 10. Model map
+## 11. Model map
 
 | Model | Fields | Role |
 |---|---|---|
@@ -166,13 +194,14 @@ to `auth="public"`. Nothing downstream changes.
 | `staff.allowance.usage` | 8 | Stored daily totals for reporting |
 | `staff.allowance.attempt` | 10 | Refused orders |
 | `staff.allowance.beneficiary.mixin` | 4 | Employee-or-contact + timezone helpers |
+| `pos.order` (inherited) | 3 | Records each sale against the customer's allowance |
 
 Dropped in this version: the whole custom `staff.allowance.category` model
 (20 fields) plus `assigned_only`, `fallback`, `unlimited`, `allowed`,
 `applies_to`, `product_ids`, `origin`, `strict`, `code`, `color`, `note` on
 plans, and `user_id` / `company_id` where nothing used them.
 
-## 11. Install
+## 12. Install
 
 Copy into your addons path, restart the service, **Apps → Update Apps List**,
 install **Staff Allowance**. Depends on `hr` and `point_of_sale`, both
@@ -181,7 +210,24 @@ Community.
 **Restart the service on every upgrade.** Odoo re-reads XML on upgrade but
 does not reload Python — model changes need a restart.
 
-## 12. Known issue: search views
+## 13. Enabling the POS cashier warning
+
+`static/src/js/pos_allowance_warning.js` patches the POS payment screen: it
+calls `staff.allowance.rule.check_pos_basket()` before validation and shows an
+alert if the basket puts the customer over. It never blocks, and the whole
+check is inside a try/catch so a failure degrades to no warning.
+
+It is not in the manifest by default. A wrong import path in a POS asset
+breaks the POS interface (not the install), and I have not been able to
+verify the OWL paths against your Odoo 19 build. To enable, uncomment the
+`assets` block in `__manifest__.py`, restart, upgrade, then open the POS. If
+the POS fails to load, comment it back out and upgrade again.
+
+The two paths it depends on:
+`@point_of_sale/app/screens/payment_screen/payment_screen` and
+`@web/core/confirmation_dialog/confirmation_dialog`.
+
+## 14. Known issue: search views
 
 Custom search views on these models failed to install repeatedly, always with
 a `ParseError` that hides the real message. This build ships **no custom
@@ -214,7 +260,7 @@ Or get the real message directly:
     --log-handler odoo.addons.base.models.ir_ui_view:DEBUG
 ```
 
-## 13. Pre-flight check
+## 15. Pre-flight check
 
 ```bash
 cd staff_allowance && python3 tools/check_views.py

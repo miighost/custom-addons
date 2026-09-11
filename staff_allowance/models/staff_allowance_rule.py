@@ -384,3 +384,54 @@ class StaffAllowanceRule(models.Model):
                 ("order_date", "=", self._local_today(beneficiary)),
             ],
         }
+
+    # ------------------------------------------------------------------
+    # Called from the POS screen to warn the cashier
+    # ------------------------------------------------------------------
+    @api.model
+    def check_pos_basket(self, partner_id, lines):
+        """Return warnings for a basket, without recording anything.
+
+        lines: [{"product_id": int, "qty": number}]
+        Returns {"warnings": [str], "details": [ ... ]} -- empty when the
+        customer has no rules covering anything in the basket.
+        """
+        partner = self.env["res.partner"].sudo().browse(int(partner_id or 0)).exists()
+        if not partner or not lines:
+            return {"warnings": [], "details": []}
+
+        Product = self.env["product.product"].sudo()
+        wanted = {}
+        for line in lines:
+            product = Product.browse(int(line.get("product_id") or 0)).exists()
+            qty = int(round(float(line.get("qty") or 0)))
+            if not product or qty <= 0:
+                continue
+            category = self._category_of_product(product)
+            if category:
+                wanted[category.id] = wanted.get(category.id, 0) + qty
+
+        warnings, details = [], []
+        for category_id, qty in wanted.items():
+            category = self.env["pos.category"].sudo().browse(category_id)
+            evaluation = self._evaluate(partner, category, increment=qty)
+            if not evaluation["restricted"]:
+                continue
+            details.append({
+                "category_id": category_id,
+                "category_name": category.display_name,
+                "limit": evaluation["limit"],
+                "used": evaluation["used"],
+                "in_basket": qty,
+                "over_limit": evaluation["over_limit"],
+                "overdraft": evaluation["overdraft"],
+            })
+            if evaluation["over_limit"]:
+                warnings.append(_(
+                    "%(who)s is over the daily %(category)s allowance: "
+                    "%(used)s already used of %(limit)s, %(basket)s more in "
+                    "this order.",
+                    who=partner.display_name, category=category.display_name,
+                    used=evaluation["used"], limit=evaluation["limit"],
+                    basket=qty))
+        return {"warnings": warnings, "details": details}
