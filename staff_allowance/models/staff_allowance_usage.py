@@ -29,6 +29,7 @@ class StaffAllowanceUsage(models.Model):
 
     used = fields.Integer(string="Used", readonly=True)
     order_count = fields.Integer(string="Orders", readonly=True)
+    unlimited = fields.Boolean(string="No Limit", readonly=True)
     limit_value = fields.Integer(string="Limit", readonly=True)
     remaining = fields.Integer(readonly=True)
     over_by = fields.Integer(string="Over By", readonly=True)
@@ -37,7 +38,8 @@ class StaffAllowanceUsage(models.Model):
          ("ok", "Available"),
          ("near", "Almost Used Up"),
          ("reached", "Limit Reached"),
-         ("over", "Over Limit")],
+         ("over", "Over Limit"),
+         ("unlimited", "No Limit")],
         readonly=True, index=True,
     )
     origin = fields.Selection(
@@ -78,9 +80,11 @@ class StaffAllowanceUsage(models.Model):
     # Maintenance
     # ------------------------------------------------------------------
     @api.model
-    def _status_for(self, allowed, used, limit):
+    def _status_for(self, allowed, used, limit, unlimited=False):
         if not allowed:
             return "blocked"
+        if unlimited:
+            return "unlimited"
         if limit and used > limit:
             return "over"
         if limit and used >= limit:
@@ -115,14 +119,15 @@ class StaffAllowanceUsage(models.Model):
 
         used = (len(orders) if category.count_mode == "order"
                 else sum(orders.mapped("qty")))
-        allowed, limit, origin = category._limit_for(beneficiary)
+        allowed, unlimited, limit, origin = category._limit_for(beneficiary)
         vals = {
             "used": used,
             "order_count": len(orders),
-            "limit_value": limit,
-            "remaining": max(limit - used, 0),
-            "over_by": max(used - limit, 0),
-            "status": self._status_for(allowed, used, limit),
+            "unlimited": unlimited,
+            "limit_value": 0 if unlimited else limit,
+            "remaining": 0 if unlimited else max(limit - used, 0),
+            "over_by": 0 if unlimited else max(used - limit, 0),
+            "status": self._status_for(allowed, used, limit, unlimited),
             "origin": origin,
         }
         if record:

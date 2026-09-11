@@ -8,6 +8,7 @@
             <field name="daily_limit">10</field>
             <field name="count_mode">qty</field>
             <field name="applies_to">employee</field>
+            <field name="fallback">default_limit</field>
             <field name="overdraft_policy">block</field>
             <field name="sequence">10</field>
             <field name="color">1</field>
@@ -19,6 +20,7 @@
             <field name="daily_limit">5</field>
             <field name="count_mode">qty</field>
             <field name="applies_to">employee</field>
+            <field name="fallback">unlimited</field>
             <field name="overdraft_policy">approval</field>
             <field name="overdraft_limit">2</field>
             <field name="sequence">20</field>

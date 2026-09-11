@@ -14,6 +14,7 @@
                 <field name="beneficiary_type" optional="hide"/>
                 <field name="category_id"/>
                 <field name="used" sum="Used"/>
+                <field name="unlimited" optional="show"/>
                 <field name="limit_value"/>
                 <field name="remaining"/>
                 <field name="over_by" sum="Over By"/>
@@ -44,6 +45,7 @@
                         </group>
                         <group>
                             <field name="used"/>
+                            <field name="unlimited"/>
                             <field name="limit_value"/>
                             <field name="remaining"/>
                             <field name="over_by"/>
@@ -57,44 +59,6 @@
         </field>
     </record>
 
-    <record id="view_allowance_usage_search" model="ir.ui.view">
-        <field name="name">staff.allowance.usage.search</field>
-        <field name="model">staff.allowance.usage</field>
-        <field name="arch" type="xml">
-            <search string="Daily Usage">
-                <field name="beneficiary_name" string="Beneficiary"/>
-                <field name="employee_id"/>
-                <field name="partner_id"/>
-                <field name="category_id"/>
-                <filter name="today" string="Today"
-                        domain="[('day', '=', context_today().strftime('%Y-%m-%d'))]"/>
-                <filter name="this_month" string="This Month"
-                        domain="[('day', '&gt;=', context_today().strftime('%Y-%m-01'))]"/>
-                <separator/>
-                <filter name="reached" string="At or Over Limit"
-                        domain="[('status', 'in', ['reached', 'over'])]"/>
-                <filter name="over" string="Over Limit"
-                        domain="[('status', '=', 'over')]"/>
-                <filter name="near" string="Almost Used Up"
-                        domain="[('status', '=', 'near')]"/>
-                <separator/>
-                <filter name="employees" string="Employees"
-                        domain="[('beneficiary_type', '=', 'employee')]"/>
-                <filter name="partners" string="Contacts"
-                        domain="[('beneficiary_type', '=', 'partner')]"/>
-                <group expand="0" string="Group By">
-                    <filter name="group_beneficiary" string="Beneficiary"
-                            context="{'group_by': 'beneficiary_name'}"/>
-                    <filter name="group_category" string="Category"
-                            context="{'group_by': 'category_id'}"/>
-                    <filter name="group_status" string="Status"
-                            context="{'group_by': 'status'}"/>
-                    <filter name="group_day" string="Day"
-                            context="{'group_by': 'day'}"/>
-                </group>
-            </search>
-        </field>
-    </record>
 
     <record id="view_allowance_usage_pivot" model="ir.ui.view">
         <field name="name">staff.allowance.usage.pivot</field>
@@ -125,7 +89,6 @@
         <field name="name">Daily Usage</field>
         <field name="res_model">staff.allowance.usage</field>
         <field name="view_mode">list,pivot,graph,form</field>
-        <field name="context">{'search_default_today': 1}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">No consumption recorded yet</p>
             <p>One row per person, category and day — searchable, groupable and
@@ -138,7 +101,6 @@
         <field name="res_model">staff.allowance.usage</field>
         <field name="view_mode">list,pivot,form</field>
         <field name="domain">[('status', 'in', ['reached', 'over'])]</field>
-        <field name="context">{'search_default_today': 1}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">Nobody has hit their limit</p>
             <p>Everyone who has used up their daily allowance, and by how much

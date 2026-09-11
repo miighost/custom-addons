@@ -159,8 +159,9 @@ class StaffAllowanceController(http.Controller):
                                _("Could not register the order."), 500)
 
         quota = {k: result[k] for k in
-                 ("code", "name", "limit", "used", "remaining", "over_limit",
-                  "overdraft", "resets_at", "count_mode", "day", "origin")}
+                 ("code", "name", "unlimited", "limit", "used", "remaining",
+                  "over_limit", "overdraft", "resets_at", "count_mode", "day",
+                  "origin")}
 
         if not result["ok"]:
             # 429 reads correctly for a quota that is used up; the app can

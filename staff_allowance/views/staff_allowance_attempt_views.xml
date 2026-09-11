@@ -52,38 +52,11 @@
         </field>
     </record>
 
-    <record id="view_allowance_attempt_search" model="ir.ui.view">
-        <field name="name">staff.allowance.attempt.search</field>
-        <field name="model">staff.allowance.attempt</field>
-        <field name="arch" type="xml">
-            <search string="Blocked Attempts">
-                <field name="beneficiary_name" string="Beneficiary"/>
-                <field name="category_id"/>
-                <filter name="today" string="Today"
-                        domain="[('attempt_date', '=', context_today().strftime('%Y-%m-%d'))]"/>
-                <filter name="limit_reached" string="Limit Reached"
-                        domain="[('reason', 'in', ('limit_reached', 'overdraft_exceeded'))]"/>
-                <filter name="not_allowed" string="Not Allowed"
-                        domain="[('reason', '=', 'not_allowed')]"/>
-                <group expand="0" string="Group By">
-                    <filter name="group_beneficiary" string="Beneficiary"
-                            context="{'group_by': 'beneficiary_name'}"/>
-                    <filter name="group_category" string="Category"
-                            context="{'group_by': 'category_id'}"/>
-                    <filter name="group_reason" string="Reason"
-                            context="{'group_by': 'reason'}"/>
-                    <filter name="group_day" string="Day"
-                            context="{'group_by': 'attempt_date'}"/>
-                </group>
-            </search>
-        </field>
-    </record>
 
     <record id="action_allowance_attempt" model="ir.actions.act_window">
         <field name="name">Blocked Attempts</field>
         <field name="res_model">staff.allowance.attempt</field>
         <field name="view_mode">list,form</field>
-        <field name="context">{'search_default_today': 1, 'search_default_group_beneficiary': 1}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">No blocked attempts today</p>
             <p>Every order the app refused is logged here with the exact message

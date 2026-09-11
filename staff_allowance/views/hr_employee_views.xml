@@ -42,7 +42,9 @@
                               decoration-danger="status in ('reached', 'over', 'blocked')"
                               decoration-warning="status == 'near'">
                             <field name="category_id"/>
-                            <field name="daily_limit" string="Daily Limit"/>
+                            <field name="unlimited" widget="boolean_toggle"/>
+                            <field name="daily_limit" string="Daily Limit"
+                                   readonly="unlimited"/>
                             <field name="used_today"/>
                             <field name="remaining_today"/>
                             <field name="overdraft_today" optional="hide"/>

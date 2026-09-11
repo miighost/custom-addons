@@ -40,10 +40,33 @@ Most specific wins:
 | 1 | **Personal line** | Allowance tab on the employee or contact |
 | 2 | **Plan line** | Allowances → Configuration → Plans |
 | 3 | **Category default** | Allowances → Configuration → Categories |
-| 4 | **Blocked** | category *Assigned Only*, or an exhaustive plan |
+| 4 | **Category fallback** | what happens when nothing above matched |
 
 `_limit_for()` returns the limit **and its origin**, so the API tells the app
-whether a number came from a personal line, a plan, or the category default.
+whether a number came from a personal line, a plan, or the category.
+
+### No allowance set = free
+
+The category setting **If Nothing Is Assigned** decides what happens to
+somebody with no personal line and no plan entry:
+
+| Setting | Effect |
+|---|---|
+| **Free — no limit unless assigned** (default) | They order with no cap at all |
+| **Apply the default limit below** | The category Daily Limit caps everyone |
+| **Not allowed unless assigned** | They cannot order until you assign them |
+
+New categories default to **Free**, so installing this module restricts nobody.
+An allowance only ever starts limiting once you actually set one — on the
+person's Allowance tab, or through a plan.
+
+You can also grant someone an uncapped allowance explicitly: tick **No Limit**
+on their line (or on a plan line, for a whole tier). The API reports this as
+`"unlimited": true` with `limit` and `remaining` set to `null` rather than `0`,
+so an app testing `remaining == 0` can never block an uncapped user by mistake.
+
+Product restrictions still apply when uncapped — *no limit* means no daily
+cap, not "anything goes".
 
 ### Plans (the tier)
 
@@ -248,6 +271,30 @@ cd staff_allowance && python3 tools/check_views.py
 It also checks that any model with a search view has a resolvable `_rec_name`.
 Both install failures this module hit were caught by these rules, so it is
 worth running before pushing to the server.
+
+### Search views on the name-less models are parked
+
+`staff.allowance.line`, `.attempt` and `.usage` have no `name` field, so they
+depend on `_rec_name` — which is set on the beneficiary mixin, but `_rec_name`
+is **Python**, and Odoo does not reload Python when you press Install. On a
+server whose service was not restarted, a search view on those models fails to
+validate.
+
+Their search views therefore live in `views/optional_search_views.xml`, which
+is **not** in the manifest. Everything else — list, form, kanban, pivot, graph,
+the Allowance tabs, the API — is unaffected, and the monitoring actions carry
+their own domains so "At or Over Limit" still works. You just get Odoo's
+default search bar on those three lists instead of preset filters.
+
+To turn them back on once the service has been restarted:
+
+1. `sudo systemctl restart odoo19`
+2. add `"views/optional_search_views.xml",` to the `data` list in
+   `__manifest__.py`
+3. upgrade the module
+
+If it fails again at that point, the cause is not `_rec_name` and the log
+command below will say what it is.
 
 ### If a view still fails to load
 

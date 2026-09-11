@@ -33,8 +33,9 @@ class StaffAllowanceCategory(models.Model):
     daily_limit = fields.Integer(
         default=10,
         required=True,
-        help="Default number of units per beneficiary per day. Overridden by a "
-             "plan, and then by a personal allowance line.",
+        help="Used when 'If Nothing Is Assigned' is set to apply it, and as the "
+             "suggested value when you assign someone. Overridden by a plan, "
+             "and then by a personal allowance line.",
     )
     count_mode = fields.Selection(
         [("qty", "Units ordered"), ("order", "Number of orders")],
@@ -50,11 +51,19 @@ class StaffAllowanceCategory(models.Model):
         default="employee",
         required=True,
     )
-    assigned_only = fields.Boolean(
-        string="Assigned Only",
-        default=False,
-        help="If enabled, only beneficiaries with an explicit allowance line or a "
-             "plan covering this category may order from it.",
+    fallback = fields.Selection(
+        [("unlimited", "Free - no limit unless assigned"),
+         ("default_limit", "Apply the default limit below"),
+         ("blocked", "Not allowed unless assigned")],
+        string="If Nothing Is Assigned",
+        default="unlimited",
+        required=True,
+        help="What happens to someone who has no personal allowance line and "
+             "no plan entry for this category.\n"
+             "Free: they order without any cap. This is the default -- an "
+             "allowance only ever restricts once you actually set one.\n"
+             "Apply the default limit: the Daily Limit below caps everyone.\n"
+             "Not allowed: they cannot order at all until you assign them.",
     )
 
     # --- what happens at the limit --------------------------------------
@@ -140,19 +149,20 @@ class StaffAllowanceCategory(models.Model):
         Cascade, most specific first:
           1. personal allowance line   (Allowance tab on the employee/contact)
           2. plan line                 (the tier assigned to them)
-          3. category default
-          4. blocked
-        Returns (allowed: bool, limit: int, origin: str).
+          3. the category fallback     (free by default)
+
+        Returns (allowed: bool, unlimited: bool, limit: int, origin: str).
+        When `unlimited` is True the limit is meaningless -- nothing is capped.
         """
         self.ensure_one()
         if not beneficiary:
-            return (False, 0, "none")
+            return (False, False, 0, "none")
 
         is_employee = beneficiary._name == "hr.employee"
         if self.applies_to == "employee" and not is_employee:
-            return (False, 0, "scope")
+            return (False, False, 0, "scope")
         if self.applies_to == "partner" and is_employee:
-            return (False, 0, "scope")
+            return (False, False, 0, "scope")
 
         Line = self.env["staff.allowance.line"].sudo()
         line = Line.search(
@@ -160,21 +170,29 @@ class StaffAllowanceCategory(models.Model):
             limit=1,
         )
         if line:
-            return (bool(line.allowed), line.daily_limit if line.allowed else 0,
-                    "personal")
+            if not line.allowed:
+                return (False, False, 0, "personal")
+            return (True, line.unlimited,
+                    0 if line.unlimited else line.daily_limit, "personal")
 
         plan = beneficiary.allowance_plan_id
         if plan:
             plan_line = plan.line_ids.filtered(lambda l: l.category_id == self)
             if plan_line:
-                return (True, plan_line[0].daily_limit, "plan")
+                entry = plan_line[0]
+                return (True, entry.unlimited,
+                        0 if entry.unlimited else entry.daily_limit, "plan")
             if plan.strict:
                 # The plan is the complete list; anything outside it is blocked.
-                return (False, 0, "plan")
+                return (False, False, 0, "plan")
 
-        if self.assigned_only:
-            return (False, 0, "category")
-        return (True, self.daily_limit, "category")
+        # Nothing assigned anywhere. Default is free -- an allowance only ever
+        # restricts once somebody actually sets one.
+        if self.fallback == "blocked":
+            return (False, False, 0, "category")
+        if self.fallback == "default_limit":
+            return (True, False, self.daily_limit, "category")
+        return (True, True, 0, "category")
 
     def _used_today(self, beneficiary, day=None, exclude_ids=None):
         """Units (or orders) already consumed by the beneficiary on `day`."""
@@ -210,11 +228,11 @@ class StaffAllowanceCategory(models.Model):
         self.ensure_one()
         Order = self.env["staff.allowance.order"].sudo()
         day = day or Order._local_today(beneficiary)
-        allowed, limit, origin = self._limit_for(beneficiary)
+        allowed, unlimited, limit, origin = self._limit_for(beneficiary)
         used = self._used_today(beneficiary, day, exclude_ids=exclude_ids) \
             if allowed else 0
         projected = used + increment
-        overdraft = max(projected - limit, 0)
+        overdraft = 0 if unlimited else max(projected - limit, 0)
 
         result = {
             "category_id": self.id,
@@ -222,9 +240,12 @@ class StaffAllowanceCategory(models.Model):
             "name": self.name,
             "day": fields.Date.to_string(day),
             "allowed": allowed,
-            "limit": limit,
+            "unlimited": unlimited,
+            # null rather than 0 when uncapped, so an app testing
+            # `remaining == 0` never blocks an unlimited user by accident
+            "limit": None if unlimited else limit,
             "used": used,
-            "remaining": max(limit - used, 0),
+            "remaining": None if unlimited else max(limit - used, 0),
             "origin": origin,
             "count_mode": self.count_mode,
             "overdraft_policy": self.overdraft_policy,
@@ -258,6 +279,9 @@ class StaffAllowanceCategory(models.Model):
                 message=_("%(product)s is not part of the %(category)s allowance.",
                           product=product.display_name, category=self.name),
             )
+            return result
+
+        if unlimited:
             return result
 
         if overdraft:

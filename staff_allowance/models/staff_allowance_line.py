@@ -18,6 +18,10 @@ class StaffAllowanceLine(models.Model):
         related="category_id.company_id", store=True, readonly=True
     )
 
+    unlimited = fields.Boolean(
+        string="No Limit",
+        help="Let this person order freely in this category, with no daily cap.",
+    )
     daily_limit = fields.Integer(
         required=True, default=10,
         help="Overrides both the plan and the category default for this person.",
@@ -36,7 +40,8 @@ class StaffAllowanceLine(models.Model):
          ("ok", "Available"),
          ("near", "Almost Used Up"),
          ("reached", "Limit Reached"),
-         ("over", "Over Limit")],
+         ("over", "Over Limit"),
+         ("unlimited", "No Limit")],
         compute="_compute_usage",
         string="Today",
     )
@@ -45,7 +50,7 @@ class StaffAllowanceLine(models.Model):
 
     # ------------------------------------------------------------------
     @api.depends("employee_id", "partner_id", "category_id", "daily_limit",
-                 "allowed")
+                 "allowed", "unlimited")
     def _compute_usage(self):
         for line in self:
             beneficiary = line._beneficiary()
@@ -61,6 +66,13 @@ class StaffAllowanceLine(models.Model):
                 continue
 
             used = line.category_id._used_today(beneficiary)
+            if line.unlimited:
+                line.used_today = used
+                line.remaining_today = 0
+                line.overdraft_today = 0
+                line.status = "unlimited"
+                line.resets_at = line._resets_at(beneficiary)
+                continue
             limit = line.daily_limit
             line.used_today = used
             line.remaining_today = max(limit - used, 0)

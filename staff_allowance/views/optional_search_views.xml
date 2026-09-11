@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ==================================================================
+         OPTIONAL SEARCH VIEWS
+         ==================================================================
+         These are NOT loaded by default. They are search views for the three
+         models that have no `name` field (staff.allowance.line, .attempt,
+         .usage) and therefore rely on _rec_name, which is a Python-level
+         setting and needs a full service restart to take effect.
+
+         To enable, restart Odoo, then add to __manifest__.py's data list:
+             "views/optional_search_views.xml",
+         and upgrade the module.
+         ================================================================== -->
+
+    <record id="view_allowance_line_search" model="ir.ui.view">
+        <field name="name">staff.allowance.line.search</field>
+        <field name="model">staff.allowance.line</field>
+        <field name="arch" type="xml">
+            <search string="Allowances">
+                <field name="beneficiary_name" string="Beneficiary"/>
+                <field name="employee_id"/>
+                <field name="partner_id"/>
+                <field name="category_id"/>
+                <filter name="employees" string="Employees"
+                        domain="[('beneficiary_type', '=', 'employee')]"/>
+                <filter name="partners" string="Contacts"
+                        domain="[('beneficiary_type', '=', 'partner')]"/>
+                <separator/>
+                <filter name="blocked" string="Blocked"
+                        domain="[('allowed', '=', False)]"/>
+                <filter name="group_category" string="Category"
+                        context="{'group_by': 'category_id'}"/>
+                <filter name="group_type" string="Beneficiary Type"
+                        context="{'group_by': 'beneficiary_type'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_allowance_attempt_search" model="ir.ui.view">
+        <field name="name">staff.allowance.attempt.search</field>
+        <field name="model">staff.allowance.attempt</field>
+        <field name="arch" type="xml">
+            <search string="Blocked Attempts">
+                <field name="beneficiary_name" string="Beneficiary"/>
+                <field name="category_id"/>
+                <filter name="today" string="Today"
+                        domain="[('attempt_date', '=', context_today().strftime('%Y-%m-%d'))]"/>
+                <filter name="limit_reached" string="Limit Reached"
+                        domain="[('reason', 'in', ('limit_reached', 'overdraft_exceeded'))]"/>
+                <filter name="not_allowed" string="Not Allowed"
+                        domain="[('reason', '=', 'not_allowed')]"/>
+                <group expand="0" string="Group By">
+                    <filter name="group_beneficiary" string="Beneficiary"
+                            context="{'group_by': 'beneficiary_name'}"/>
+                    <filter name="group_category" string="Category"
+                            context="{'group_by': 'category_id'}"/>
+                    <filter name="group_reason" string="Reason"
+                            context="{'group_by': 'reason'}"/>
+                    <filter name="group_day" string="Day"
+                            context="{'group_by': 'attempt_date'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_allowance_usage_search" model="ir.ui.view">
+        <field name="name">staff.allowance.usage.search</field>
+        <field name="model">staff.allowance.usage</field>
+        <field name="arch" type="xml">
+            <search string="Daily Usage">
+                <field name="beneficiary_name" string="Beneficiary"/>
+                <field name="employee_id"/>
+                <field name="partner_id"/>
+                <field name="category_id"/>
+                <filter name="today" string="Today"
+                        domain="[('day', '=', context_today().strftime('%Y-%m-%d'))]"/>
+                <filter name="this_month" string="This Month"
+                        domain="[('day', '&gt;=', context_today().strftime('%Y-%m-01'))]"/>
+                <separator/>
+                <filter name="reached" string="At or Over Limit"
+                        domain="[('status', 'in', ['reached', 'over'])]"/>
+                <filter name="over" string="Over Limit"
+                        domain="[('status', '=', 'over')]"/>
+                <filter name="near" string="Almost Used Up"
+                        domain="[('status', '=', 'near')]"/>
+                <filter name="uncapped" string="No Limit"
+                        domain="[('unlimited', '=', True)]"/>
+                <separator/>
+                <filter name="employees" string="Employees"
+                        domain="[('beneficiary_type', '=', 'employee')]"/>
+                <filter name="partners" string="Contacts"
+                        domain="[('beneficiary_type', '=', 'partner')]"/>
+                <group expand="0" string="Group By">
+                    <filter name="group_beneficiary" string="Beneficiary"
+                            context="{'group_by': 'beneficiary_name'}"/>
+                    <filter name="group_category" string="Category"
+                            context="{'group_by': 'category_id'}"/>
+                    <filter name="group_status" string="Status"
+                            context="{'group_by': 'status'}"/>
+                    <filter name="group_day" string="Day"
+                            context="{'group_by': 'day'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+</odoo>

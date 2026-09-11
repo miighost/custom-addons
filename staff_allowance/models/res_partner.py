@@ -58,5 +58,6 @@ class ResPartner(models.Model):
                 Line.create({
                     "partner_id": partner.id,
                     "category_id": plan_line.category_id.id,
+                    "unlimited": plan_line.unlimited,
                     "daily_limit": plan_line.daily_limit,
                 })

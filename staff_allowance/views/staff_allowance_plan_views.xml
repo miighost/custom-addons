@@ -58,7 +58,8 @@
                                 <list editable="bottom">
                                     <field name="category_id"/>
                                     <field name="category_default"/>
-                                    <field name="daily_limit"/>
+                                    <field name="unlimited" widget="boolean_toggle"/>
+                                    <field name="daily_limit" readonly="unlimited"/>
                                 </list>
                             </field>
                             <div class="text-muted mt-2">

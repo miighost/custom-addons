@@ -59,6 +59,7 @@ class HrEmployee(models.Model):
                 Line.create({
                     "employee_id": employee.id,
                     "category_id": plan_line.category_id.id,
+                    "unlimited": plan_line.unlimited,
                     "daily_limit": plan_line.daily_limit,
                 })
 
@@ -70,10 +71,11 @@ class HrEmployee(models.Model):
         for employee in self:
             missing = categories - employee.allowance_line_ids.mapped("category_id")
             for category in missing:
-                allowed, limit, _origin = category._limit_for(employee)
+                allowed, unlimited, limit, _origin = category._limit_for(employee)
                 Line.create({
                     "employee_id": employee.id,
                     "category_id": category.id,
+                    "unlimited": unlimited,
                     "daily_limit": limit or category.daily_limit,
                     "allowed": allowed,
                 })

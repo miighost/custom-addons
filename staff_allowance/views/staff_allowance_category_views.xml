@@ -48,7 +48,7 @@
                 <field name="daily_limit"/>
                 <field name="count_mode"/>
                 <field name="overdraft_policy"/>
-                <field name="assigned_only" optional="show"/>
+                <field name="fallback" optional="show"/>
                 <field name="today_order_count" string="Today"/>
                 <field name="today_over_count" string="Over Limit"
                        decoration-danger="today_over_count &gt; 0"/>
@@ -85,12 +85,13 @@
                     <group>
                         <group string="Daily Quota">
                             <field name="code" placeholder="e.g. coffee"/>
-                            <field name="daily_limit"/>
+                            <field name="daily_limit"
+                                   invisible="fallback == 'unlimited'"/>
                             <field name="count_mode" widget="radio"/>
                         </group>
                         <group string="Who Can Use It">
                             <field name="applies_to"/>
-                            <field name="assigned_only"/>
+                            <field name="fallback"/>
                             <field name="sequence"/>
                             <field name="active" invisible="1"/>
                             <field name="color" widget="color_picker"/>
@@ -98,6 +99,12 @@
                                    groups="base.group_multi_company"/>
                         </group>
                     </group>
+                    <div class="text-muted mb-3"
+                         invisible="fallback != 'unlimited'">
+                        Nobody is capped in this category until you give them an
+                        allowance — on their own Allowance tab, or through a plan.
+                        The settings below only apply to people who have one.
+                    </div>
                     <group string="When the Limit Is Reached">
                         <group>
                             <field name="overdraft_policy" widget="radio"/>
@@ -136,7 +143,8 @@
                                 <list editable="bottom">
                                     <field name="employee_id"/>
                                     <field name="partner_id"/>
-                                    <field name="daily_limit"/>
+                                    <field name="unlimited" widget="boolean_toggle"/>
+                                    <field name="daily_limit" readonly="unlimited"/>
                                     <field name="used_today"/>
                                     <field name="remaining_today"/>
                                     <field name="status" widget="badge"
@@ -165,6 +173,8 @@
                 <filter name="for_partners" string="For Contacts"
                         domain="[('applies_to', 'in', ('all', 'partner'))]"/>
                 <separator/>
+                <filter name="free" string="Free by Default"
+                        domain="[('fallback', '=', 'unlimited')]"/>
                 <filter name="blocking" string="Blocks at Limit"
                         domain="[('overdraft_policy', '=', 'block')]"/>
                 <filter name="archived" string="Archived"

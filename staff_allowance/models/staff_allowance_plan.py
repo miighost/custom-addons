@@ -98,6 +98,10 @@ class StaffAllowancePlanLine(models.Model):
     category_id = fields.Many2one(
         "staff.allowance.category", required=True, ondelete="cascade", index=True
     )
+    unlimited = fields.Boolean(
+        string="No Limit",
+        help="Everyone on this plan orders freely in this category.",
+    )
     daily_limit = fields.Integer(required=True, default=10)
     category_default = fields.Integer(
         related="category_id.daily_limit", string="Category Default", readonly=True
