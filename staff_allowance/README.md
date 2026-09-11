@@ -272,7 +272,24 @@ It also checks that any model with a search view has a resolvable `_rec_name`.
 Both install failures this module hit were caught by these rules, so it is
 worth running before pushing to the server.
 
-### Search views on the name-less models are parked
+### All custom search views are parked (temporary)
+
+Four install attempts failed on a search view, always with a `ParseError` that
+hides the real message. Comparing the two views that failed against the one
+that loads leaves exactly four constructs present in both failures and absent
+from the success: a `string=` label on a search field, a many2one search
+field, a field inherited from the beneficiary mixin, and a group-by filter.
+
+Reasoning cannot separate those four, so every custom search view now lives in
+`views/optional_search_views.xml`, which is **not** loaded. The module installs
+and every other view works; those lists just get Odoo's default search bar.
+
+`views/diagnostic_search_views.xml` (also not loaded) settles it in one run —
+see "Finding the cause" below.
+
+### Search views on the name-less models
+
+
 
 `staff.allowance.line`, `.attempt` and `.usage` have no `name` field, so they
 depend on `_rec_name` — which is set on the beneficiary mixin, but `_rec_name`
@@ -295,6 +312,33 @@ To turn them back on once the service has been restarted:
 
 If it fails again at that point, the cause is not `_rec_name` and the log
 command below will say what it is.
+
+### Finding the cause
+
+`views/diagnostic_search_views.xml` holds eight minimal search views on
+`staff.allowance.order`. Each adds exactly one suspect construct to a baseline
+that mirrors the search view already proven to load. Records load in order and
+Odoo stops at the first invalid one, so the record id in the error names the
+culprit directly.
+
+1. Add `"views/diagnostic_search_views.xml",` to the `data` list in
+   `__manifest__.py`
+2. Restart Odoo, upgrade the module
+3. Note which `diag_*` id the error names — or whether all eight pass
+
+| id | construct under test |
+|---|---|
+| `diag_a_baseline` | plain stored Char only (should always pass) |
+| `diag_b_string_attr` | `string=` label on a search field |
+| `diag_c_many2one` | many2one search field |
+| `diag_d_mixin_field` | field inherited from the beneficiary mixin |
+| `diag_e_mixin_domain` | filter domain on a mixin Selection field |
+| `diag_f_group_by` | group-by filter |
+| `diag_g_group_wrapper` | `<group>` Group By wrapper |
+| `diag_h_context_today` | date filter using `context_today()` |
+
+If all eight pass, the problem is a combination rather than any single
+construct, and the log command below will name it.
 
 ### If a view still fails to load
 

@@ -106,4 +106,46 @@
         </field>
     </record>
 
+    <record id="view_allowance_order_search" model="ir.ui.view">
+        <field name="name">staff.allowance.order.search</field>
+        <field name="model">staff.allowance.order</field>
+        <field name="arch" type="xml">
+            <search string="Allowance Orders">
+                <field name="name"/>
+                <field name="beneficiary_name" string="Beneficiary"/>
+                <field name="employee_id"/>
+                <field name="partner_id"/>
+                <field name="category_id"/>
+                <field name="product_id"/>
+                <filter name="today" string="Today"
+                        domain="[('order_date', '=', context_today().strftime('%Y-%m-%d'))]"/>
+                <filter name="this_month" string="This Month"
+                        domain="[('order_date', '&gt;=', context_today().strftime('%Y-%m-01'))]"/>
+                <separator/>
+                <filter name="to_approve" string="To Approve"
+                        domain="[('state', '=', 'draft')]"/>
+                <filter name="done" string="Done" domain="[('state', '=', 'done')]"/>
+                <filter name="over_limit" string="Over Limit"
+                        domain="[('is_over_limit', '=', True)]"/>
+                <separator/>
+                <filter name="employees" string="Employees"
+                        domain="[('beneficiary_type', '=', 'employee')]"/>
+                <filter name="partners" string="Contacts"
+                        domain="[('beneficiary_type', '=', 'partner')]"/>
+                <filter name="from_app" string="From Mobile App"
+                        domain="[('source', '=', 'app')]"/>
+                <group expand="0" string="Group By">
+                    <filter name="group_beneficiary" string="Beneficiary"
+                            context="{'group_by': 'beneficiary_name'}"/>
+                    <filter name="group_category" string="Category"
+                            context="{'group_by': 'category_id'}"/>
+                    <filter name="group_state" string="Status"
+                            context="{'group_by': 'state'}"/>
+                    <filter name="group_date" string="Day"
+                            context="{'group_by': 'order_date'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
 </odoo>
