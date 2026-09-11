@@ -52,7 +52,7 @@
         <field name="arch" type="xml">
             <search string="Diag C">
                 <field name="name"/>
-                <field name="category_id"/>
+                <field name="pos_category_id"/>
             </search>
         </field>
     </record>
@@ -94,7 +94,7 @@
             <search string="Diag F">
                 <field name="name"/>
                 <filter name="diag_f_grp" string="Category"
-                        context="{'group_by': 'category_id'}"/>
+                        context="{'group_by': 'pos_category_id'}"/>
             </search>
         </field>
     </record>
@@ -109,7 +109,7 @@
                 <field name="name"/>
                 <group expand="0" string="Group By">
                     <filter name="diag_g_grp" string="Category"
-                            context="{'group_by': 'category_id'}"/>
+                            context="{'group_by': 'pos_category_id'}"/>
                 </group>
             </search>
         </field>

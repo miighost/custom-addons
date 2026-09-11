@@ -12,7 +12,8 @@ BASE = {"id", "display_name", "create_date", "create_uid", "write_date",
         "activity_ids", "message_needaction", "message_attachment_count"}
 
 # models we extend but do not define -- their fields live in core Odoo
-EXTERNAL = {"hr.employee", "res.partner"}
+EXTERNAL = {"hr.employee", "res.partner", "pos.category",
+            "product.product", "res.users"}
 
 
 REC_NAME = {}

@@ -6,15 +6,10 @@ class ResPartner(models.Model):
 
     allowance_plan_id = fields.Many2one(
         "staff.allowance.plan", string="Allowance Plan",
-        help="Tier of daily limits applied to this contact. Personal lines "
-             "override it.",
-    )
-    allowance_line_ids = fields.One2many(
-        "staff.allowance.line", "partner_id", string="Allowances"
-    )
-    allowance_order_ids = fields.One2many(
-        "staff.allowance.order", "partner_id", string="Allowance Orders"
-    )
+        help="Tier of rules applied to this contact. Personal rules below "
+             "override it. Categories in neither stay free.")
+    allowance_rule_ids = fields.One2many("staff.allowance.rule", "partner_id",
+                                         string="Allowance Rules")
     allowance_order_count = fields.Integer(compute="_compute_allowance_counts")
     allowance_over_count = fields.Integer(compute="_compute_allowance_counts")
 
@@ -22,13 +17,11 @@ class ResPartner(models.Model):
         Order = self.env["staff.allowance.order"].sudo()
         done = Order._read_group(
             [("partner_id", "in", self.ids), ("state", "in", ("draft", "done"))],
-            groupby=["partner_id"], aggregates=["__count"],
-        )
+            groupby=["partner_id"], aggregates=["__count"])
         over = Order._read_group(
             [("partner_id", "in", self.ids), ("is_over_limit", "=", True),
              ("state", "in", ("draft", "done"))],
-            groupby=["partner_id"], aggregates=["__count"],
-        )
+            groupby=["partner_id"], aggregates=["__count"])
         done_map = {p.id: c for p, c in done}
         over_map = {p.id: c for p, c in over}
         for partner in self:
@@ -47,17 +40,19 @@ class ResPartner(models.Model):
         }
 
     def action_apply_allowance_plan(self):
-        Line = self.env["staff.allowance.line"]
+        Rule = self.env["staff.allowance.rule"]
         for partner in self:
             if not partner.allowance_plan_id:
                 continue
-            existing = partner.allowance_line_ids.mapped("category_id")
-            for plan_line in partner.allowance_plan_id.line_ids:
-                if plan_line.category_id in existing:
+            existing = partner.allowance_rule_ids.mapped("pos_category_id")
+            for line in partner.allowance_plan_id.line_ids:
+                if line.pos_category_id in existing:
                     continue
-                Line.create({
+                Rule.create({
                     "partner_id": partner.id,
-                    "category_id": plan_line.category_id.id,
-                    "unlimited": plan_line.unlimited,
-                    "daily_limit": plan_line.daily_limit,
+                    "pos_category_id": line.pos_category_id.id,
+                    "daily_limit": line.daily_limit,
+                    "count_mode": line.count_mode,
+                    "policy": line.policy,
+                    "tolerance": line.tolerance,
                 })

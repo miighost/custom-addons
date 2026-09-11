@@ -8,24 +8,20 @@
             <list string="Daily Usage" create="false" sample="1"
                   decoration-danger="status == 'over'"
                   decoration-warning="status == 'reached'"
-                  decoration-muted="status == 'blocked'">
+                  decoration-muted="status == 'free'">
                 <field name="day"/>
                 <field name="beneficiary_name" string="Beneficiary"/>
                 <field name="beneficiary_type" optional="hide"/>
-                <field name="category_id"/>
+                <field name="pos_category_id"/>
                 <field name="used" sum="Used"/>
-                <field name="unlimited" optional="show"/>
                 <field name="limit_value"/>
                 <field name="remaining"/>
                 <field name="over_by" sum="Over By"/>
                 <field name="order_count" optional="hide"/>
-                <field name="origin" optional="hide"/>
                 <field name="status" widget="badge"
                        decoration-success="status == 'ok'"
                        decoration-warning="status == 'near'"
-                       decoration-danger="status in ('reached', 'over', 'blocked')"/>
-                <field name="company_id" groups="base.group_multi_company"
-                       optional="hide"/>
+                       decoration-danger="status in ('reached', 'over')"/>
             </list>
         </field>
     </record>
@@ -40,17 +36,15 @@
                         <group>
                             <field name="employee_id"/>
                             <field name="partner_id"/>
-                            <field name="category_id"/>
+                            <field name="pos_category_id"/>
                             <field name="day"/>
                         </group>
                         <group>
                             <field name="used"/>
-                            <field name="unlimited"/>
                             <field name="limit_value"/>
                             <field name="remaining"/>
                             <field name="over_by"/>
                             <field name="order_count"/>
-                            <field name="origin"/>
                             <field name="status"/>
                         </group>
                     </group>
@@ -66,7 +60,7 @@
         <field name="arch" type="xml">
             <pivot string="Daily Usage" sample="1">
                 <field name="beneficiary_name" type="row"/>
-                <field name="category_id" type="col"/>
+                <field name="pos_category_id" type="col"/>
                 <field name="used" type="measure"/>
                 <field name="over_by" type="measure"/>
             </pivot>
@@ -79,7 +73,7 @@
         <field name="arch" type="xml">
             <graph string="Daily Usage" sample="1">
                 <field name="day"/>
-                <field name="category_id"/>
+                <field name="pos_category_id"/>
                 <field name="used" type="measure"/>
             </graph>
         </field>

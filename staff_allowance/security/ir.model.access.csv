@@ -1,19 +1,17 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_allowance_category_user,category user,model_staff_allowance_category,base.group_user,1,0,0,0
-access_allowance_category_manager,category manager,model_staff_allowance_category,hr.group_hr_manager,1,1,1,1
+access_allowance_rule_user,rule user,model_staff_allowance_rule,base.group_user,1,0,0,0
+access_allowance_rule_officer,rule officer,model_staff_allowance_rule,hr.group_hr_user,1,1,1,0
+access_allowance_rule_manager,rule manager,model_staff_allowance_rule,hr.group_hr_manager,1,1,1,1
 access_allowance_plan_user,plan user,model_staff_allowance_plan,base.group_user,1,0,0,0
 access_allowance_plan_manager,plan manager,model_staff_allowance_plan,hr.group_hr_manager,1,1,1,1
 access_allowance_plan_line_user,plan line user,model_staff_allowance_plan_line,base.group_user,1,0,0,0
 access_allowance_plan_line_manager,plan line manager,model_staff_allowance_plan_line,hr.group_hr_manager,1,1,1,1
-access_allowance_line_user,allowance user,model_staff_allowance_line,base.group_user,1,0,0,0
-access_allowance_line_officer,allowance officer,model_staff_allowance_line,hr.group_hr_user,1,1,1,0
-access_allowance_line_manager,allowance manager,model_staff_allowance_line,hr.group_hr_manager,1,1,1,1
 access_allowance_order_user,order user,model_staff_allowance_order,base.group_user,1,0,1,0
 access_allowance_order_officer,order officer,model_staff_allowance_order,hr.group_hr_user,1,1,1,0
 access_allowance_order_manager,order manager,model_staff_allowance_order,hr.group_hr_manager,1,1,1,1
-access_allowance_attempt_user,attempt user,model_staff_allowance_attempt,base.group_user,1,0,1,0
-access_allowance_attempt_officer,attempt officer,model_staff_allowance_attempt,hr.group_hr_user,1,1,1,0
-access_allowance_attempt_manager,attempt manager,model_staff_allowance_attempt,hr.group_hr_manager,1,1,1,1
 access_allowance_usage_user,usage user,model_staff_allowance_usage,base.group_user,1,0,0,0
 access_allowance_usage_officer,usage officer,model_staff_allowance_usage,hr.group_hr_user,1,1,1,0
 access_allowance_usage_manager,usage manager,model_staff_allowance_usage,hr.group_hr_manager,1,1,1,1
+access_allowance_attempt_user,attempt user,model_staff_allowance_attempt,base.group_user,1,0,1,0
+access_allowance_attempt_officer,attempt officer,model_staff_allowance_attempt,hr.group_hr_user,1,1,1,0
+access_allowance_attempt_manager,attempt manager,model_staff_allowance_attempt,hr.group_hr_manager,1,1,1,1

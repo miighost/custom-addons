@@ -1,46 +1,38 @@
 {
     "name": "Staff Allowance",
-    "version": "19.0.3.2.0",
+    "version": "19.0.4.0.0",
     "category": "Human Resources",
-    "summary": "Daily per-category allowances for employees and contacts, with "
-               "plans, over-limit handling and a REST API for mobile apps",
+    "summary": "Daily POS-category limits for individual employees and contacts "
+               "— free by default, capped only where you say so",
     "description": """
 Staff Allowance
 ===============
 
-Give employees **and contacts** a daily quota per category (Coffee 10/day,
-Snacks 5/day...). The quota resets by itself at each person's local midnight,
-because consumption is derived from the day's order records -- no counter to
-reset, no cron job to fail.
+Cap how much of a **POS category** a person may take per day. Built on the
+POS categories you already use, so the limits follow your real product data.
 
-Limits cascade, most specific first:
+Nothing is restricted until you add a rule. A rule names one person and one
+POS category; everyone else, and every other category, is untouched.
 
-1. a personal line in the Allowance tab
-2. the allowance plan (tier) assigned to the person
-3. the category default
-
-When someone reaches their limit, the category decides what happens: block the
-order with a clear message, allow it but require approval, or allow and flag it.
-Blocked attempts are logged so you can see who ran out.
+Limits reset by themselves at each person's local midnight, because
+consumption is derived from that day's order records — no counter, no cron.
 """,
     "author": "",
     "website": "",
     "license": "LGPL-3",
-    "depends": ["hr", "product", "mail"],
+    "depends": ["hr", "point_of_sale"],
     "data": [
         "security/ir.model.access.csv",
         "security/staff_allowance_security.xml",
         "data/ir_sequence_data.xml",
-        "views/staff_allowance_category_views.xml",
+        "views/staff_allowance_rule_views.xml",
         "views/staff_allowance_plan_views.xml",
-        "views/staff_allowance_line_views.xml",
         "views/staff_allowance_order_views.xml",
         "views/staff_allowance_usage_views.xml",
         "views/staff_allowance_attempt_views.xml",
         "views/hr_employee_views.xml",
         "views/res_partner_views.xml",
         "views/staff_allowance_menus.xml",
-        "data/staff_allowance_data.xml",
     ],
     "installable": True,
     "application": True,

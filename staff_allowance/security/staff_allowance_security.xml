@@ -21,8 +21,8 @@
     </record>
 
     <record id="rule_allowance_line_own" model="ir.rule">
-        <field name="name">Allowances: own only</field>
-        <field name="model_id" ref="model_staff_allowance_line"/>
+        <field name="name">Allowance Rules: own only</field>
+        <field name="model_id" ref="model_staff_allowance_rule"/>
         <field name="domain_force">['|',
             ('employee_id.user_id', '=', user.id),
             ('partner_id', '=', user.partner_id.id)]</field>
@@ -30,8 +30,8 @@
     </record>
 
     <record id="rule_allowance_line_officer" model="ir.rule">
-        <field name="name">Allowances: all</field>
-        <field name="model_id" ref="model_staff_allowance_line"/>
+        <field name="name">Allowance Rules: all</field>
+        <field name="model_id" ref="model_staff_allowance_rule"/>
         <field name="domain_force">[(1, '=', 1)]</field>
         <field name="groups" eval="[(4, ref('hr.group_hr_user'))]"/>
     </record>

@@ -10,7 +10,7 @@
                 <field name="attempt_datetime"/>
                 <field name="attempt_date" optional="hide"/>
                 <field name="beneficiary_name" string="Beneficiary"/>
-                <field name="category_id"/>
+                <field name="pos_category_id"/>
                 <field name="qty"/>
                 <field name="used_at_attempt"/>
                 <field name="limit_at_attempt"/>
@@ -31,7 +31,7 @@
                         <group>
                             <field name="employee_id"/>
                             <field name="partner_id"/>
-                            <field name="category_id"/>
+                            <field name="pos_category_id"/>
                             <field name="product_id"/>
                             <field name="qty"/>
                         </group>

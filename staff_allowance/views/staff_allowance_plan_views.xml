@@ -8,11 +8,8 @@
             <list string="Allowance Plans">
                 <field name="sequence" widget="handle"/>
                 <field name="name"/>
-                <field name="code" optional="show"/>
-                <field name="strict"/>
                 <field name="employee_count"/>
                 <field name="partner_count"/>
-                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
             </list>
         </field>
     </record>
@@ -39,37 +36,27 @@
                             bg_color="text-bg-danger" invisible="active"/>
                     <div class="oe_title">
                         <label for="name"/>
-                        <h1><field name="name" placeholder="e.g. Staff"/></h1>
+                        <h1><field name="name" placeholder="e.g. Kitchen Staff"/></h1>
                     </div>
                     <group>
-                        <group>
-                            <field name="code"/>
-                            <field name="sequence"/>
-                            <field name="active" invisible="1"/>
-                        </group>
-                        <group>
-                            <field name="strict"/>
-                            <field name="company_id" groups="base.group_multi_company"/>
-                        </group>
+                        <field name="sequence"/>
+                        <field name="active" invisible="1"/>
                     </group>
                     <notebook>
                         <page string="Category Limits" name="limits">
                             <field name="line_ids">
                                 <list editable="bottom">
-                                    <field name="category_id"/>
-                                    <field name="category_default"/>
-                                    <field name="unlimited" widget="boolean_toggle"/>
-                                    <field name="daily_limit" readonly="unlimited"/>
+                                    <field name="pos_category_id"/>
+                                    <field name="daily_limit"/>
+                                    <field name="count_mode"/>
+                                    <field name="policy"/>
+                                    <field name="tolerance"/>
                                 </list>
                             </field>
                             <div class="text-muted mt-2">
-                                These limits apply to everyone on this plan, unless
-                                the person has a personal line in their own
-                                Allowance tab.
+                                Only the categories listed here are capped.
+                                Anything else stays free for people on this plan.
                             </div>
-                        </page>
-                        <page string="Notes" name="notes">
-                            <field name="note" placeholder="Internal notes..."/>
                         </page>
                     </notebook>
                 </sheet>
@@ -83,8 +70,8 @@
         <field name="view_mode">list,form</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">Create an allowance plan</p>
-            <p>A plan is a reusable tier of limits — Staff, Manager, VIP Customer —
-               that you assign in one click instead of editing every person.</p>
+            <p>A reusable tier of limits you assign in one click instead of
+               writing the same rules for every person.</p>
         </field>
     </record>
 

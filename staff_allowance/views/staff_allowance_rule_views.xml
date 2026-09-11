@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_allowance_rule_list" model="ir.ui.view">
+        <field name="name">staff.allowance.rule.list</field>
+        <field name="model">staff.allowance.rule</field>
+        <field name="arch" type="xml">
+            <list string="Allowance Rules" sample="1"
+                  decoration-danger="status in ('reached', 'over')"
+                  decoration-warning="status == 'near'">
+                <field name="employee_id"/>
+                <field name="partner_id"/>
+                <field name="pos_category_id"/>
+                <field name="daily_limit"/>
+                <field name="count_mode" optional="hide"/>
+                <field name="policy"/>
+                <field name="tolerance" optional="hide"/>
+                <field name="used_today"/>
+                <field name="remaining_today"/>
+                <field name="over_today" optional="hide"/>
+                <field name="status" widget="badge"
+                       decoration-success="status == 'ok'"
+                       decoration-warning="status == 'near'"
+                       decoration-danger="status in ('reached', 'over')"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_allowance_rule_form" model="ir.ui.view">
+        <field name="name">staff.allowance.rule.form</field>
+        <field name="model">staff.allowance.rule</field>
+        <field name="arch" type="xml">
+            <form string="Allowance Rule">
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_today_orders" type="object"
+                                class="oe_stat_button" icon="fa-list">
+                            <field name="used_today" widget="statinfo"
+                                   string="Used Today"/>
+                        </button>
+                    </div>
+                    <widget name="web_ribbon" title="Archived"
+                            bg_color="text-bg-danger" invisible="active"/>
+                    <group>
+                        <group string="Who">
+                            <field name="employee_id"
+                                   readonly="partner_id != False"/>
+                            <field name="partner_id"
+                                   readonly="employee_id != False"/>
+                            <field name="active" invisible="1"/>
+                        </group>
+                        <group string="What">
+                            <field name="pos_category_id"/>
+                            <field name="daily_limit"/>
+                            <field name="count_mode" widget="radio"/>
+                        </group>
+                    </group>
+                    <group string="At the Limit">
+                        <group>
+                            <field name="policy" widget="radio" nolabel="1"/>
+                        </group>
+                        <group>
+                            <field name="tolerance"
+                                   invisible="policy == 'block'"/>
+                            <div class="text-muted">
+                                A limit of 0 blocks this category for this
+                                person entirely. Archive the rule to give them
+                                free access back.
+                            </div>
+                        </group>
+                    </group>
+                    <group string="Today" col="4">
+                        <field name="used_today"/>
+                        <field name="remaining_today"/>
+                        <field name="over_today"/>
+                        <field name="status"/>
+                        <field name="resets_at"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_allowance_rule" model="ir.actions.act_window">
+        <field name="name">Rules</field>
+        <field name="res_model">staff.allowance.rule</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No rules yet — everything is free</p>
+            <p>Nobody is capped until a rule exists for that person and that
+               POS category. Adding one affects only that person.</p>
+        </field>
+    </record>
+
+    <record id="action_allowance_rule_reached" model="ir.actions.act_window">
+        <field name="name">At or Over Limit Today</field>
+        <field name="res_model">staff.allowance.rule</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Nobody has hit their limit</p>
+        </field>
+    </record>
+
+</odoo>

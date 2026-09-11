@@ -1,4 +1,4 @@
-from odoo import _, api, fields, models
+from odoo import _, fields, models
 
 
 class HrEmployee(models.Model):
@@ -6,15 +6,10 @@ class HrEmployee(models.Model):
 
     allowance_plan_id = fields.Many2one(
         "staff.allowance.plan", string="Allowance Plan",
-        help="Tier of daily limits applied to this employee. Personal lines "
-             "below override it.",
-    )
-    allowance_line_ids = fields.One2many(
-        "staff.allowance.line", "employee_id", string="Allowances"
-    )
-    allowance_order_ids = fields.One2many(
-        "staff.allowance.order", "employee_id", string="Allowance Orders"
-    )
+        help="Tier of rules applied to this employee. Personal rules below "
+             "override it. Categories in neither stay free.")
+    allowance_rule_ids = fields.One2many("staff.allowance.rule", "employee_id",
+                                         string="Allowance Rules")
     allowance_order_count = fields.Integer(compute="_compute_allowance_counts")
     allowance_over_count = fields.Integer(compute="_compute_allowance_counts")
 
@@ -22,13 +17,11 @@ class HrEmployee(models.Model):
         Order = self.env["staff.allowance.order"].sudo()
         done = Order._read_group(
             [("employee_id", "in", self.ids), ("state", "in", ("draft", "done"))],
-            groupby=["employee_id"], aggregates=["__count"],
-        )
+            groupby=["employee_id"], aggregates=["__count"])
         over = Order._read_group(
             [("employee_id", "in", self.ids), ("is_over_limit", "=", True),
              ("state", "in", ("draft", "done"))],
-            groupby=["employee_id"], aggregates=["__count"],
-        )
+            groupby=["employee_id"], aggregates=["__count"])
         done_map = {e.id: c for e, c in done}
         over_map = {e.id: c for e, c in over}
         for employee in self:
@@ -47,35 +40,20 @@ class HrEmployee(models.Model):
         }
 
     def action_apply_allowance_plan(self):
-        """Materialise the assigned plan as personal lines, so they can be tuned."""
-        Line = self.env["staff.allowance.line"]
+        """Copy the plan into personal rules, so they can be tuned."""
+        Rule = self.env["staff.allowance.rule"]
         for employee in self:
             if not employee.allowance_plan_id:
                 continue
-            existing = employee.allowance_line_ids.mapped("category_id")
-            for plan_line in employee.allowance_plan_id.line_ids:
-                if plan_line.category_id in existing:
+            existing = employee.allowance_rule_ids.mapped("pos_category_id")
+            for line in employee.allowance_plan_id.line_ids:
+                if line.pos_category_id in existing:
                     continue
-                Line.create({
+                Rule.create({
                     "employee_id": employee.id,
-                    "category_id": plan_line.category_id.id,
-                    "unlimited": plan_line.unlimited,
-                    "daily_limit": plan_line.daily_limit,
-                })
-
-    def action_add_missing_allowances(self):
-        """Add a line for every category this employee has none for."""
-        Category = self.env["staff.allowance.category"]
-        Line = self.env["staff.allowance.line"]
-        categories = Category.search([("applies_to", "in", ("all", "employee"))])
-        for employee in self:
-            missing = categories - employee.allowance_line_ids.mapped("category_id")
-            for category in missing:
-                allowed, unlimited, limit, _origin = category._limit_for(employee)
-                Line.create({
-                    "employee_id": employee.id,
-                    "category_id": category.id,
-                    "unlimited": unlimited,
-                    "daily_limit": limit or category.daily_limit,
-                    "allowed": allowed,
+                    "pos_category_id": line.pos_category_id.id,
+                    "daily_limit": line.daily_limit,
+                    "count_mode": line.count_mode,
+                    "policy": line.policy,
+                    "tolerance": line.tolerance,
                 })

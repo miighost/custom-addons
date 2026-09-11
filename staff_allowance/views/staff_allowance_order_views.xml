@@ -14,7 +14,7 @@
                 <field name="order_date" optional="hide"/>
                 <field name="beneficiary_name" string="Beneficiary"/>
                 <field name="beneficiary_type" optional="hide"/>
-                <field name="category_id"/>
+                <field name="pos_category_id"/>
                 <field name="product_id" optional="show"/>
                 <field name="qty" sum="Total"/>
                 <field name="is_over_limit" string="Over" optional="show"/>
@@ -31,8 +31,6 @@
                 <button name="action_refuse" type="object" string="Refuse"
                         icon="fa-times" invisible="state != 'draft'"
                         groups="hr.group_hr_user"/>
-                <field name="company_id" groups="base.group_multi_company"
-                       optional="hide"/>
             </list>
         </field>
     </record>
@@ -72,7 +70,7 @@
                             <field name="beneficiary_type" invisible="1"/>
                         </group>
                         <group string="What">
-                            <field name="category_id"/>
+                            <field name="pos_category_id"/>
                             <field name="product_id"/>
                             <field name="qty"/>
                             <field name="note"/>
@@ -102,7 +100,7 @@
         <field name="arch" type="xml">
             <pivot string="Consumption" sample="1">
                 <field name="beneficiary_name" type="row"/>
-                <field name="category_id" type="col"/>
+                <field name="pos_category_id" type="col"/>
                 <field name="qty" type="measure"/>
             </pivot>
         </field>
@@ -114,7 +112,7 @@
         <field name="arch" type="xml">
             <graph string="Consumption" sample="1">
                 <field name="order_date"/>
-                <field name="category_id"/>
+                <field name="pos_category_id"/>
                 <field name="qty" type="measure"/>
             </graph>
         </field>
