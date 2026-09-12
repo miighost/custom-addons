@@ -66,11 +66,12 @@
                                                 <td><t t-esc="o.partner_id.parent_id.name or o.partner_id.company_name"/></td>
                                             </tr>
                                         </t>
-                                        <t t-if="o.partner_id.phone or o.partner_id.mobile">
+                                        <t t-set="contact_no" t-value="o.partner_id.phone or (o.partner_id.mobile if 'mobile' in o.partner_id._fields else False)"/>
+                                        <t t-if="contact_no">
                                             <tr>
                                                 <td style="font-weight: 600; color: #444;">Contact No</td>
                                                 <td style="font-weight: 600;">:</td>
-                                                <td><t t-esc="o.partner_id.phone or o.partner_id.mobile"/></td>
+                                                <td><t t-esc="contact_no"/></td>
                                             </tr>
                                         </t>
                                         <tr>
