@@ -33,87 +33,87 @@
                             <p style="margin-bottom: 0;">In this regard, we would like to confirm your booking details as follows:</p>
                         </div>
 
-                        <!-- Guest & Booking Summary Card -->
-                        <div style="padding: 4px 0; margin-bottom: 20px;">
+                        <!-- Guest & Booking Summary Card (Borderless) -->
+                        <div style="padding: 4px 0; margin-bottom: 22px;">
                             <div class="row">
                                 <!-- Left Details Column -->
                                 <div class="col-6">
-                                    <table style="width: 100%; border-collapse: separate; border-spacing: 0 5px;">
-                                        <tr>
-                                            <td style="width: 125px; font-weight: 600; color: #444;">Guest Name</td>
-                                            <td style="width: 12px; font-weight: 600;">:</td>
-                                            <td style="font-weight: 700; color: #000;"><t t-esc="o.partner_id.name"/></td>
+                                    <table style="width: 100%; border: none !important; border-collapse: collapse !important; margin: 0; background: transparent;">
+                                        <tr style="border: none !important; background: transparent;">
+                                            <td style="width: 140px; font-weight: 600; color: #444; border: none !important; padding: 3px 0; white-space: nowrap;">Guest Name</td>
+                                            <td style="width: 14px; font-weight: 600; border: none !important; padding: 3px 0; text-align: center;">:</td>
+                                            <td style="font-weight: 700; color: #000; border: none !important; padding: 3px 0;"><t t-esc="o.partner_id.name"/></td>
                                         </tr>
-                                        <tr>
-                                            <td style="font-weight: 600; color: #444;">Nationality</td>
-                                            <td style="font-weight: 600;">:</td>
-                                            <td><t t-esc="o.partner_id.country_id.name or '-'"/></td>
+                                        <tr style="border: none !important; background: transparent;">
+                                            <td style="width: 140px; font-weight: 600; color: #444; border: none !important; padding: 3px 0; white-space: nowrap;">Nationality</td>
+                                            <td style="width: 14px; font-weight: 600; border: none !important; padding: 3px 0; text-align: center;">:</td>
+                                            <td style="border: none !important; padding: 3px 0;"><t t-esc="o.partner_id.country_id.name or '-'"/></td>
                                         </tr>
-                                        <tr>
-                                            <td style="font-weight: 600; color: #444;">Reservation No</td>
-                                            <td style="font-weight: 600;">:</td>
-                                            <td style="font-weight: 700; color: #111;"><t t-esc="o.folio_no or (o.name or '').replace('BOOKING/', '').strip()"/></td>
+                                        <tr style="border: none !important; background: transparent;">
+                                            <td style="width: 140px; font-weight: 600; color: #444; border: none !important; padding: 3px 0; white-space: nowrap;">Reservation No</td>
+                                            <td style="width: 14px; font-weight: 600; border: none !important; padding: 3px 0; text-align: center;">:</td>
+                                            <td style="font-weight: 700; color: #111; border: none !important; padding: 3px 0;"><t t-esc="o.folio_no or (o.name or '').replace('BOOKING/', '').strip()"/></td>
                                         </tr>
-                                        <tr>
-                                            <td style="font-weight: 600; color: #444;">Reservation Date</td>
-                                            <td style="font-weight: 600;">:</td>
-                                            <td><t t-esc="o.date_order and o.date_order.strftime('%d-%B-%Y') or '-'"/></td>
+                                        <tr style="border: none !important; background: transparent;">
+                                            <td style="width: 140px; font-weight: 600; color: #444; border: none !important; padding: 3px 0; white-space: nowrap;">Reservation Date</td>
+                                            <td style="width: 14px; font-weight: 600; border: none !important; padding: 3px 0; text-align: center;">:</td>
+                                            <td style="border: none !important; padding: 3px 0;"><t t-esc="o.date_order and o.date_order.strftime('%d-%B-%Y') or '-'"/></td>
                                         </tr>
                                         <t t-if="o.partner_id.parent_id or o.partner_id.company_name">
-                                            <tr>
-                                                <td style="font-weight: 600; color: #444;">Company / Org</td>
-                                                <td style="font-weight: 600;">:</td>
-                                                <td><t t-esc="o.partner_id.parent_id.name or o.partner_id.company_name"/></td>
+                                            <tr style="border: none !important; background: transparent;">
+                                                <td style="width: 140px; font-weight: 600; color: #444; border: none !important; padding: 3px 0; white-space: nowrap;">Company / Org</td>
+                                                <td style="width: 14px; font-weight: 600; border: none !important; padding: 3px 0; text-align: center;">:</td>
+                                                <td style="border: none !important; padding: 3px 0;"><t t-esc="o.partner_id.parent_id.name or o.partner_id.company_name"/></td>
                                             </tr>
                                         </t>
                                         <t t-set="contact_no" t-value="o.partner_id.phone or (o.partner_id.mobile if 'mobile' in o.partner_id._fields else False)"/>
                                         <t t-if="contact_no">
-                                            <tr>
-                                                <td style="font-weight: 600; color: #444;">Contact No</td>
-                                                <td style="font-weight: 600;">:</td>
-                                                <td><t t-esc="contact_no"/></td>
+                                            <tr style="border: none !important; background: transparent;">
+                                                <td style="width: 140px; font-weight: 600; color: #444; border: none !important; padding: 3px 0; white-space: nowrap;">Contact No</td>
+                                                <td style="width: 14px; font-weight: 600; border: none !important; padding: 3px 0; text-align: center;">:</td>
+                                                <td style="border: none !important; padding: 3px 0;"><t t-esc="contact_no"/></td>
                                             </tr>
                                         </t>
-                                        <tr>
-                                            <td style="font-weight: 600; color: #444;">Pax</td>
-                                            <td style="font-weight: 600;">:</td>
-                                            <td><t t-esc="o.room_line_ids and o.room_line_ids[0].room_id.num_person or 1"/></td>
+                                        <tr style="border: none !important; background: transparent;">
+                                            <td style="width: 140px; font-weight: 600; color: #444; border: none !important; padding: 3px 0; white-space: nowrap;">Pax</td>
+                                            <td style="width: 14px; font-weight: 600; border: none !important; padding: 3px 0; text-align: center;">:</td>
+                                            <td style="border: none !important; padding: 3px 0;"><t t-esc="o.room_line_ids and o.room_line_ids[0].room_id.num_person or 1"/></td>
                                         </tr>
                                     </table>
                                 </div>
 
                                 <!-- Right Details Column -->
                                 <div class="col-6">
-                                    <table style="width: 100%; border-collapse: separate; border-spacing: 0 5px;">
-                                        <tr>
-                                            <td style="width: 125px; font-weight: 600; color: #444;">From Date</td>
-                                            <td style="width: 12px; font-weight: 600;">:</td>
-                                            <td style="font-weight: 700; color: #000;"><t t-esc="o.checkin_date and o.checkin_date.strftime('%d-%B-%Y') or '-'"/></td>
+                                    <table style="width: 100%; border: none !important; border-collapse: collapse !important; margin: 0; background: transparent;">
+                                        <tr style="border: none !important; background: transparent;">
+                                            <td style="width: 140px; font-weight: 600; color: #444; border: none !important; padding: 3px 0; white-space: nowrap;">From Date</td>
+                                            <td style="width: 14px; font-weight: 600; border: none !important; padding: 3px 0; text-align: center;">:</td>
+                                            <td style="font-weight: 700; color: #000; border: none !important; padding: 3px 0;"><t t-esc="o.checkin_date and o.checkin_date.strftime('%d-%B-%Y') or '-'"/></td>
                                         </tr>
-                                        <tr>
-                                            <td style="width: 125px; font-weight: 600; color: #444;">To Date</td>
-                                            <td style="width: 12px; font-weight: 600;">:</td>
-                                            <td style="font-weight: 700; color: #000;"><t t-esc="o.checkout_date and o.checkout_date.strftime('%d-%B-%Y') or '-'"/></td>
+                                        <tr style="border: none !important; background: transparent;">
+                                            <td style="width: 140px; font-weight: 600; color: #444; border: none !important; padding: 3px 0; white-space: nowrap;">To Date</td>
+                                            <td style="width: 14px; font-weight: 600; border: none !important; padding: 3px 0; text-align: center;">:</td>
+                                            <td style="font-weight: 700; color: #000; border: none !important; padding: 3px 0;"><t t-esc="o.checkout_date and o.checkout_date.strftime('%d-%B-%Y') or '-'"/></td>
                                         </tr>
-                                        <tr>
-                                            <td style="font-weight: 600; color: #444;">No of Nights</td>
-                                            <td style="font-weight: 600;">:</td>
-                                            <td><t t-esc="o.duration or 1"/> Night(s)</td>
+                                        <tr style="border: none !important; background: transparent;">
+                                            <td style="width: 140px; font-weight: 600; color: #444; border: none !important; padding: 3px 0; white-space: nowrap;">No of Nights</td>
+                                            <td style="width: 14px; font-weight: 600; border: none !important; padding: 3px 0; text-align: center;">:</td>
+                                            <td style="border: none !important; padding: 3px 0;"><t t-esc="int(o.duration or 1)"/> Night(s)</td>
                                         </tr>
-                                        <tr>
-                                            <td style="font-weight: 600; color: #444;">Status</td>
-                                            <td style="font-weight: 600;">:</td>
-                                            <td><span style="font-weight: 700; color: #1e7e34;">Confirm</span></td>
+                                        <tr style="border: none !important; background: transparent;">
+                                            <td style="width: 140px; font-weight: 600; color: #444; border: none !important; padding: 3px 0; white-space: nowrap;">Status</td>
+                                            <td style="width: 14px; font-weight: 600; border: none !important; padding: 3px 0; text-align: center;">:</td>
+                                            <td style="border: none !important; padding: 3px 0;"><span style="font-weight: 700; color: #1e7e34;">Confirm</span></td>
                                         </tr>
-                                        <tr>
-                                            <td style="font-weight: 600; color: #444;">Payment Type</td>
-                                            <td style="font-weight: 600;">:</td>
-                                            <td><t t-esc="o.pricelist_id.name or '-'"/></td>
+                                        <tr style="border: none !important; background: transparent;">
+                                            <td style="width: 140px; font-weight: 600; color: #444; border: none !important; padding: 3px 0; white-space: nowrap;">Payment Type</td>
+                                            <td style="width: 14px; font-weight: 600; border: none !important; padding: 3px 0; text-align: center;">:</td>
+                                            <td style="border: none !important; padding: 3px 0;"><t t-esc="o.pricelist_id.name or '-'"/></td>
                                         </tr>
-                                        <tr>
-                                            <td style="font-weight: 600; color: #444;">Adv. Amount</td>
-                                            <td style="font-weight: 600;">:</td>
-                                            <td style="font-weight: 700; color: #000;">
+                                        <tr style="border: none !important; background: transparent;">
+                                            <td style="width: 140px; font-weight: 600; color: #444; border: none !important; padding: 3px 0; white-space: nowrap;">Adv. Amount</td>
+                                            <td style="width: 14px; font-weight: 600; border: none !important; padding: 3px 0; text-align: center;">:</td>
+                                            <td style="font-weight: 700; color: #000; border: none !important; padding: 3px 0;">
                                                 <t t-if="o.amount_paid and o.amount_paid &gt; 0">
                                                     <t t-esc="'%.2f' % o.amount_paid"/> <t t-esc="o.currency_id.symbol or ''"/>
                                                 </t>
@@ -122,10 +122,10 @@
                                                 </t>
                                             </td>
                                         </tr>
-                                        <tr>
-                                            <td style="font-weight: 600; color: #444;">Plan</td>
-                                            <td style="font-weight: 600;">:</td>
-                                            <td style="font-weight: 700; color: #000;"><t t-esc="o.meal_plan_id.name or plan_labels.get(o.plan, o.plan or 'Bed &amp; Breakfast (BB)')"/></td>
+                                        <tr style="border: none !important; background: transparent;">
+                                            <td style="width: 140px; font-weight: 600; color: #444; border: none !important; padding: 3px 0; white-space: nowrap;">Plan</td>
+                                            <td style="width: 14px; font-weight: 600; border: none !important; padding: 3px 0; text-align: center;">:</td>
+                                            <td style="font-weight: 700; color: #000; border: none !important; padding: 3px 0;"><t t-esc="o.meal_plan_id.name or plan_labels.get(o.plan, o.plan or 'Bed &amp; Breakfast (BB)')"/></td>
                                         </tr>
                                     </table>
                                 </div>
@@ -138,7 +138,7 @@
                                 <thead>
                                     <tr style="background-color: #e9ecef; text-align: center; font-weight: bold; color: #111;">
                                         <th style="border: 1px solid #555; padding: 8px; text-align: left;">Room Type</th>
-                                        <th style="border: 1px solid #555; padding: 8px; width: 22%; text-align: center;">No of Rooms</th>
+                                        <th style="border: 1px solid #555; padding: 8px; width: 22%; text-align: center;">No of Nights</th>
                                         <th style="border: 1px solid #555; padding: 8px; width: 25%; text-align: right;">Room Rate</th>
                                     </tr>
                                 </thead>
@@ -149,7 +149,9 @@
                                             <td style="border: 1px solid #555; padding: 8px; text-align: left;">
                                                 <strong style="color: #000;"><t t-esc="rt_dict.get(r.room_id.room_type, r.room_id.name if r.room_id else 'STANDARD ROOM')"/></strong>
                                             </td>
-                                            <td style="border: 1px solid #555; padding: 8px; text-align: center;">1</td>
+                                            <td style="border: 1px solid #555; padding: 8px; text-align: center;">
+                                                <t t-esc="int(r.uom_qty) if r.uom_qty else int(o.duration or 1)"/>
+                                            </td>
                                             <td style="border: 1px solid #555; padding: 8px; text-align: right; font-weight: bold;">
                                                 <t t-esc="'%.2f' % r.price_unit"/>
                                             </td>
