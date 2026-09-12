@@ -126,9 +126,22 @@ class RoomBooking(models.Model):
                                          "booking time, check-in "
                                          "or check-out time.", tracking=True)
     duration = fields.Integer(string="Duration in Days",
+                              compute="_compute_duration",
+                              store=True, readonly=False,
                               help="Number of days which will automatically "
                                    "count from the check-in and check-out "
                                    "date.", )
+
+    @api.depends('checkin_date', 'checkout_date')
+    def _compute_duration(self):
+        """Compute the duration in nights between check-in and check-out."""
+        for rec in self:
+            if rec.checkin_date and rec.checkout_date:
+                cin = fields.Datetime.to_datetime(rec.checkin_date)
+                cout = fields.Datetime.to_datetime(rec.checkout_date)
+                rec.duration = max(1, (cout.date() - cin.date()).days)
+            else:
+                rec.duration = 1
     @api.model
     def _get_default_meal_plan_id(self):
         """Default to BB (Bed & Breakfast) or first available meal plan safely."""
@@ -402,6 +415,16 @@ class RoomBooking(models.Model):
     def _compute_today_balance(self):
         """Compute the real-time balance accrued up to today."""
         for rec in self:
+            paid = 0.0
+            if rec.hotel_invoice_id:
+                paid = rec.hotel_invoice_id.amount_total - rec.hotel_invoice_id.amount_residual
+            rec.amount_paid = paid
+
+            if rec.state in ('draft', 'reserved', 'cancel'):
+                rec.amount_accrued_today = 0.0
+                rec.today_balance = 0.0
+                continue
+
             room_accrued = sum(rec.room_line_ids.mapped('today_accrued_rent'))
             incidental = (sum(rec.food_order_line_ids.mapped('price_total')) +
                           sum(rec.service_line_ids.mapped('price_total')) +
@@ -413,11 +436,6 @@ class RoomBooking(models.Model):
 
             total_accrued = room_accrued + incidental + pos_total
             rec.amount_accrued_today = total_accrued
-
-            paid = 0.0
-            if rec.hotel_invoice_id:
-                paid = rec.hotel_invoice_id.amount_total - rec.hotel_invoice_id.amount_residual
-            rec.amount_paid = paid
             rec.today_balance = max(0.0, total_accrued - paid)
 
     def _compute_has_pos_orders(self):
@@ -605,11 +623,9 @@ class RoomBooking(models.Model):
         if self.checkin_date and self.checkout_date:
             if self.checkout_date < self.checkin_date:
                 raise ValidationError(("Checkout date must be greater than or equal to checkin date."))
-            diff = self.checkout_date - self.checkin_date
-            qty = diff.days
-            if diff.total_seconds() > 0:
-                qty += 1
-            self.duration = qty
+            cin = fields.Datetime.to_datetime(self.checkin_date)
+            cout = fields.Datetime.to_datetime(self.checkout_date)
+            self.duration = max(1, (cout.date() - cin.date()).days)
             for line in self.room_line_ids:
                 line.checkin_date = self.checkin_date
                 line.checkout_date = self.checkout_date
@@ -804,15 +820,13 @@ class RoomBooking(models.Model):
                     'is_room_avail': True
                 })
                 r_in = room.checkin_date or record.checkin_date or now
-                diffdate = now - r_in
-                qty = diffdate.days
-                if diffdate.total_seconds() > 0:
-                    qty = qty + 1
-                qty = max(1.0, float(qty))
+                cin = fields.Datetime.to_datetime(r_in)
+                cout = fields.Datetime.to_datetime(now)
+                nights = max(1.0, float((cout.date() - cin.date()).days))
 
                 room.write({
                     'checkout_date': now,
-                    'uom_qty': qty,
+                    'uom_qty': nights,
                 })
             record._compute_amount_untaxed()
 

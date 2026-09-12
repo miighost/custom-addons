@@ -77,7 +77,8 @@
                             <field name="user_id"
                                    domain="[('parent_id','=',partner_id)]"
                                    context="{'default_type':'invoice'}"
-                                   options="{'always_reload': True}"/>
+                                   options="{'always_reload': True}"
+                                   invisible="user_id == partner_id"/>
                             <field name="is_long_stay" string="Long Stay (LSR)" widget="boolean_toggle"/>
                             <field name="is_private_reserved" string="Reserved (RR)" widget="boolean_toggle"/>
                             <field name="is_cr" string="Complimentary (CR)" widget="boolean_toggle"/>
@@ -116,7 +117,8 @@
                                     <field name="uom_qty" string="Duration"
                                            readonly="1" force_save="1"/>
                                     <field name="elapsed_days" string="Stayed Days"
-                                           readonly="1" force_save="1"/>
+                                           readonly="1" force_save="1"
+                                           column_invisible="parent.state in ['draft', 'reserved']"/>
                                     <field name="uom_id"
                                            readonly="booking_line_visible == True"
                                            string="Unit of Measure"
@@ -134,7 +136,8 @@
                                            string="Today's Balance"
                                            widget="monetary"
                                            sum="Total Today's Balance"
-                                           readonly="1"/>
+                                           readonly="1"
+                                           column_invisible="parent.state in ['draft', 'reserved']"/>
                                     <field groups="account.group_account_manager"
                                            name="price_total" widget="monetary"
                                            readonly="booking_line_visible == True"/>
@@ -167,13 +170,16 @@
                                 <label for="amount_total"/>
                                 <field name="amount_total" nolabel="1"
                                        sum="Total amount" widget="monetary"/>
-                                <field name="amount_accrued_today" widget="monetary" string="Accrued (Today)"/>
+                                <field name="amount_accrued_today" widget="monetary" string="Accrued (Today)"
+                                       invisible="state in ['draft', 'reserved']"/>
                                 <field name="room_rate" widget="monetary" string="Daily Rate"/>
                                 <field name="amount_paid" widget="monetary" string="Amount Paid" invisible="amount_paid == 0"/>
-                                <div class="oe_subtotal_footer_separator oe_inline o_td_label">
+                                <div class="oe_subtotal_footer_separator oe_inline o_td_label"
+                                     invisible="state in ['draft', 'reserved']">
                                     <label for="today_balance" string="Today's Due Balance" style="font-weight: bold; font-size: 14px; color: #0056b3;"/>
                                 </div>
-                                <field name="today_balance" nolabel="1" class="oe_subtotal_footer_separator" widget="monetary" style="font-weight: bold; font-size: 14px; color: #0056b3;"/>
+                                <field name="today_balance" nolabel="1" class="oe_subtotal_footer_separator" widget="monetary" style="font-weight: bold; font-size: 14px; color: #0056b3;"
+                                       invisible="state in ['draft', 'reserved']"/>
                             </group>
                             <div class="oe_clear"/>
                         </page>

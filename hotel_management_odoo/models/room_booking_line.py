@@ -110,17 +110,14 @@ class RoomBookingLine(models.Model):
 
     @api.depends('checkin_date', 'checkout_date')
     def _compute_uom_qty(self):
-        """Automatically recompute stay duration whenever checkin or checkout date changes."""
+        """Automatically recompute stay duration (nights) whenever checkin or checkout date changes."""
         for line in self:
             if line.checkin_date and line.checkout_date:
                 cin = fields.Datetime.to_datetime(line.checkin_date)
                 cout = fields.Datetime.to_datetime(line.checkout_date)
                 if cout >= cin:
-                    diff = cout - cin
-                    days = diff.days
-                    if diff.total_seconds() > 0:
-                        days += 1
-                    line.uom_qty = max(1.0, float(days))
+                    nights = (cout.date() - cin.date()).days
+                    line.uom_qty = max(1.0, float(nights))
                 else:
                     line.uom_qty = 1.0
             else:
@@ -135,26 +132,23 @@ class RoomBookingLine(models.Model):
                 _("Checkout must be greater or equal checkin date"))
         self._compute_uom_qty()
 
-    @api.depends('checkin_date', 'checkout_date', 'price_unit', 'price_subtotal', 'uom_qty')
+    @api.depends('checkin_date', 'checkout_date', 'price_unit', 'price_subtotal', 'uom_qty', 'booking_id.state')
     def _compute_today_accrued(self):
         """Compute accrued days and today's balance as of current date."""
         now = fields.Datetime.now()
         for line in self:
-            if not line.checkin_date:
+            booking_state = line.booking_id.state if line.booking_id else line.state
+            if not line.checkin_date or booking_state in ('draft', 'reserved', 'cancel'):
                 line.elapsed_days = 0.0
                 line.today_accrued_rent = 0.0
                 continue
-            cin = line.checkin_date
-            cout = line.checkout_date or now
+            cin = fields.Datetime.to_datetime(line.checkin_date)
+            cout = fields.Datetime.to_datetime(line.checkout_date or now)
             effective_out = min(now, cout)
-            if effective_out <= cin:
+            days = (effective_out.date() - cin.date()).days
+            if days <= 0:
                 days = 1.0
-            else:
-                diff = effective_out - cin
-                days = diff.days
-                if diff.total_seconds() > 0:
-                    days += 1
-            line.elapsed_days = max(1.0, float(min(days, line.uom_qty or days)))
+            line.elapsed_days = float(min(days, line.uom_qty or days))
             daily_rate = line.price_unit or (line.price_subtotal / (line.uom_qty or 1.0) if line.uom_qty else 0.0)
             line.today_accrued_rent = daily_rate * line.elapsed_days
 

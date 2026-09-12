@@ -18,13 +18,6 @@
                 <t t-call="web.external_layout">
                     <div class="page" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 13px; color: #222; padding-top: 10px; line-height: 1.4;">
                         
-                        <!-- Top Right Printed Date -->
-                        <div class="row" style="margin-bottom: 8px;">
-                            <div class="col-12 text-end text-right" style="font-size: 14px; font-weight: bold; color: #000;">
-                                Print Date: <span t-esc="context_timestamp(datetime.datetime.now()).strftime('%d-%b-%Y %I:%M %p')"/>
-                            </div>
-                        </div>
-
                         <!-- Document Header Title -->
                         <div class="text-center mb-4">
                             <h3 style="font-weight: 700; text-transform: uppercase; color: #111; letter-spacing: 1px; border-bottom: 2px solid #333; display: inline-block; padding-bottom: 6px; margin-bottom: 0;">
@@ -41,7 +34,7 @@
                         </div>
 
                         <!-- Guest & Booking Summary Card -->
-                        <div style="border: 1px solid #666; border-radius: 6px; padding: 14px; margin-bottom: 20px; background-color: #fafafa;">
+                        <div style="padding: 4px 0; margin-bottom: 20px;">
                             <div class="row">
                                 <!-- Left Details Column -->
                                 <div class="col-6">
@@ -66,16 +59,20 @@
                                             <td style="font-weight: 600;">:</td>
                                             <td><t t-esc="o.date_order and o.date_order.strftime('%d-%B-%Y') or '-'"/></td>
                                         </tr>
-                                        <tr>
-                                            <td style="font-weight: 600; color: #444;">City Ledger</td>
-                                            <td style="font-weight: 600;">:</td>
-                                            <td><t t-esc="o.partner_id.parent_id.name or '-'"/></td>
-                                        </tr>
-                                        <tr>
-                                            <td style="font-weight: 600; color: #444;">C/O</td>
-                                            <td style="font-weight: 600;">:</td>
-                                            <td><t t-esc="o.partner_id.company_name or '-'"/></td>
-                                        </tr>
+                                        <t t-if="o.partner_id.parent_id or o.partner_id.company_name">
+                                            <tr>
+                                                <td style="font-weight: 600; color: #444;">Company / Org</td>
+                                                <td style="font-weight: 600;">:</td>
+                                                <td><t t-esc="o.partner_id.parent_id.name or o.partner_id.company_name"/></td>
+                                            </tr>
+                                        </t>
+                                        <t t-if="o.partner_id.phone or o.partner_id.mobile">
+                                            <tr>
+                                                <td style="font-weight: 600; color: #444;">Contact No</td>
+                                                <td style="font-weight: 600;">:</td>
+                                                <td><t t-esc="o.partner_id.phone or o.partner_id.mobile"/></td>
+                                            </tr>
+                                        </t>
                                         <tr>
                                             <td style="font-weight: 600; color: #444;">Pax</td>
                                             <td style="font-weight: 600;">:</td>
@@ -93,14 +90,14 @@
                                             <td style="font-weight: 700; color: #000;"><t t-esc="o.checkin_date and o.checkin_date.strftime('%d-%B-%Y') or '-'"/></td>
                                         </tr>
                                         <tr>
-                                            <td style="font-weight: 600; color: #444;">To Date</td>
-                                            <td style="font-weight: 600;">:</td>
+                                            <td style="width: 125px; font-weight: 600; color: #444;">To Date</td>
+                                            <td style="width: 12px; font-weight: 600;">:</td>
                                             <td style="font-weight: 700; color: #000;"><t t-esc="o.checkout_date and o.checkout_date.strftime('%d-%B-%Y') or '-'"/></td>
                                         </tr>
                                         <tr>
-                                            <td style="font-weight: 600; color: #444;">No of Days</td>
+                                            <td style="font-weight: 600; color: #444;">No of Nights</td>
                                             <td style="font-weight: 600;">:</td>
-                                            <td><t t-esc="o.duration or 1"/> Day(s)</td>
+                                            <td><t t-esc="o.duration or 1"/> Night(s)</td>
                                         </tr>
                                         <tr>
                                             <td style="font-weight: 600; color: #444;">Status</td>
@@ -115,7 +112,14 @@
                                         <tr>
                                             <td style="font-weight: 600; color: #444;">Adv. Amount</td>
                                             <td style="font-weight: 600;">:</td>
-                                            <td>0.00</td>
+                                            <td style="font-weight: 700; color: #000;">
+                                                <t t-if="o.amount_paid and o.amount_paid &gt; 0">
+                                                    <t t-esc="'%.2f' % o.amount_paid"/> <t t-esc="o.currency_id.symbol or ''"/>
+                                                </t>
+                                                <t t-else="">
+                                                    0.00
+                                                </t>
+                                            </td>
                                         </tr>
                                         <tr>
                                             <td style="font-weight: 600; color: #444;">Plan</td>
@@ -143,7 +147,6 @@
                                         <tr>
                                             <td style="border: 1px solid #555; padding: 8px; text-align: left;">
                                                 <strong style="color: #000;"><t t-esc="rt_dict.get(r.room_id.room_type, r.room_id.name if r.room_id else 'STANDARD ROOM')"/></strong>
-                                                <t t-if="r.room_id and r.room_id.name"> (Room <t t-esc="r.room_id.name"/>)</t>
                                             </td>
                                             <td style="border: 1px solid #555; padding: 8px; text-align: center;">1</td>
                                             <td style="border: 1px solid #555; padding: 8px; text-align: right; font-weight: bold;">
