@@ -7,12 +7,12 @@ balance movement inside loyalty.history, which is what staff and accounting
 actually reconcile against.
 """
 import logging
-from datetime import date
+import math
 
 from odoo import fields, http
 from odoo.http import request
 
-from .main import AppApi, ROUTE, api_endpoint
+from .main import AppApi, ROUTE, api_endpoint, lock_for_payment
 
 _logger = logging.getLogger(__name__)
 
@@ -46,56 +46,42 @@ class AppWallet(http.Controller):
         order = self._owned_order(partner, payload.get('order_id', 0))
         if not order:
             return {'error': 'order_not_found'}
+        if not lock_for_payment(order):
+            return {'error': 'payment_in_progress'}
         if order.state not in ('draft', 'sent'):
             return {'error': 'order_not_editable'}
 
         cards = self._active_cards(partner)
         if not cards:
             return {'error': 'no_wallet'}
-        balance = sum(cards.mapped('points'))
-        if balance <= 0:
+        if sum(cards.mapped('points')) <= 0:
             return {'error': 'insufficient_balance', 'balance': 0.0}
 
-        total_before = order.amount_total
-        applied = []
+        order._app_apply_wallet(cards.filtered(lambda c: c.points > 0))
 
-        for card in cards.sorted(
-                lambda c: c.expiration_date or date.max):
-            if order.amount_total <= 0:
-                break
-            result = order._try_apply_code(card.code)
-            if isinstance(result, dict) and result.get('error'):
-                if result.get('already_applied'):
-                    continue
-                _logger.info("Wallet %s not applicable to %s: %s",
-                             card.code, order.name, result['error'])
-                continue
-            # result maps coupons to the rewards they make claimable
-            for coupon, rewards in (result or {}).items():
-                for reward in rewards:
-                    outcome = order._apply_program_reward(reward, coupon)
-                    if outcome.get('error'):
-                        _logger.info("Reward %s rejected: %s",
-                                     reward.id, outcome['error'])
-                    else:
-                        applied.append(card.id)
-
-        order._update_programs_and_rewards()
-
+        # Measured from the reward lines, so calling this twice on the same
+        # quotation still reports what the wallet covers.
+        applied = -sum(order.order_line.filtered(
+            lambda line: line.coupon_id in cards).mapped('price_total'))
+        if not applied:
+            _logger.info("No eWallet reward applicable to %s", order.name)
         remaining = order.amount_total
-        covered = total_before - remaining
+        fully_covered = order.currency_id.compare_amounts(remaining, 0) <= 0
 
-        if payload.get('confirm') and remaining <= 0:
+        if payload.get('confirm') and fully_covered:
+            order.write({'app_payment_method': 'wallet'})
             order.action_confirm()
             order.message_post(body="Paid in full from the eWallet via the mobile app.")
 
-        cards = self._active_cards(partner)
         return {
             'order': AppApi()._order_dict(order),
-            'wallet_applied': round(covered, 2),
-            'remaining_due': round(remaining, 2),
-            'fully_covered': remaining <= 0,
-            'balance_after': sum(cards.mapped('points')),
+            'wallet_applied': round(applied, 2),
+            'remaining_due': round(max(remaining, 0.0), 2),
+            'fully_covered': fully_covered,
+            # Points leave the card when the order is confirmed; until then
+            # this is what will be left once it is.
+            'balance_after': sum(order._get_real_points_for_coupon(card)
+                                 for card in cards),
             'confirmed': order.state in ('sale', 'done'),
         }
 
@@ -124,6 +110,9 @@ class AppWallet(http.Controller):
 
         Body: {"product_id": 55, "qty": 1}
         """
+        qty = float(payload.get('qty', 1))
+        if not (math.isfinite(qty) and qty > 0):
+            return {'error': 'bad_qty'}
         product = request.env['product.product'].sudo().browse(
             int(payload.get('product_id', 0))).exists()
         if not product:
@@ -141,7 +130,7 @@ class AppWallet(http.Controller):
             'origin': 'Mobile app - eWallet top-up',
             'order_line': [(0, 0, {
                 'product_id': product.id,
-                'product_uom_qty': float(payload.get('qty', 1)),
+                'product_uom_qty': qty,
             })],
         })
         order.message_post(body="eWallet top-up requested from the mobile app.")

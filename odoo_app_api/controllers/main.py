@@ -1,16 +1,34 @@
 import functools
 import logging
+import math
 
+from psycopg2 import OperationalError
+from psycopg2.errors import LockNotAvailable
 from werkzeug.exceptions import HTTPException
 
 from odoo import fields, http
+from odoo.exceptions import AccessError, ConcurrencyError, UserError
 from odoo.http import request
+from odoo.tools import SQL
 
 from .firebase import current_partner
 
 _logger = logging.getLogger(__name__)
 
 ROUTE = dict(type='http', auth='public', methods=['POST'], csrf=False, cors='*')
+
+
+def _rollback():
+    """Discard everything a failed call wrote.
+
+    Odoo commits whatever a controller wrote once it returns a response, and
+    `api_endpoint` turns exceptions into responses - so without this, a
+    wallet debited just before a failing payment registration would be saved.
+    """
+    env = request.env
+    env.cr.rollback()
+    env.transaction.reset()
+    env.registry.reset_changes()
 
 
 def api_endpoint(func):
@@ -21,13 +39,46 @@ def api_endpoint(func):
             partner = current_partner()
             payload = request.get_json_data() if request.httprequest.data else {}
             return request.make_json_response(func(self, partner, payload, **kw))
+        except (OperationalError, ConcurrencyError):
+            # Serialization failure: Odoo rolls back and retries the request.
+            raise
         except HTTPException as err:
+            _rollback()
             return request.make_json_response(
                 {'error': err.description}, status=err.code)
-        except Exception as err:                      # noqa: BLE001
+        except (UserError, AccessError) as err:
+            _rollback()
+            return request.make_json_response(
+                {'error': err.args[0] if err.args else 'forbidden'}, status=400)
+        except (KeyError, TypeError, ValueError):
+            _rollback()
+            _logger.info("Bad request to %s", func.__name__, exc_info=True)
+            return request.make_json_response({'error': 'bad_request'}, status=400)
+        except Exception:                             # noqa: BLE001
+            _rollback()
             _logger.exception("App API error in %s", func.__name__)
-            return request.make_json_response({'error': str(err)}, status=400)
+            # The details are in the server log, not in the app.
+            return request.make_json_response({'error': 'server_error'}, status=400)
     return wrapper
+
+
+def lock_for_payment(records):
+    """Row-lock `records` until the request ends; False if another request
+    already holds them.
+
+    Taken before calling the gateway, so a double tap gets
+    `payment_in_progress` instead of charging the customer twice. If the rows
+    changed since this request started, PostgreSQL raises a serialization
+    error and Odoo retries the request - still before any money has moved.
+    """
+    try:
+        with request.env.cr.savepoint(flush=False):
+            request.env.cr.execute(SQL(
+                "SELECT id FROM %s WHERE id IN %s FOR NO KEY UPDATE NOWAIT",
+                SQL.identifier(records._table), tuple(records.ids)))
+    except LockNotAvailable:
+        return False
+    return True
 
 
 class AppApi(http.Controller):
@@ -112,10 +163,19 @@ class AppApi(http.Controller):
         lines = payload.get('lines') or []
         if not lines:
             return {'error': 'no_lines'}
+        try:
+            wanted = [(int(line['product_id']), float(line.get('qty', 1)))
+                      for line in lines]
+        except (AttributeError, KeyError, TypeError, ValueError):
+            return {'error': 'bad_lines'}
+        if any(not (math.isfinite(qty) and qty > 0) for _pid, qty in wanted):
+            return {'error': 'bad_qty'}
 
-        product_ids = [int(l['product_id']) for l in lines]
-        products = request.env['product.product'].sudo().browse(product_ids)
-        if not products.exists() or len(products) != len(set(product_ids)):
+        # The same product may sit on two lines; every id must still exist.
+        product_ids = list({product_id for product_id, _qty in wanted})
+        products = request.env['product.product'].sudo().browse(
+            product_ids).exists()
+        if len(products) != len(product_ids):
             return {'error': 'unknown_product'}
         # Only let the app order things it is allowed to see
         if any(not p.sale_ok or not p.active or not p.available_in_app
@@ -129,9 +189,9 @@ class AppApi(http.Controller):
             'client_order_ref': payload.get('client_ref') or False,
             'note': payload.get('note') or False,
             'order_line': [(0, 0, {
-                'product_id': int(line['product_id']),
-                'product_uom_qty': float(line.get('qty', 1)),
-            }) for line in lines],
+                'product_id': product_id,
+                'product_uom_qty': qty,
+            }) for product_id, qty in wanted],
         })
         # Leave it as a quotation so staff confirm it in Odoo, or call
         # order.action_confirm() here if the app should place firm orders.

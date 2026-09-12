@@ -14,11 +14,12 @@ import uuid
 from datetime import datetime
 
 import requests
+from markupsafe import Markup
 
 from odoo import http
 from odoo.http import request
 
-from .main import ROUTE, api_endpoint, AppApi
+from .main import ROUTE, AppApi, api_endpoint, lock_for_payment
 
 _logger = logging.getLogger(__name__)
 
@@ -30,12 +31,18 @@ PARAMS = {
     'api_key': 'app_api.waafi_api_key',
 }
 
+# Preauthorize waits while the customer approves on their handset; commit is
+# quick. Together they have to stay under Odoo's limit_time_real (120s by
+# default), or a worker can be killed between the charge and the booking.
+PREAUTHORIZE_TIMEOUT = 60
+COMMIT_TIMEOUT = 30
+
 
 def _config(name):
     return request.env['ir.config_parameter'].sudo().get_param(PARAMS[name])
 
 
-def _waafi(service_name, service_params):
+def _waafi(service_name, service_params, timeout=PREAUTHORIZE_TIMEOUT):
     """One call to the gateway. Returns the decoded JSON, or raises."""
     url = _config('url')
     if not url or not _config('merchant_uid'):
@@ -53,7 +60,7 @@ def _waafi(service_name, service_params):
             'apiKey': _config('api_key'),
         }),
     }
-    resp = requests.post(url, json=body, timeout=60)
+    resp = requests.post(url, json=body, timeout=timeout)
     resp.raise_for_status()
     return resp.json()
 
@@ -79,8 +86,18 @@ class AppPayment(http.Controller):
         order = self._owned_order(partner, payload.get('order_id', 0))
         if not order:
             return {'error': 'order_not_found'}
+        # Held until this request ends, so a second tap cannot charge again
+        # while the first one waits on the customer's handset.
+        if not lock_for_payment(order):
+            return {'error': 'payment_in_progress'}
+        if order.app_payment_reference:
+            return {'error': 'already_paid',
+                    'transaction_id': order.app_payment_reference}
         if order.state not in ('draft', 'sent'):
             return {'error': 'order_not_payable'}
+        # Confirming re-evaluates loyalty and eWallet lines. Do it now, so the
+        # customer is charged the total the order will actually confirm at.
+        order._update_programs_and_rewards()
         if order.amount_total <= 0:
             return {'error': 'nothing_to_pay'}
 
@@ -123,7 +140,7 @@ class AppPayment(http.Controller):
             commit = _waafi('API_PREAUTHORIZE_COMMIT', {
                 'transactionId': transaction_id,
                 'description': f"Commit {order.name}",
-            })
+            }, timeout=COMMIT_TIMEOUT)
         except Exception as err:                                  # noqa: BLE001
             _logger.exception("Commit failed for %s (tx %s)",
                               order.name, transaction_id)
@@ -135,14 +152,28 @@ class AppPayment(http.Controller):
             return {'error': 'commit_refused',
                     'gateway_message': commit.get('responseMsg')}
 
+        # The customer has been charged. Record that before anything else can
+        # fail: the reference is what answers already_paid to a second call.
         order.write({
             'app_payment_reference': transaction_id,
             'app_payment_method': 'waafi',
         })
-        order.action_confirm()
-        order.message_post(
-            body=f"Paid from the mobile app. WaafiPay transaction "
-                 f"<b>{transaction_id}</b> for {amount} {currency}.")
+        try:
+            with request.env.cr.savepoint():
+                order.action_confirm()
+        except Exception:                                         # noqa: BLE001
+            _logger.exception("Order %s paid (WaafiPay tx %s) but not confirmed",
+                              order.name, transaction_id)
+            order.message_post(body=Markup(
+                "Paid from the mobile app (WaafiPay transaction <b>%s</b>, "
+                "%s %s) but the order could not be confirmed automatically. "
+                "Confirm it by hand.") % (transaction_id, amount, currency))
+            return {'error': 'paid_not_confirmed',
+                    'transaction_id': transaction_id,
+                    'order': AppApi()._order_dict(order)}
+        order.message_post(body=Markup(
+            "Paid from the mobile app. WaafiPay transaction <b>%s</b> for "
+            "%s %s.") % (transaction_id, amount, currency))
 
         return {
             'paid': True,

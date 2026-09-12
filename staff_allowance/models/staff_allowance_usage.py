@@ -1,5 +1,4 @@
-from odoo import _, api, fields, models
-from odoo.exceptions import ValidationError
+from odoo import api, fields, models
 
 
 class StaffAllowanceUsage(models.Model):
@@ -38,20 +37,12 @@ class StaffAllowanceUsage(models.Model):
          ("over", "Over Limit")],
         readonly=True, index=True)
 
-    @api.constrains("employee_id", "partner_id", "pos_category_id", "day")
-    def _check_unique_day(self):
-        for usage in self:
-            duplicate = self.search(
-                self._beneficiary_domain(usage._beneficiary()) + [
-                    ("pos_category_id", "=", usage.pos_category_id.id),
-                    ("day", "=", usage.day), ("id", "!=", usage.id),
-                ], limit=1)
-            if duplicate:
-                raise ValidationError(
-                    _("Usage is already recorded for %(who)s / %(category)s "
-                      "on %(day)s.", who=usage.beneficiary_name,
-                      category=usage.pos_category_id.display_name,
-                      day=usage.day))
+    # Enforced by the database, not a Python check: two requests refreshing
+    # the same day at once cannot see each other's row.
+    _beneficiary_day_unique = models.UniqueIndex(
+        "(COALESCE(employee_id, 0), COALESCE(partner_id, 0), pos_category_id, day)",
+        "Usage is already recorded for this person, category and day.",
+    )
 
     def _compute_display_name(self):
         for usage in self:

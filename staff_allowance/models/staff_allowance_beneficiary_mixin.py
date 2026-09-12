@@ -83,9 +83,17 @@ class AllowanceBeneficiaryMixin(models.AbstractModel):
     # ------------------------------------------------------------------
     @api.model
     def _beneficiary_tz(self, beneficiary):
+        """The person's own timezone, else their company's.
+
+        Never the current user's: the same order would otherwise land on a
+        different day depending on who recorded it (cashier, app, cron).
+        """
+        company = (beneficiary.company_id if beneficiary else False) \
+            or self.env.company
         tz_name = (
             getattr(beneficiary, "tz", False)
-            or self.env.user.tz
+            or company.resource_calendar_id.tz
+            or company.partner_id.tz
             or "UTC"
         )
         try:

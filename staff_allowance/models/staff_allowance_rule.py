@@ -194,7 +194,7 @@ class StaffAllowanceRule(models.Model):
             })
 
         plan = beneficiary.allowance_plan_id
-        if plan:
+        if plan.active:  # an archived plan frees everyone on it
             line = plan.line_ids.filtered(
                 lambda l: l.pos_category_id == pos_category)
             if line:

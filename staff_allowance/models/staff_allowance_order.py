@@ -2,6 +2,7 @@ import pytz
 
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
+from odoo.tools import SQL
 
 
 class StaffAllowanceOrder(models.Model):
@@ -63,8 +64,8 @@ class StaffAllowanceOrder(models.Model):
             if not vals.get("name") or vals["name"] == _("New"):
                 vals["name"] = self.env["ir.sequence"].next_by_code(
                     "staff.allowance.order") or _("New")
-        self._lock_beneficiaries(vals_list)
         orders = super().create(vals_list)
+        orders._lock_beneficiaries()
         orders._sync_usage()
         return orders
 
@@ -81,18 +82,23 @@ class StaffAllowanceOrder(models.Model):
         self.env["staff.allowance.usage"]._refresh_keys(keys)
         return result
 
-    def _lock_beneficiaries(self, vals_list):
-        """Lock the beneficiary row so two simultaneous taps cannot both pass."""
-        employee_ids = {v["employee_id"] for v in vals_list if v.get("employee_id")}
-        partner_ids = {v["partner_id"] for v in vals_list if v.get("partner_id")}
-        if employee_ids:
-            self.env.cr.execute(
-                "SELECT id FROM hr_employee WHERE id IN %s FOR UPDATE",
-                (tuple(employee_ids),))
-        if partner_ids:
-            self.env.cr.execute(
-                "SELECT id FROM res_partner WHERE id IN %s FOR UPDATE",
-                (tuple(partner_ids),))
+    def _lock_beneficiaries(self):
+        """Make two simultaneous orders for the same person conflict.
+
+        Odoo runs each request in REPEATABLE READ, so the limit check reads a
+        snapshot taken when the request started. `SELECT ... FOR UPDATE` only
+        makes the second request wait -- it still cannot see the first order,
+        and both pass. Updating the row is what works: the second request
+        then fails with a serialization error, Odoo retries it, and the retry
+        sees the first order. The constraint having already run does not
+        matter, since the whole transaction is thrown away.
+        """
+        for table, records in (("hr_employee", self.employee_id),
+                               ("res_partner", self.partner_id)):
+            if records:
+                self.env.cr.execute(SQL(
+                    "UPDATE %s SET write_date = write_date WHERE id IN %s",
+                    SQL.identifier(table), tuple(records.ids)))
 
     def _usage_keys(self):
         keys = set()
@@ -150,14 +156,17 @@ class StaffAllowanceOrder(models.Model):
     @api.constrains("employee_id", "partner_id", "pos_category_id", "qty",
                     "order_date", "state")
     def _check_allowance(self):
-        if self.env.context.get("allowance_force"):
-            # A POS sale already happened. Recording it must never fail --
-            # the over-limit flag is what reports it. Only the POS bridge
-            # sets this flag.
-            return
         Rule = self.env["staff.allowance.rule"].sudo()
         for order in self:
             if order.state not in ("draft", "done"):
+                continue
+            pos_sale = order.pos_order_id
+            if pos_sale.state in ("paid", "done") \
+                    and pos_sale.partner_id == order.partner_id:
+                # A paid POS sale already happened. Recording it must never
+                # fail -- the over-limit flag is what reports it. Decided
+                # from the linked sale, not from a context key: constraints
+                # run as superuser and any RPC caller sets the context.
                 continue
             if order.qty <= 0:
                 raise ValidationError(_("The quantity must be greater than zero."))

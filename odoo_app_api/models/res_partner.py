@@ -1,4 +1,8 @@
+from psycopg2 import IntegrityError
+
 from odoo import api, fields, models
+from odoo.exceptions import ConcurrencyError
+from odoo.tools import email_normalize
 
 
 class ResPartner(models.Model):
@@ -18,10 +22,12 @@ class ResPartner(models.Model):
         help="Display copy of the contact's barcode. The barcode field itself "
              "is company-dependent, so it cannot be listed or sorted on.")
 
-    _sql_constraints = [
-        ('firebase_uid_uniq', 'unique(firebase_uid)',
-         'This Firebase account is already linked to another contact.'),
-    ]
+    # Odoo 19 no longer reads `_sql_constraints`: a constraint declared that
+    # way is silently never created.
+    _firebase_uid_uniq = models.Constraint(
+        'unique(firebase_uid)',
+        'This Firebase account is already linked to another contact.',
+    )
 
     @api.depends('barcode')
     def _compute_membership_code(self):
@@ -40,7 +46,7 @@ class ResPartner(models.Model):
     @api.model
     def _resolve_firebase_user(self, claims):
         uid = claims.get('user_id') or claims.get('sub')
-        email = (claims.get('email') or '').strip().lower()
+        email = email_normalize(claims.get('email') or '') or ''
         phone = (claims.get('phone_number') or '').strip()
 
         partner = self.search([('firebase_uid', '=', uid)], limit=1)
@@ -48,34 +54,41 @@ class ResPartner(models.Model):
             return partner
 
         # Returning customer who already exists in Odoo: claim the record
-        # instead of creating a duplicate. Only trust a VERIFIED email.
-        # Only ever claim a contact that is not already linked to someone else
+        # instead of creating a duplicate. Only trust a VERIFIED email, only
+        # ever claim a contact that is not already linked to someone else,
+        # and compare exactly: an `=ilike` pattern treats `_` as a wildcard,
+        # so a verified john_smith@ address would claim john.smith@.
         unlinked = [('firebase_uid', '=', False)]
-        domain = []
         if email and claims.get('email_verified'):
-            domain = unlinked + [('email', '=ilike', email)]
-        elif phone:
+            partner = self.search(
+                unlinked + [('email_normalized', '=', email)], limit=1)
+        if not partner and phone:
             if 'mobile' in self._fields:
-                domain = unlinked + ['|', ('phone', '=', phone),
-                                          ('mobile', '=', phone)]
+                phone_domain = ['|', ('phone', '=', phone), ('mobile', '=', phone)]
             else:
-                domain = unlinked + [('phone', '=', phone)]
-        if domain:
-            partner = self.search(domain, limit=1)
+                phone_domain = [('phone', '=', phone)]
+            partner = self.search(unlinked + phone_domain, limit=1)
 
         vals = {
             'firebase_uid': uid,
             'app_signup_date': fields.Datetime.now(),
         }
-        if partner:
-            partner.write(vals)
-        else:
-            partner = self.create(dict(vals, **{
-                'name': claims.get('name') or email or phone or 'App user',
-                'email': email or False,
-                'phone': phone or False,
-                'customer_rank': 1,
-            }))
+        try:
+            with self.env.cr.savepoint():
+                if partner:
+                    partner.write(vals)
+                else:
+                    partner = self.create(dict(vals, **{
+                        'name': claims.get('name') or email or phone or 'App user',
+                        'email': email or False,
+                        'phone': phone or False,
+                        'customer_rank': 1,
+                    }))
+        except IntegrityError as err:
+            # Two first sign-ins for the same account raced and the other one
+            # linked it first. This transaction's snapshot cannot see that
+            # contact, so have Odoo retry the request, which will.
+            raise ConcurrencyError("Firebase account linked concurrently") from err
         partner._ensure_app_barcode()
         return partner
 

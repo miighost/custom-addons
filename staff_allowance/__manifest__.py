@@ -1,6 +1,6 @@
 {
     "name": "Staff Allowance",
-    "version": "19.0.5.0.0",
+    "version": "19.0.5.0.1",
     "category": "Human Resources",
     "summary": "Daily POS-category limits for individual employees and contacts "
                "— free by default, capped only where you say so",

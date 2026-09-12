@@ -1,8 +1,10 @@
 import json
 import logging
 
-from odoo import _, http
-from odoo.exceptions import AccessError, ValidationError
+from psycopg2 import OperationalError
+
+from odoo import _, fields, http
+from odoo.exceptions import AccessError, ConcurrencyError, ValidationError
 from odoo.http import request
 
 _logger = logging.getLogger(__name__)
@@ -38,6 +40,16 @@ class StaffAllowanceController(http.Controller):
         except ValueError:
             return {}
 
+    @staticmethod
+    def _int(value, default=0):
+        """A whole number from the request, or None when it is not one."""
+        if value in (None, "", False):
+            return default
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return None
+
     def _beneficiary(self):
         user = request.env.user
         employee = request.env["hr.employee"].sudo().search(
@@ -63,7 +75,7 @@ class StaffAllowanceController(http.Controller):
         categories = Rule.search(
             Rule._beneficiary_domain(beneficiary)).mapped("pos_category_id")
         plan = beneficiary.allowance_plan_id
-        if plan:
+        if plan.active:
             categories |= plan.line_ids.mapped("pos_category_id")
         return self._json({
             "success": True,
@@ -89,6 +101,10 @@ class StaffAllowanceController(http.Controller):
             return self._error("no_beneficiary",
                                _("No employee or contact is linked to this user."),
                                404)
+        category_id, product_id = self._int(category_id), self._int(product_id)
+        if category_id is None or product_id is None:
+            return self._error("bad_request",
+                               _("category_id and product_id must be whole numbers."))
         Rule = request.env["staff.allowance.rule"].sudo()
         category = self._resolve_category(category_id, product_id)
         if not category:
@@ -98,12 +114,13 @@ class StaffAllowanceController(http.Controller):
                            **self._quota(Rule._evaluate(beneficiary, category))})
 
     def _resolve_category(self, category_id, product_id):
+        """Both ids already parsed; 0 means not given."""
         if category_id:
             return request.env["pos.category"].sudo().browse(
-                int(category_id)).exists()
+                category_id).exists()
         if product_id:
             product = request.env["product.product"].sudo().browse(
-                int(product_id)).exists()
+                product_id).exists()
             return request.env["staff.allowance.rule"]._category_of_product(product)
         return request.env["pos.category"]
 
@@ -125,10 +142,13 @@ class StaffAllowanceController(http.Controller):
         except (TypeError, ValueError):
             return self._error("bad_qty", _("Quantity must be a whole number."))
 
-        product = request.env["product.product"].sudo().browse(
-            int(body.get("product_id") or 0)).exists()
-        category = self._resolve_category(body.get("category_id"),
-                                          body.get("product_id"))
+        product_id = self._int(body.get("product_id"))
+        category_id = self._int(body.get("category_id"))
+        if product_id is None or category_id is None:
+            return self._error("bad_request",
+                               _("product_id and category_id must be whole numbers."))
+        product = request.env["product.product"].sudo().browse(product_id).exists()
+        category = self._resolve_category(category_id, product_id)
         if not category:
             return self._error(
                 "missing_category",
@@ -139,6 +159,10 @@ class StaffAllowanceController(http.Controller):
             result = request.env["staff.allowance.rule"].sudo()._place_order(
                 beneficiary, pos_category=category, product=product or None,
                 qty=qty, source="app", note=body.get("note"))
+        except (OperationalError, ConcurrencyError):
+            # A simultaneous order for the same person: let Odoo roll back
+            # and retry the request, which then sees the other order.
+            raise
         except ValidationError as exc:
             return self._error("limit_reached",
                                exc.args[0] if exc.args else str(exc), 429)
@@ -171,9 +195,18 @@ class StaffAllowanceController(http.Controller):
         body = self._body() or kw
         beneficiary = self._beneficiary()
         order = request.env["staff.allowance.order"].sudo().browse(
-            int(body.get("order_id") or 0)).exists()
-        if not order or order._beneficiary() != beneficiary:
+            self._int(body.get("order_id")) or 0).exists()
+        if not beneficiary or not order or order._beneficiary() != beneficiary:
             return self._error("not_found", _("Order not found."), 404)
+        # Only an app order still waiting for approval can be withdrawn. A done
+        # order was consumed: cancelling it would hand the quota back and let
+        # the person order again. A POS sale is not the app's to undo.
+        if order.source != "app" or order.state != "draft":
+            return self._error(
+                "not_cancellable",
+                _("Only an order that is still waiting for approval can be "
+                  "cancelled."),
+                409, extra={"order": order._to_json()})
         category = order.pos_category_id
         order.action_cancel()
         return self._json({
@@ -195,6 +228,16 @@ class StaffAllowanceController(http.Controller):
             return self._error("no_beneficiary",
                                _("No employee or contact is linked to this user."),
                                404)
+        limit, category_id = self._int(limit, 100), self._int(category_id)
+        if limit is None or category_id is None:
+            return self._error("bad_request",
+                               _("limit and category_id must be whole numbers."))
+        try:
+            date_from = fields.Date.to_date(date_from or None)
+            date_to = fields.Date.to_date(date_to or None)
+        except ValueError:
+            return self._error("bad_request", _("Dates must be YYYY-MM-DD."))
+
         Order = request.env["staff.allowance.order"].sudo()
         domain = Order._beneficiary_domain(beneficiary) + [
             ("state", "in", ("draft", "done"))]
@@ -203,7 +246,7 @@ class StaffAllowanceController(http.Controller):
         if date_to:
             domain.append(("order_date", "<=", date_to))
         if category_id:
-            domain.append(("pos_category_id", "=", int(category_id)))
-        orders = Order.search(domain, limit=min(int(limit), 500))
+            domain.append(("pos_category_id", "=", category_id))
+        orders = Order.search(domain, limit=min(max(limit, 1), 500))
         return self._json({"success": True, "count": len(orders),
                            "orders": [o._to_json() for o in orders]})

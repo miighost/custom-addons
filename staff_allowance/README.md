@@ -22,7 +22,7 @@ Two sources, both feeding the same ledger:
 
 | Source | How | Enforcement |
 |---|---|---|
-| **Odoo POS** | `pos.order` is hooked. On every sale with a customer set, each line is recorded against that customer's allowance. | Always recorded, even over limit — a sale that happened is a fact. Over-limit sales are flagged. |
+| **Odoo POS** | `pos.order` is hooked. Once a sale with a customer set is paid, each line is recorded against that customer's allowance. | Always recorded, even over limit — a sale that happened is a fact. Over-limit sales are flagged. |
 | **FlutterFlow app** | The app calls `POST /api/allowance/order`. | Blocked or sent for approval per the rule. |
 
 **A POS sale with no customer on the ticket charges nobody.** There is no
@@ -31,7 +31,10 @@ system entirely. If a staff member's coffee should count, their contact has
 to be selected on the order.
 
 Refund and zero-quantity lines do not consume an allowance. Changing the
-customer or the lines on a ticket rewrites its allowance entries.
+customer or the lines on a ticket rewrites its allowance entries. An unpaid
+or parked ticket counts nothing until it is paid, so one that gets cancelled
+costs nothing. A paid ticket cannot be cancelled in Odoo, and refunding it
+does not give the allowance back.
 
 ## 3. Built on your real POS data
 
@@ -47,8 +50,9 @@ remaining = limit − consumed on that person's local day
 
 Tomorrow the date query returns nothing, so it resets on its own. No counter
 to reset, no cron job to fail overnight, and the history stays queryable.
-The day boundary is the beneficiary's own timezone; `order_date` is stamped
-at creation, so a 23:58 order stays on its own day.
+The day boundary is the beneficiary's own timezone, else their company's —
+never that of whoever recorded the order. `order_date` is stamped at
+creation, so a 23:58 order stays on its own day.
 
 ## 5. What happens at the limit
 
@@ -81,7 +85,8 @@ The message the person sees:
 
 A plan is a reusable set of rules — *Kitchen Staff*, *Managers* — assigned in
 one click. A plan only covers the categories listed in it; anything else stays
-free. A personal rule always wins over the plan. **Copy Plan Into Rules**
+free. A personal rule always wins over the plan, and archiving a plan frees
+everyone on it. **Copy Plan Into Rules**
 turns the plan into personal rules when you need to tune one individual.
 
 ## 7. Seeing who is over
@@ -109,11 +114,18 @@ rebuilds it if it ever drifts.
   the backend and any POS hook all call it.
 - `_evaluate()` is the only place limit / used / remaining / over-limit are
   computed. The constraint, the status badges and the API all read from it.
-- `create()` takes `SELECT … FOR UPDATE` on the beneficiary row before the
-  constraint runs, so two simultaneous taps cannot both slip through.
-- A savepoint wraps the insert: if a concurrent request wins the race, the
-  refusal is logged as an attempt instead of failing the request.
-- `@api.constrains` is the final net for direct writes and imports.
+- `create()` touches the beneficiary row, so two simultaneous orders for the
+  same person conflict: Odoo retries the second request, which then sees the
+  first order. A `SELECT … FOR UPDATE` is not enough here — under Odoo's
+  REPEATABLE READ the waiting request still reads its old snapshot.
+- A savepoint wraps the insert: if the constraint refuses it, the refusal is
+  logged as an attempt instead of failing the request.
+- `@api.constrains` is the final net for direct writes and imports. The only
+  entries it lets past the limit are those linked to a paid POS sale for the
+  same customer — decided from that sale, not from a context key a caller
+  could set. Ordinary users cannot create allowance orders directly.
+- `staff.allowance.usage` has a database unique index on person / category /
+  day.
 
 ## 9. REST API
 
@@ -162,10 +174,16 @@ Accepted → `200` with the order and the refreshed `quota`.
 Refused → `429` (quota) or `400` (bad request), always with `quota` attached
 so the app can correct its display in the same round trip.
 
-Error codes: `no_beneficiary`, `missing_category`, `bad_qty`, `limit_reached`,
-`tolerance_exceeded`, `forbidden`, `server_error`.
+Error codes: `no_beneficiary`, `missing_category`, `bad_qty`, `bad_request`,
+`limit_reached`, `tolerance_exceeded`, `forbidden`, `not_found`,
+`not_cancellable`, `server_error`.
 
 ### `POST /api/allowance/cancel` → `{ "order_id": 42 }`
+
+Withdraws an app order that is still **To Approve**. Anything else — a done
+order, a POS sale — returns `409 not_cancellable`: cancelling an order that
+was already consumed would hand the quota back.
+
 ### `GET /api/allowance/history?date_from=&date_to=&category_id=&limit=`
 
 ### Your own API model

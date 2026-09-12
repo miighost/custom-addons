@@ -1,5 +1,10 @@
 from odoo import _, api, fields, models
 
+# A POS order consumes an allowance once it is paid. The POS also saves unpaid
+# and parked orders to the server as drafts, and a cancelled order never
+# happened.
+COUNTED_STATES = ("paid", "done")
+
 
 class PosOrder(models.Model):
     """Bridge between real POS sales and the allowance ledger.
@@ -42,23 +47,22 @@ class PosOrder(models.Model):
         Rule = self.env["staff.allowance.rule"].sudo()
 
         for order in self:
-            if order.allowance_recorded and not force:
+            counts = bool(order.partner_id) and order.state in COUNTED_STATES
+            if counts and order.allowance_recorded and not force:
+                continue
+            if not counts and not order.allowance_recorded:
+                # Unpaid, or no customer on the ticket: nobody to charge yet.
                 continue
 
-            previous = Allowance.search([("pos_order_id", "=", order.id)])
-            if not order.partner_id:
-                # No customer on the ticket: nobody's allowance to charge.
-                if previous:
-                    previous.unlink()
-                if order.allowance_recorded:
-                    order.with_context(skip_allowance_record=True).write({
-                        "allowance_recorded": False,
-                        "allowance_over_limit": False,
-                    })
+            Allowance.search([("pos_order_id", "=", order.id)]).unlink()
+            if not counts:
+                # The customer was removed, or the entries were left by an
+                # earlier version that recorded unpaid tickets: give it back.
+                order.with_context(skip_allowance_record=True).write({
+                    "allowance_recorded": False,
+                    "allowance_over_limit": False,
+                })
                 continue
-
-            if previous:
-                previous.unlink()
 
             over_limit = False
             for line in order.lines:
@@ -69,7 +73,7 @@ class PosOrder(models.Model):
                 category = Rule._category_of_product(line.product_id)
                 if not category:
                     continue
-                entry = Allowance.with_context(allowance_force=True).create({
+                entry = Allowance.create({
                     "partner_id": order.partner_id.id,
                     "pos_category_id": category.id,
                     "product_id": line.product_id.id,

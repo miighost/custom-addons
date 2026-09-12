@@ -1,3 +1,7 @@
+from datetime import datetime, time
+
+import pytz
+
 from odoo import api, fields, models
 
 
@@ -38,7 +42,8 @@ class AppDashboard(models.TransientModel):
     def _compute_stats(self):
         today = fields.Date.context_today(self)
         week_ago = fields.Date.subtract(today, days=7)
-        day_start = fields.Datetime.to_datetime(today)
+        day_start = self._utc_start_of(today)
+        week_start = self._utc_start_of(week_ago)
 
         Order = self.env['sale.order']
         Move = self.env['account.move']
@@ -69,7 +74,7 @@ class AppDashboard(models.TransientModel):
             record.orders_today = len(confirmed_today)
             record.revenue_today = sum(confirmed_today.mapped('amount_total'))
             record.orders_week = Order.search_count(app_orders + [
-                ('date_order', '>=', fields.Datetime.to_datetime(week_ago)),
+                ('date_order', '>=', week_start),
             ])
             record.quotations_pending = len(quotations)
             record.quotations_value = sum(quotations.mapped('amount_total'))
@@ -83,8 +88,14 @@ class AppDashboard(models.TransientModel):
                 [('firebase_uid', '!=', False)])
             record.customers_week = Partner.search_count([
                 ('firebase_uid', '!=', False),
-                ('app_signup_date', '>=', fields.Datetime.to_datetime(week_ago)),
+                ('app_signup_date', '>=', week_start),
             ])
+
+    def _utc_start_of(self, day):
+        """Local midnight of `day`, as the naive UTC datetimes Odoo stores."""
+        tz = pytz.timezone(self.env.context.get('tz') or self.env.user.tz or 'UTC')
+        midnight = tz.localize(datetime.combine(day, time.min))
+        return midnight.astimezone(pytz.utc).replace(tzinfo=None)
 
     # ------------------------------------------------------------ actions
     def _open(self, xmlid, domain=None, context=None):

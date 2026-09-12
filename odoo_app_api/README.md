@@ -40,9 +40,17 @@ All are `POST`, all take `Authorization: Bearer <firebase_id_token>`.
 | `/api/v1/orders` | `{"limit":20,"offset":0}` | `orders[]` |
 | `/api/v1/orders/create` | `{"lines":[{"product_id":42,"qty":2}]}` | the created order |
 
-Errors come back as `{"error": "..."}` with a real HTTP status (401 for a bad
-or missing token, 400 otherwise) — no JSON-RPC envelope, so FlutterFlow JSON
-paths are flat: `$.balance`, `$.orders[:].name`.
+Errors come back as `{"error": "..."}` — no JSON-RPC envelope, so FlutterFlow
+JSON paths are flat: `$.balance`, `$.orders[:].name`.
+
+| Status | When |
+|---|---|
+| `401` | bad or missing token |
+| `400` | `bad_request` (malformed body), or `server_error` (details in the Odoo log, not the response) |
+| `200` | business refusals such as `order_not_found`, `insufficient_balance`, `payment_in_progress` |
+
+Branch on `error`, not on the status code. A call that fails with an
+exception writes nothing: everything it had done is rolled back.
 
 ## How the contact is linked
 
@@ -131,6 +139,10 @@ Partial coverage is the normal case, not an edge case — a $52.50 order against
 a $40 balance leaves $12.50 due. The app should read `remaining_due` and route
 to your payment provider when it is above zero. The order is only confirmed
 when `confirm: true` **and** the wallet covered the whole total.
+
+Points leave the card when the order is confirmed; until then `balance_after`
+is what will be left once it is. A second call on the same order while the
+first is still running returns `payment_in_progress`.
 
 Orders are looked up with a domain scoped to the caller's partner, never
 `browse(order_id)` — otherwise incrementing an id in the request body would
@@ -229,9 +241,10 @@ Three ways, in order of preference.
 On a customer's first sign-in the module tries, in order:
 
 1. a contact already carrying that Firebase UID;
-2. an **unlinked** contact whose email matches the token's email — only when
-   Firebase reports `email_verified: true`;
-3. an **unlinked** contact whose phone or mobile matches the token's phone;
+2. an **unlinked** contact whose email matches the token's email exactly
+   (ignoring letter case) — only when Firebase reports `email_verified: true`;
+3. otherwise an **unlinked** contact whose phone or mobile matches the token's
+   phone;
 4. otherwise a new contact is created.
 
 So the cheapest preparation is simply to make sure your existing contacts have
@@ -296,7 +309,22 @@ Test on sandbox first. Switch `app_api.waafi_url` to production only once a
 sandbox payment confirms an order end to end.
 
 The call blocks while the customer approves on their phone, so set the
-FlutterFlow API call timeout to at least 60 seconds and show a spinner.
+FlutterFlow API call timeout to at least 90 seconds and show a spinner. If
+Odoo runs with workers, keep `limit_time_real` above that (180 is
+comfortable), or Odoo can kill the request between the charge and the
+confirmation.
+
+It is safe against double taps:
+
+| `error` | Meaning |
+|---|---|
+| `payment_in_progress` | another payment for this order is still waiting on the gateway |
+| `already_paid` | the order already carries a WaafiPay reference |
+| `paid_not_confirmed` | the customer **was charged** and the transaction id is stored on the order, but confirming it failed. Staff get a chatter note; show the customer "payment received", not an error |
+
+The invoice routes use `payment_in_progress` too, and `paid_not_recorded` when
+the charge went through but the payment could not be registered (the
+transaction id is posted on the invoice).
 
 ### Paying a top-up
 
@@ -388,11 +416,18 @@ is already failing. Read `failed[0].error` to see why it stopped.
 
 | Field | Point it at |
 |---|---|
-| eWallet Journal | a journal whose account is your customer-wallet liability account |
+| eWallet Journal | a bank/cash journal whose incoming payment method books to your customer-wallet liability account |
 | WaafiPay Journal | the bank/cash journal your WaafiPay settlements land in |
 
 If either is blank the module falls back to the first bank or cash journal it
 finds, which will book the money in the wrong place. Set them.
+
+On the eWallet journal it is the **payment method's** account that matters:
+journal → Incoming Payments → the payment method → **Outstanding Receipts
+account** = the wallet liability account. In Community, a payment method with
+no account set is booked to the company's generic Outstanding Receipts
+account instead, and the wallet liability is never debited. After the first
+wallet payment, open its journal entry and check the debit line.
 
 ### Scoping
 

@@ -8,11 +8,13 @@ customer's invoice by guessing an id.
 import logging
 from datetime import date
 
+from markupsafe import Markup
+
 from odoo import fields, http
 from odoo.http import request
 
-from .main import ROUTE, api_endpoint
-from .payment import _waafi
+from .main import ROUTE, api_endpoint, lock_for_payment
+from .payment import COMMIT_TIMEOUT, _waafi
 
 _logger = logging.getLogger(__name__)
 
@@ -194,6 +196,8 @@ class AppAccount(http.Controller):
 
     # ---- wallet ---------------------------------------------------------
     def _pay_from_wallet(self, partner, move, amount):
+        if not lock_for_payment(move):
+            return {'error': 'payment_in_progress'}
         cards = self._wallet_cards(partner)
         balance = sum(cards.mapped('points'))
         if balance <= 0:
@@ -247,6 +251,10 @@ class AppAccount(http.Controller):
         journal = self._journal('waafi', partner)
         if not journal:
             return {'error': 'payment_journal_not_configured'}
+        # Held until the request ends: a second tap cannot charge again while
+        # the first waits on the customer's handset.
+        if not lock_for_payment(move):
+            return {'error': 'payment_in_progress'}
 
         try:
             pre = _waafi('API_PREAUTHORIZE', {
@@ -275,7 +283,7 @@ class AppAccount(http.Controller):
             commit = _waafi('API_PREAUTHORIZE_COMMIT', {
                 'transactionId': transaction_id,
                 'description': f"Commit {move.name}",
-            })
+            }, timeout=COMMIT_TIMEOUT)
         except Exception as err:                                  # noqa: BLE001
             _logger.exception("Commit failed for %s (tx %s)",
                               move.name, transaction_id)
@@ -285,11 +293,27 @@ class AppAccount(http.Controller):
             return {'error': 'commit_refused',
                     'gateway_message': commit.get('responseMsg')}
 
-        self._register_payment(move, journal, amount,
-                               f"WaafiPay {transaction_id}")
-        move.message_post(
-            body=f"{amount} {move.currency_id.name} paid from the mobile app. "
-                 f"WaafiPay transaction <b>{transaction_id}</b>.")
+        # The customer has been charged. If booking it fails, keep the
+        # transaction id on the invoice for staff rather than rolling the
+        # evidence away with the rest of the request.
+        try:
+            with request.env.cr.savepoint():
+                self._register_payment(move, journal, amount,
+                                       f"WaafiPay {transaction_id}")
+        except Exception:                                         # noqa: BLE001
+            _logger.exception("Invoice %s charged (WaafiPay tx %s) but the "
+                              "payment could not be registered",
+                              move.name, transaction_id)
+            move.message_post(body=Markup(
+                "%s %s was charged through WaafiPay from the mobile app "
+                "(transaction <b>%s</b>) but the payment could not be "
+                "registered. Register it by hand.") % (
+                    amount, move.currency_id.name, transaction_id))
+            return {'error': 'paid_not_recorded',
+                    'transaction_id': transaction_id}
+        move.message_post(body=Markup(
+            "%s %s paid from the mobile app. WaafiPay transaction <b>%s</b>.")
+            % (amount, move.currency_id.name, transaction_id))
         move.invalidate_recordset(['amount_residual', 'payment_state'])
         return {
             'paid': True,
