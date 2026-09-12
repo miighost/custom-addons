@@ -138,8 +138,9 @@
                                 <thead>
                                     <tr style="background-color: #e9ecef; text-align: center; font-weight: bold; color: #111;">
                                         <th style="border: 1px solid #555; padding: 8px; text-align: left;">Room Type</th>
-                                        <th style="border: 1px solid #555; padding: 8px; width: 22%; text-align: center;">No of Nights</th>
-                                        <th style="border: 1px solid #555; padding: 8px; width: 25%; text-align: right;">Room Rate</th>
+                                        <th style="border: 1px solid #555; padding: 8px; width: 18%; text-align: center;">No of Nights</th>
+                                        <th style="border: 1px solid #555; padding: 8px; width: 20%; text-align: right;">Room Rate</th>
+                                        <th style="border: 1px solid #555; padding: 8px; width: 22%; text-align: right;">Total</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -152,8 +153,11 @@
                                             <td style="border: 1px solid #555; padding: 8px; text-align: center;">
                                                 <t t-esc="int(r.uom_qty) if r.uom_qty else int(o.duration or 1)"/>
                                             </td>
-                                            <td style="border: 1px solid #555; padding: 8px; text-align: right; font-weight: bold;">
+                                            <td style="border: 1px solid #555; padding: 8px; text-align: right;">
                                                 <t t-esc="'%.2f' % r.price_unit"/>
+                                            </td>
+                                            <td style="border: 1px solid #555; padding: 8px; text-align: right; font-weight: bold;">
+                                                <t t-esc="'%.2f' % (r.price_subtotal or (r.price_unit * (r.uom_qty or 1.0)))"/>
                                             </td>
                                         </tr>
                                     </t>
@@ -163,13 +167,13 @@
 
                         <!-- Remarks Section (if provided) -->
                         <t t-if="o.description">
-                            <div style="margin-bottom: 18px; padding: 10px 14px; border: 1px dashed #888; background-color: #fffde7; border-radius: 4px;">
+                            <div style="margin-bottom: 18px; padding: 10px 14px; border-left: 3px solid #555; background-color: #f8f9fa;">
                                 <strong>Remarks:</strong> <t t-esc="o.description"/>
                             </div>
                         </t>
 
                         <!-- Cancellation Policy Box -->
-                        <div style="border: 1px solid #888; border-radius: 6px; padding: 12px 16px; margin-bottom: 35px; background-color: #f8f9fa; font-size: 11px; line-height: 1.5;">
+                        <div style="border: 1px solid #ccc; padding: 12px 16px; margin-bottom: 35px; font-size: 11px; line-height: 1.5;">
                             <div style="font-weight: 700; text-decoration: underline; margin-bottom: 6px; color: #111; font-size: 12px;">Cancellation Policy:</div>
                             <ul style="margin: 0; padding-left: 18px; color: #333;">
                                 <li style="margin-bottom: 3px;">Non-Guaranteed reservation will be kept till 16:00 hrs on the day of arrival, unless informed about late arrival.</li>
