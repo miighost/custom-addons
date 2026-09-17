@@ -51,10 +51,12 @@ class StaffAllowanceController(http.Controller):
             return None
 
     def _beneficiary(self):
+        """The contact whose allowance applies: the employee's work contact,
+        else the user's own contact (Odoo normally keeps the two equal)."""
         user = request.env.user
         employee = request.env["hr.employee"].sudo().search(
             [("user_id", "=", user.id)], limit=1)
-        return employee or user.partner_id
+        return employee.work_contact_id or user.partner_id
 
     def _quota(self, evaluation):
         return {k: evaluation[k] for k in QUOTA_KEYS}
@@ -80,8 +82,6 @@ class StaffAllowanceController(http.Controller):
         return self._json({
             "success": True,
             "beneficiary": {
-                "type": "employee" if beneficiary._name == "hr.employee"
-                        else "partner",
                 "id": beneficiary.id,
                 "name": beneficiary.display_name,
             },
@@ -106,22 +106,25 @@ class StaffAllowanceController(http.Controller):
             return self._error("bad_request",
                                _("category_id and product_id must be whole numbers."))
         Rule = request.env["staff.allowance.rule"].sudo()
-        category = self._resolve_category(category_id, product_id)
+        category = self._resolve_category(category_id, product_id, beneficiary)
         if not category:
             return self._error("missing_category",
                                _("Provide a category_id or a product_id."))
         return self._json({"success": True,
                            **self._quota(Rule._evaluate(beneficiary, category))})
 
-    def _resolve_category(self, category_id, product_id):
-        """Both ids already parsed; 0 means not given."""
+    def _resolve_category(self, category_id, product_id, beneficiary):
+        """Both ids already parsed; 0 means not given. A product resolves to
+        its first category that caps this person, else its first category."""
         if category_id:
             return request.env["pos.category"].sudo().browse(
                 category_id).exists()
         if product_id:
             product = request.env["product.product"].sudo().browse(
                 product_id).exists()
-            return request.env["staff.allowance.rule"]._category_of_product(product)
+            Rule = request.env["staff.allowance.rule"].sudo()
+            return (Rule._counted_categories(beneficiary, product)[:1]
+                    or Rule._category_of_product(product))
         return request.env["pos.category"]
 
     # ------------------------------------------------------------------
@@ -148,7 +151,7 @@ class StaffAllowanceController(http.Controller):
             return self._error("bad_request",
                                _("product_id and category_id must be whole numbers."))
         product = request.env["product.product"].sudo().browse(product_id).exists()
-        category = self._resolve_category(category_id, product_id)
+        category = self._resolve_category(category_id, product_id, beneficiary)
         if not category:
             return self._error(
                 "missing_category",
@@ -181,7 +184,8 @@ class StaffAllowanceController(http.Controller):
 
         return self._json({
             "success": True,
-            "order": result["order"]._to_json(),
+            # None when no rule or plan covers the category: nothing is tracked.
+            "order": result["order"]._to_json() if result["order"] else None,
             "requires_approval": result["requires_approval"],
             "quota": self._quota(result),
         })

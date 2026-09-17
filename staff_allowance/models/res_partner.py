@@ -12,6 +12,48 @@ class ResPartner(models.Model):
                                          string="Allowance Rules")
     allowance_order_count = fields.Integer(compute="_compute_allowance_counts")
     allowance_over_count = fields.Integer(compute="_compute_allowance_counts")
+    allowance_summary = fields.Char(
+        string="Limits", compute="_compute_allowance_today",
+        help="The daily limits in force, personal rules first, e.g. "
+             "\"Coffee 2/day · Food 1/day\".")
+    allowance_status = fields.Selection(
+        [("none", "Nothing Used"),
+         ("ok", "Available"),
+         ("near", "Almost Used Up"),
+         ("reached", "Limit Reached"),
+         ("over", "Over Limit")],
+        string="Today", compute="_compute_allowance_today",
+        help="The most used-up of this person's limits today.")
+
+    def _compute_allowance_today(self):
+        Rule = self.env["staff.allowance.rule"].sudo()
+        Usage = self.env["staff.allowance.usage"].sudo()
+        rules = Rule.search([("partner_id", "in", self.ids)])
+        rank = {"free": 0, "ok": 1, "near": 2, "reached": 3, "over": 4}
+
+        # One usage search per local day (usually just one for everybody).
+        by_day = {}
+        for partner in self:
+            by_day.setdefault(Usage._local_today(partner), []).append(partner.id)
+        worst = {}
+        for day, partner_ids in by_day.items():
+            for usage in Usage.search([("partner_id", "in", partner_ids),
+                                       ("day", "=", day)]):
+                current = worst.get(usage.partner_id.id, "free")
+                if rank[usage.status] > rank[current]:
+                    worst[usage.partner_id.id] = usage.status
+
+        for partner in self:
+            personal = rules.filtered(lambda r: r.partner_id == partner)
+            parts = [f"{r.pos_category_id.name} {r.daily_limit}/day" for r in personal]
+            if partner.allowance_plan_id.active:
+                parts += [
+                    f"{line.pos_category_id.name} {line.daily_limit}/day"
+                    for line in partner.allowance_plan_id.line_ids
+                    if line.pos_category_id not in personal.pos_category_id]
+            partner.allowance_summary = " · ".join(parts)
+            status = worst.get(partner.id, "free")
+            partner.allowance_status = "none" if status == "free" else status
 
     def _compute_allowance_counts(self):
         Order = self.env["staff.allowance.order"].sudo()
@@ -39,20 +81,10 @@ class ResPartner(models.Model):
             "context": {"default_partner_id": self.id},
         }
 
-    def action_apply_allowance_plan(self):
-        Rule = self.env["staff.allowance.rule"]
-        for partner in self:
-            if not partner.allowance_plan_id:
-                continue
-            existing = partner.allowance_rule_ids.mapped("pos_category_id")
-            for line in partner.allowance_plan_id.line_ids:
-                if line.pos_category_id in existing:
-                    continue
-                Rule.create({
-                    "partner_id": partner.id,
-                    "pos_category_id": line.pos_category_id.id,
-                    "daily_limit": line.daily_limit,
-                    "count_mode": line.count_mode,
-                    "policy": line.policy,
-                    "tolerance": line.tolerance,
-                })
+    def action_give_allowance(self):
+        """Open Give an Allowance for this person: the one way to change limits."""
+        self.ensure_one()
+        action = self.env["ir.actions.act_window"]._for_xml_id(
+            "staff_allowance.action_allowance_give")
+        action["context"] = {"default_partner_id": self.id}
+        return action

@@ -42,6 +42,15 @@ class RoomBooking(models.Model):
                                  required=True, index=True,
                                  default=lambda self: self.env.company)
 
+    def _auto_init(self):
+        super()._auto_init()
+        # Backfill company_id for existing bookings safely during upgrade
+        self.env.cr.execute("""
+            UPDATE room_booking
+            SET company_id = (SELECT id FROM res_company ORDER BY id ASC LIMIT 1)
+            WHERE company_id IS NULL;
+        """)
+
     @api.depends('name')
     def _compute_folio_no(self):
         """Extract clean numeric folio number from name."""
@@ -448,8 +457,9 @@ class RoomBooking(models.Model):
         """Sequence Generation"""
         for vals in vals_list:
             if vals.get('name', 'New') == 'New':
-                vals['name'] = self.env['ir.sequence'].next_by_code(
-                    'room.booking')
+                comp_id = vals.get('company_id') or self.env.company.id
+                vals['name'] = self.env['ir.sequence'].with_company(comp_id).next_by_code(
+                    'room.booking') or 'New'
         return super().create(vals_list)
 
     @api.depends('partner_id')
@@ -840,11 +850,12 @@ class RoomBooking(models.Model):
             raise ValidationError((
                                       "No new items to invoice. All items appear to be already invoiced (e.g. via POS or separate invoice)."))
 
-        account_move = self.env["account.move"].create([{
+        account_move = self.env["account.move"].with_company(self.company_id).create([{
             'move_type': 'out_invoice',
             'invoice_date': fields.Date.today(),
             'partner_id': self.partner_id.id,
             'ref': self.name,
+            'company_id': self.company_id.id,
         }])
         for rec in booking_list:
             move_line_vals = {
@@ -909,17 +920,24 @@ class RoomBooking(models.Model):
             }
         }
 
-    def get_details(self):
+    @api.model
+    def get_details(self, *args, **kwargs):
         """ Returns different counts for displaying in dashboard"""
+        company_id = self.env.context.get('company_id') or self.env.company.id
+        company = self.env['res.company'].browse(company_id) if company_id else self.env.company
         today_date = fields.Date.context_today(self)
 
-        # 1. Total Physical Active Rooms in Hotel
-        total_room = self.env['hotel.room'].search_count([('active', '=', True)])
+        # 1. Total Physical Active Rooms in Hotel for this company
+        total_room = self.env['hotel.room'].search_count([
+            ('active', '=', True),
+            ('company_id', '=', company_id)
+        ])
 
         # 2. Stay Category Checked-In Room Counts
         checked_in_lines = self.env['room.booking.line'].search([
             ('booking_id.state', '=', 'check_in'),
-            ('room_id', '!=', False)
+            ('room_id', '!=', False),
+            ('company_id', '=', company_id)
         ])
         lsr_room_ids = set(checked_in_lines.filtered(lambda l: l.booking_id.is_long_stay).mapped('room_id.id'))
         prr_room_ids = set(checked_in_lines.filtered(lambda l: l.booking_id.is_private_reserved and not l.booking_id.is_long_stay).mapped('room_id.id'))
@@ -938,14 +956,21 @@ class RoomBooking(models.Model):
         available_room = max(0, total_room - check_in)
 
         # Reservations: Total Physical Rooms Reserved (Counts all room lines across reserved bookings)
-        reserved_bookings = self.search([('state', '=', 'reserved')])
+        reserved_bookings = self.search([
+            ('state', '=', 'reserved'),
+            ('company_id', '=', company_id)
+        ])
         reserved_lines = self.env['room.booking.line'].search([
-            ('booking_id.state', '=', 'reserved')
+            ('booking_id.state', '=', 'reserved'),
+            ('company_id', '=', company_id)
         ])
         reservation = len(reserved_lines) if reserved_lines else sum(len(b.room_line_ids) for b in reserved_bookings) or len(reserved_bookings)
 
         # Today's Departures (rooms checking out today)
-        check_outs = self.env['room.booking'].search([('state', 'not in', ['cancel', 'draft'])])
+        check_outs = self.env['room.booking'].search([
+            ('state', 'not in', ['cancel', 'draft']),
+            ('company_id', '=', company_id)
+        ])
         check_out = 0
         for rec in check_outs:
             for room in rec.room_line_ids:
@@ -954,58 +979,76 @@ class RoomBooking(models.Model):
                     check_out += 1
 
         # Today's Arrivals (rooms checking in today)
-        arrivals = self.env['room.booking'].search([('state', 'not in', ['cancel', 'draft'])])
+        arrivals = self.env['room.booking'].search([
+            ('state', 'not in', ['cancel', 'draft']),
+            ('company_id', '=', company_id)
+        ])
         today_arrival = 0
         for rec in arrivals:
             for room in rec.room_line_ids:
                 if room.checkin_date and fields.Date.to_date(
                         fields.Datetime.context_timestamp(self, room.checkin_date)) == today_date:
                     today_arrival += 1
-        staff = self.env['res.users'].search_count(
-            [('group_ids', 'in',
-              [self.env.ref('hotel_management_odoo.hotel_group_admin').id,
-               self.env.ref(
-                   'hotel_management_odoo.cleaning_team_group_head').id,
-               self.env.ref(
-                   'hotel_management_odoo.cleaning_team_group_user').id,
-               self.env.ref(
-                   'hotel_management_odoo.hotel_group_reception').id,
-               self.env.ref(
-                   'hotel_management_odoo.maintenance_team_group_leader').id,
-               self.env.ref(
-                   'hotel_management_odoo.maintenance_team_group_user').id
-               ])])
-        total_vehicle = self.env['fleet.vehicle.model'].search_count([])
-        available_vehicle = total_vehicle - self.env[
-            'fleet.booking.line'].search_count(
-            [('state', '=', 'check_in')])
-        total_event = self.env['event.event'].search_count([])
-        pending_event = self.env['event.event'].search([])
+
+        staff_groups = [
+            self.env.ref('hotel_management_odoo.hotel_group_admin', raise_if_not_found=False),
+            self.env.ref('hotel_management_odoo.cleaning_team_group_head', raise_if_not_found=False),
+            self.env.ref('hotel_management_odoo.cleaning_team_group_user', raise_if_not_found=False),
+            self.env.ref('hotel_management_odoo.hotel_group_reception', raise_if_not_found=False),
+            self.env.ref('hotel_management_odoo.maintenance_team_group_leader', raise_if_not_found=False),
+            self.env.ref('hotel_management_odoo.maintenance_team_group_user', raise_if_not_found=False),
+        ]
+        group_ids = [g.id for g in staff_groups if g]
+        staff = self.env['res.users'].search_count([
+            ('company_ids', 'in', [company_id]),
+            ('group_ids', 'in', group_ids)
+        ])
+
+        total_vehicle = self.env['fleet.vehicle.model'].search_count([]) if 'fleet.vehicle.model' in self.env else 0
+        available_vehicle = total_vehicle - (self.env['fleet.booking.line'].search_count([('state', '=', 'check_in')]) if 'fleet.booking.line' in self.env else 0)
+
+        event_domain = [('company_id', 'in', [company_id, False])] if 'company_id' in self.env['event.event']._fields else []
+        total_event = self.env['event.event'].search_count(event_domain) if 'event.event' in self.env else 0
+        pending_event = self.env['event.event'].search(event_domain) if 'event.event' in self.env else []
         pending_events = 0
         today_events = 0
         for pending in pending_event:
-            if pending.date_end >= fields.Datetime.now():
+            if pending.date_end and pending.date_end >= fields.Datetime.now():
                 pending_events += 1
-            if fields.Date.to_date(fields.Datetime.context_timestamp(self, pending.date_end)) == today_date:
+            if pending.date_end and fields.Date.to_date(fields.Datetime.context_timestamp(self, pending.date_end)) == today_date:
                 today_events += 1
+
         food_items = self.env['lunch.product'].search_count([]) if 'lunch.product' in self.env else 0
+
+        start_today = datetime.combine(today_date, time.min)
+        end_today = datetime.combine(today_date, time.max)
         if 'pos.order' in self.env and 'booking_id' in self.env['pos.order']._fields:
-            start_today = datetime.combine(today_date, time.min)
-            end_today = datetime.combine(today_date, time.max)
-            food_order = self.env['pos.order'].search_count([
+            pos_domain = [
                 ('booking_id', '!=', False),
                 ('date_order', '>=', fields.Datetime.to_string(start_today)),
                 ('date_order', '<=', fields.Datetime.to_string(end_today)),
-            ])
+            ]
+            if 'company_id' in self.env['pos.order']._fields:
+                pos_domain.append(('company_id', '=', company_id))
+            food_order = self.env['pos.order'].search_count(pos_domain)
         elif 'hotel.pos.line' in self.env:
-            food_order = self.env['hotel.pos.line'].search_count([])
+            pos_line_domain = []
+            if 'company_id' in self.env['hotel.pos.line']._fields:
+                pos_line_domain.append(('company_id', '=', company_id))
+            food_order = self.env['hotel.pos.line'].search_count(pos_line_domain)
         else:
             food_order = 0
 
+        # Night Audit
+        night_audit = 0
+        if 'hotel.night.audit' in self.env:
+            night_audit_domain = []
+            if 'company_id' in self.env['hotel.night.audit']._fields:
+                night_audit_domain.append(('company_id', '=', company_id))
+            night_audit = self.env['hotel.night.audit'].search_count(night_audit_domain)
+
         """Hotel Guest Revenue, Today's Revenue, and Pending Payments (Strictly Hotel Guests)"""
-        hotel_bookings = self.search([])
-        start_today = datetime.combine(today_date, time.min)
-        end_today = datetime.combine(today_date, time.max)
+        hotel_bookings = self.search([('company_id', '=', company_id)])
 
         # 1. Total Hotel Revenue: Completed folios + payments received on active folios
         completed_bookings = hotel_bookings.filtered(lambda b: b.state in ['check_out', 'done'])
@@ -1014,10 +1057,12 @@ class RoomBooking(models.Model):
         revenue_active_paid = sum(b.amount_paid for b in active_inhouse)
 
         hotel_inv_ids = set(hotel_bookings.mapped('hotel_invoice_id.id'))
-        hotel_inv_ids.update(self.env['account.move'].search([
+        move_domain = [
+            ('company_id', '=', company_id),
             '|', ('hotel_booking_id', '!=', False),
             ('ref', 'in', hotel_bookings.mapped('name'))
-        ]).ids)
+        ]
+        hotel_inv_ids.update(self.env['account.move'].search(move_domain).ids)
         hotel_inv_ids.discard(False)
 
         inv_paid_total = 0.0
@@ -1042,31 +1087,49 @@ class RoomBooking(models.Model):
 
         total_revenue = max(revenue_completed + revenue_active_paid, inv_paid_total)
 
-        # 2. Today's Revenue: Earned room rent today for in-house guests + checkouts today + POS orders today
-        inhouse_today_rent = sum(
-            sum(line.price_unit or (line.price_subtotal / (b.duration or 1)) for line in b.room_line_ids)
-            for b in hotel_bookings.filtered(lambda b: b.state == 'check_in')
-        )
-        checked_out_today_rev = sum(
-            b.amount_total for b in hotel_bookings.filtered(
-                lambda b: b.checkout_date and b.checkout_date.date() == today_date and b.state in ['check_out', 'done']
-            )
-        )
+        # 2. Today's Earned Revenue (Option 1: Daily Hotel Charges):
+        # A. Room rent earned today (1 night's daily rate for in-house occupied rooms, excluding complimentary CR)
+        today_room_revenue = 0.0
+        for b in hotel_bookings.filtered(lambda b: b.state == 'check_in'):
+            if b.is_cr or b.stay_type == 'cr':
+                continue
+            for line in b.room_line_ids:
+                rate = line.price_unit or (line.price_subtotal / (b.duration or 1.0) if b.duration else line.price_subtotal)
+                today_room_revenue += rate
 
+        # B. Day-use bookings (checked in & checked out on today's date)
+        for b in hotel_bookings.filtered(
+            lambda b: b.state in ['check_out', 'done'] and
+                      b.checkin_date and b.checkout_date and
+                      fields.Date.to_date(fields.Datetime.context_timestamp(self, b.checkin_date)) == today_date and
+                      fields.Date.to_date(fields.Datetime.context_timestamp(self, b.checkout_date)) == today_date
+        ):
+            if b.is_cr or b.stay_type == 'cr':
+                continue
+            for line in b.room_line_ids:
+                rate = line.price_unit or (line.price_subtotal / (b.duration or 1.0) if b.duration else line.price_subtotal)
+                today_room_revenue += rate
+
+        # C. Restaurant / POS sales completed today
         pos_today_rev = 0.0
         if 'pos.order' in self.env:
-            today_pos = self.env['pos.order'].search([
+            pos_domain = [
                 ('date_order', '>=', fields.Datetime.to_string(start_today)),
                 ('date_order', '<=', fields.Datetime.to_string(end_today)),
-                ('state', 'in', ['paid', 'done', 'invoiced'])
-            ])
+                ('state', 'in', ['paid', 'done', 'invoiced']),
+            ]
+            if 'company_id' in self.env['pos.order']._fields:
+                pos_domain.append(('company_id', '=', company_id))
+            today_pos = self.env['pos.order'].search(pos_domain)
             pos_today_rev = sum(today_pos.mapped('amount_total'))
 
-        today_revenue = max(inhouse_today_rent + checked_out_today_rev + pos_today_rev, inv_today_paid)
+        today_revenue = today_room_revenue + pos_today_rev
 
         # 3. Pending Payment: Sum of real-time outstanding today's due balance across active guest folios
         active_bookings = hotel_bookings.filtered(lambda b: b.state in ['check_in', 'reserved', 'check_out'])
         pending_payment = sum(b.today_balance for b in active_bookings if b.today_balance > 0)
+
+        currency = company.currency_id or self.env.company.currency_id
 
         return {
             'total_room': total_room,
@@ -1086,21 +1149,23 @@ class RoomBooking(models.Model):
             'today_events': today_events,
             'pending_events': pending_events,
             'food_items': food_items,
-            'night_audit': self.env['hotel.night.audit'].search_count([]) if 'hotel.night.audit' in self.env else 0,
+            'night_audit': night_audit,
             'food_order': food_order,
             'total_revenue': round(total_revenue, 2),
             'today_revenue': round(today_revenue, 2),
             'pending_payment': round(pending_payment, 2),
-            'currency_symbol': self.env.user.company_id.currency_id.symbol,
-            'currency_position': self.env.user.company_id.currency_id.position
+            'currency_symbol': currency.symbol if currency else '$',
+            'currency_position': currency.position if currency else 'before'
         }
 
     @api.model
     def get_hotel_revenue_invoice_ids(self, filter_type='total'):
         """Return account.move IDs strictly belonging to Hotel Guest Bookings."""
-        hotel_bookings = self.search([])
+        company_id = self.env.context.get('company_id') or self.env.company.id
+        hotel_bookings = self.search([('company_id', '=', company_id)])
         inv_ids = set(hotel_bookings.mapped('hotel_invoice_id.id'))
         inv_ids.update(self.env['account.move'].search([
+            ('company_id', '=', company_id),
             '|', ('hotel_booking_id', '!=', False),
             ('ref', 'in', hotel_bookings.mapped('name'))
         ]).ids)

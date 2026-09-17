@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
+    <!-- The contact's Allowance tab shows the plan and limits; changing them
+         goes through Give an Allowance, which HR officers can use even
+         without rights to edit contacts. -->
     <record id="view_partner_form_allowance" model="ir.ui.view">
         <field name="name">res.partner.form.allowance</field>
         <field name="model">res.partner</field>
@@ -20,30 +23,38 @@
             <xpath expr="//notebook" position="inside">
                 <page string="Allowance" name="staff_allowance"
                       groups="hr.group_hr_user">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <span class="text-muted flex-grow-1">
+                            Every POS category is free for this person unless
+                            their plan or a limit below covers it.
+                        </span>
+                        <button name="action_give_allowance" type="object"
+                                string="Give an Allowance" class="btn-primary"
+                                icon="fa-plus"
+                                invisible="not id or allowance_plan_id or allowance_rule_ids"/>
+                        <button name="action_give_allowance" type="object"
+                                string="Change Limits" class="btn-primary"
+                                icon="fa-pencil"
+                                invisible="not allowance_plan_id and not allowance_rule_ids"/>
+                    </div>
                     <group>
                         <group>
-                            <field name="allowance_plan_id"/>
+                            <field name="allowance_plan_id" readonly="1"/>
                         </group>
                         <group>
                             <field name="allowance_over_count"
                                    string="Over-Limit Orders" readonly="1"/>
                         </group>
                     </group>
-                    <div class="mb-2">
-                        <button name="action_apply_allowance_plan" type="object"
-                                string="Copy Plan Into Rules" class="btn-secondary"
-                                icon="fa-clone" invisible="not allowance_plan_id"/>
-                    </div>
-                    <field name="allowance_rule_ids"
-                           context="{'default_partner_id': id}">
-                        <list editable="bottom"
-                              decoration-danger="status in ('reached', 'over')"
+                    <field name="allowance_rule_ids" readonly="1">
+                        <list decoration-danger="status in ('reached', 'over')"
                               decoration-warning="status == 'near'">
                             <field name="pos_category_id"/>
                             <field name="daily_limit"/>
                             <field name="count_mode" optional="hide"/>
                             <field name="policy"/>
-                            <field name="tolerance" optional="hide"/>
+                            <field name="tolerance" optional="hide"
+                                   invisible="policy == 'block'"/>
                             <field name="used_today"/>
                             <field name="remaining_today"/>
                             <field name="status" widget="badge"
@@ -52,9 +63,6 @@
                                    decoration-danger="status in ('reached', 'over')"/>
                         </list>
                     </field>
-                    <div class="text-muted mt-2">
-                        Every POS category is free for this contact unless it is listed here, or covered by the plan above. Use this for loyalty tiers or corporate accounts with a daily cap.
-                    </div>
                 </page>
             </xpath>
 

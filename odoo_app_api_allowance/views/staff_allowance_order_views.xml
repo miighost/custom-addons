@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_allowance_order_form_app" model="ir.ui.view">
+        <field name="name">staff.allowance.order.form.app</field>
+        <field name="model">staff.allowance.order</field>
+        <field name="inherit_id" ref="staff_allowance.view_allowance_order_form"/>
+        <field name="arch" type="xml">
+            <field name="pos_order_id" position="after">
+                <field name="sale_order_id" invisible="not sale_order_id"/>
+            </field>
+        </field>
+    </record>
+
+</odoo>

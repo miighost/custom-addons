@@ -1,26 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
+    <!-- Three levels, the way Odoo's own apps are built: the app, a section,
+         the screens. Clicking Allowances opens Today. -->
     <menuitem id="menu_allowance_root" name="Allowances" sequence="95"
+              action="action_allowance_usage_today"
               groups="hr.group_hr_user"/>
 
-    <menuitem id="menu_allowance_operations" name="Operations"
-              parent="menu_allowance_root" sequence="10"/>
-    <menuitem id="menu_allowance_order" name="Orders"
+    <menuitem id="menu_allowance_today" name="Today"
+              parent="menu_allowance_root"
+              action="action_allowance_usage_today" sequence="5"/>
+
+    <menuitem id="menu_allowance_people" name="People"
+              parent="menu_allowance_root"
+              action="action_allowance_people" sequence="10"/>
+
+    <menuitem id="menu_allowance_operations" name="Orders"
+              parent="menu_allowance_root" sequence="20"/>
+    <menuitem id="menu_allowance_order" name="All Orders"
               parent="menu_allowance_operations" action="action_allowance_order"
               sequence="10"/>
     <menuitem id="menu_allowance_to_approve" name="To Approve"
               parent="menu_allowance_operations"
               action="action_allowance_order_to_approve" sequence="20"/>
 
-    <menuitem id="menu_allowance_monitoring" name="Monitoring"
-              parent="menu_allowance_root" sequence="20"/>
-    <menuitem id="menu_allowance_usage" name="Daily Usage"
+    <menuitem id="menu_allowance_monitoring" name="Reporting"
+              parent="menu_allowance_root" sequence="80"/>
+    <menuitem id="menu_allowance_usage" name="Usage Analysis"
               parent="menu_allowance_monitoring" action="action_allowance_usage"
-              sequence="5"/>
-    <menuitem id="menu_allowance_reached" name="At or Over Limit"
-              parent="menu_allowance_monitoring"
-              action="action_allowance_usage_reached" sequence="10"/>
+              sequence="10"/>
     <menuitem id="menu_allowance_over" name="Over-Limit Orders"
               parent="menu_allowance_monitoring"
               action="action_allowance_order_over" sequence="20"/>
@@ -31,11 +39,11 @@
     <menuitem id="menu_allowance_config" name="Configuration"
               parent="menu_allowance_root" sequence="90"
               groups="hr.group_hr_manager"/>
-    <menuitem id="menu_allowance_rule" name="Rules"
-              parent="menu_allowance_config" action="action_allowance_rule"
-              sequence="10"/>
     <menuitem id="menu_allowance_plan" name="Plans"
               parent="menu_allowance_config" action="action_allowance_plan"
+              sequence="10"/>
+    <menuitem id="menu_allowance_rule" name="Rules"
+              parent="menu_allowance_config" action="action_allowance_rule"
               sequence="20"/>
 
 </odoo>

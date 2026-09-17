@@ -38,7 +38,7 @@ class StaffAllowanceAttempt(models.Model):
     limit_at_attempt = fields.Integer(string="Limit")
     used_at_attempt = fields.Integer(string="Already Used")
 
-    @api.depends("attempt_datetime", "employee_id", "partner_id")
+    @api.depends("attempt_datetime", "partner_id")
     def _compute_attempt_date(self):
         for attempt in self:
             beneficiary = attempt._beneficiary()

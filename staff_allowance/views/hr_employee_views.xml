@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
+    <!-- Limits live on the employee's work contact. The employee form shows
+         them, read-only, and sends you to the contact to change them. -->
     <record id="view_employee_form_allowance" model="ir.ui.view">
         <field name="name">hr.employee.form.allowance</field>
         <field name="model">hr.employee</field>
@@ -10,7 +12,8 @@
             <xpath expr="//div[@name='button_box']" position="inside">
                 <button name="action_view_allowance_orders" type="object"
                         class="oe_stat_button" icon="fa-coffee"
-                        groups="hr.group_hr_user">
+                        groups="hr.group_hr_user"
+                        invisible="not work_contact_id">
                     <field name="allowance_order_count" widget="statinfo"
                            string="Allowance Orders"/>
                 </button>
@@ -19,30 +22,36 @@
             <xpath expr="//notebook" position="inside">
                 <page string="Allowance" name="staff_allowance"
                       groups="hr.group_hr_user">
+                    <div class="alert alert-info d-flex align-items-center gap-3"
+                         role="status" invisible="not work_contact_id">
+                        <span class="flex-grow-1">
+                            These limits belong to the contact
+                            <field name="work_contact_id" readonly="1" class="fw-bold"
+                                   options="{'no_open': True}"/>.
+                        </span>
+                        <button name="action_edit_allowance" type="object"
+                                string="Edit Limits" class="btn-primary"
+                                icon="fa-pencil"/>
+                    </div>
+                    <div class="alert alert-warning" role="alert"
+                         invisible="work_contact_id">
+                        Save the employee first: Odoo creates their contact on save.
+                    </div>
                     <group>
                         <group>
                             <field name="allowance_plan_id"/>
                         </group>
                         <group>
                             <field name="allowance_over_count"
-                                   string="Over-Limit Orders" readonly="1"/>
+                                   string="Over-Limit Orders"/>
                         </group>
                     </group>
-                    <div class="mb-2">
-                        <button name="action_apply_allowance_plan" type="object"
-                                string="Copy Plan Into Rules" class="btn-secondary"
-                                icon="fa-clone" invisible="not allowance_plan_id"/>
-                    </div>
-                    <field name="allowance_rule_ids"
-                           context="{'default_employee_id': id}">
-                        <list editable="bottom"
-                              decoration-danger="status in ('reached', 'over')"
+                    <field name="allowance_rule_ids">
+                        <list decoration-danger="status in ('reached', 'over')"
                               decoration-warning="status == 'near'">
                             <field name="pos_category_id"/>
                             <field name="daily_limit"/>
-                            <field name="count_mode" optional="hide"/>
                             <field name="policy"/>
-                            <field name="tolerance" optional="hide"/>
                             <field name="used_today"/>
                             <field name="remaining_today"/>
                             <field name="status" widget="badge"
@@ -51,9 +60,6 @@
                                    decoration-danger="status in ('reached', 'over')"/>
                         </list>
                     </field>
-                    <div class="text-muted mt-2">
-                        Every POS category is free for this employee unless it is listed here, or covered by the plan above. Adding a rule affects only this employee. A limit of 0 blocks the category outright. Quotas reset at their local midnight.
-                    </div>
                 </page>
             </xpath>
 

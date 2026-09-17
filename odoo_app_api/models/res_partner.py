@@ -92,6 +92,12 @@ class ResPartner(models.Model):
         partner._ensure_app_barcode()
         return partner
 
+    def _app_product_extras(self, products):
+        """Extra, customer-specific facts per product for the app catalogue:
+        {product_id: {key: value}}, merged into each product. Empty here; the
+        App API: Staff Allowance module adds the allowance left today."""
+        return {}
+
     def _ensure_app_barcode(self):
         """Give every app customer a membership number they can be scanned by.
 

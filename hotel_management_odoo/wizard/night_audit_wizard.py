@@ -34,6 +34,13 @@ class NightAuditWizard(models.TransientModel):
         required=True,
         help="Select the 24-hour audit date"
     )
+    company_id = fields.Many2one(
+        "res.company",
+        string="Company",
+        default=lambda self: self.env.company,
+        required=True,
+        help="Hotel / Company for this night audit"
+    )
     user_id = fields.Many2one(
         "res.users",
         string="Audited By",
@@ -72,28 +79,36 @@ class NightAuditWizard(models.TransientModel):
         audit_date = self.date
         dt_start = datetime.combine(audit_date, time.min)
         dt_end = datetime.combine(audit_date, time.max)
+        cid = self.company_id.id if self.company_id else self.env.company.id
 
         # -------------------------------------------------------------
         # 1. ROOM ANALYSIS & OCCUPANCY KPIS
         # -------------------------------------------------------------
-        all_rooms = self.env["hotel.room"].search([])
+        all_rooms = self.env["hotel.room"].search([("company_id", "=", cid)])
         total_rooms = len(all_rooms)
 
-        maint_requests = self.env["maintenance.request"].search([
+        maint_domain = [
             ("type", "=", "room"),
             ("state", "in", ["draft", "assign", "ongoing", "support"])
-        ])
+        ]
+        if "company_id" in self.env["maintenance.request"]._fields:
+            maint_domain.append(("company_id", "=", cid))
+        maint_requests = self.env["maintenance.request"].search(maint_domain)
         maintenance_count = len(set(maint_requests.mapped("room_maintenance_ids.id")))
 
-        cleaning_requests = self.env["cleaning.request"].search([
+        cleaning_domain = [
             ("cleaning_type", "=", "room"),
             ("state", "in", ["draft", "assign", "ongoing", "support"])
-        ])
+        ]
+        if "company_id" in self.env["cleaning.request"]._fields:
+            cleaning_domain.append(("company_id", "=", cid))
+        cleaning_requests = self.env["cleaning.request"].search(cleaning_domain)
         cleaning_count = len(set(cleaning_requests.mapped("room_id.id")))
 
         available_rooms_count = max(0, total_rooms - maintenance_count)
 
         active_bookings = self.env["room.booking"].search([
+            ("company_id", "=", cid),
             ("checkin_date", "<=", dt_end),
             ("checkout_date", ">=", dt_start),
             ("state", "in", ["check_in", "reserved", "check_out", "done"]),
@@ -130,17 +145,22 @@ class NightAuditWizard(models.TransientModel):
 
         total_restaurant_pos = 0.0
         if "pos.order" in self.env:
-            pos_orders = self.env["pos.order"].search([
+            pos_domain = [
                 ("date_order", ">=", dt_start),
                 ("date_order", "<=", dt_end),
                 ("state", "in", ["paid", "done", "invoiced"]),
-            ])
+            ]
+            if "company_id" in self.env["pos.order"]._fields:
+                pos_domain.append(("company_id", "=", cid))
+            pos_orders = self.env["pos.order"].search(pos_domain)
             total_restaurant_pos += sum(pos_orders.mapped("amount_total"))
 
-        food_lines = self.env["food.booking.line"].search([
+        food_domain = [
+            ("booking_id.company_id", "=", cid),
             ("booking_id.checkin_date", "<=", dt_end),
             ("booking_id.checkout_date", ">=", dt_start),
-        ])
+        ]
+        food_lines = self.env["food.booking.line"].search(food_domain)
         total_restaurant_pos += sum(food_lines.mapped("price_total"))
         grand_total_revenue = total_room_rent + total_restaurant_pos
 
@@ -148,6 +168,7 @@ class NightAuditWizard(models.TransientModel):
         # 2. IN-HOUSE GUEST LIST
         # -------------------------------------------------------------
         inhouse_bookings = self.env["room.booking"].search([
+            ("company_id", "=", cid),
             ("state", "=", "check_in"),
         ], order="name asc")
 
@@ -175,6 +196,7 @@ class NightAuditWizard(models.TransientModel):
         # 3. CHECK-INS (ARRIVALS) & CHECK-OUTS (DEPARTURES)
         # -------------------------------------------------------------
         arrivals_records = self.env["room.booking"].search([
+            ("company_id", "=", cid),
             ("checkin_date", ">=", dt_start),
             ("checkin_date", "<=", dt_end),
             ("state", "in", ["check_in", "reserved", "check_out", "done"]),
@@ -195,6 +217,7 @@ class NightAuditWizard(models.TransientModel):
             a_idx += 1
 
         departures_records = self.env["room.booking"].search([
+            ("company_id", "=", cid),
             ("checkout_date", ">=", dt_start),
             ("checkout_date", "<=", dt_end),
             ("state", "in", ["check_out", "done", "check_in"]),
@@ -255,10 +278,15 @@ class NightAuditWizard(models.TransientModel):
         total_credit = 0.0
 
         if "pos.payment" in self.env:
-            pos_payments = self.env["pos.payment"].search([
+            pos_pay_domain = [
                 ("payment_date", ">=", dt_start),
                 ("payment_date", "<=", dt_end),
-            ], order="payment_date asc")
+            ]
+            if "company_id" in self.env["pos.payment"]._fields:
+                pos_pay_domain.append(("company_id", "=", cid))
+            pos_payments = self.env["pos.payment"].search(pos_pay_domain, order="payment_date asc")
+            if "company_id" not in self.env["pos.payment"]._fields:
+                pos_payments = pos_payments.filtered(lambda pp: not pp.pos_order_id.company_id or pp.pos_order_id.company_id.id == cid)
             for pp in pos_payments:
                 order = pp.pos_order_id
                 dt = pp.payment_date or order.date_order
@@ -284,11 +312,14 @@ class NightAuditWizard(models.TransientModel):
                 })
 
         if "account.payment" in self.env:
-            payments = self.env["account.payment"].search([
+            pay_domain = [
                 ("date", ">=", audit_date),
                 ("date", "<=", audit_date),
                 ("state", "in", ["posted", "paid"]),
-            ], order="date asc")
+            ]
+            if "company_id" in self.env["account.payment"]._fields:
+                pay_domain.append(("company_id", "=", cid))
+            payments = self.env["account.payment"].search(pay_domain, order="date asc")
             for pay in payments:
                 j_name = pay.journal_id.name if pay.journal_id else "Bank/Cash"
                 code = "CAS" if "cash" in j_name.lower() else j_name.upper()[:8]
@@ -296,6 +327,7 @@ class NightAuditWizard(models.TransientModel):
                 booking = False
                 if pay.partner_id:
                     booking = self.env["room.booking"].search([
+                        ("company_id", "=", cid),
                         ("partner_id", "=", pay.partner_id.id),
                         ("state", "in", ["check_in", "reserved", "check_out", "done"])
                     ], limit=1, order="id desc")

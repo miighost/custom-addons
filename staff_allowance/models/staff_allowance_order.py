@@ -6,26 +6,28 @@ from odoo.tools import SQL
 
 
 class StaffAllowanceOrder(models.Model):
-    """One consumption event. Quotas are derived from these rows."""
+    """One consumption event. Quotas are derived from these rows.
+
+    Deliberately no chatter: a busy POS writes one of these per sale line,
+    and followers and "created" messages on each would only fill the database.
+    Approvals keep their own record in approver_id / approval_date.
+    """
 
     _name = "staff.allowance.order"
     _description = "Allowance Order"
-    _inherit = ["staff.allowance.beneficiary.mixin", "mail.thread"]
+    _inherit = ["staff.allowance.beneficiary.mixin"]
     _order = "order_datetime desc, id desc"
 
     name = fields.Char(required=True, copy=False, readonly=True,
                        default=lambda s: _("New"))
     # History must survive the deletion of a contact: restrict, not cascade.
-    employee_id = fields.Many2one("hr.employee", string="Employee", index=True,
-                                  ondelete="restrict", tracking=True)
-    partner_id = fields.Many2one("res.partner", string="Contact", index=True,
-                                 ondelete="restrict", tracking=True)
+    partner_id = fields.Many2one("res.partner", string="Contact", required=True,
+                                 index=True, ondelete="restrict")
     pos_category_id = fields.Many2one("pos.category", string="POS Category",
                                       required=True, index=True,
-                                      ondelete="restrict", tracking=True)
+                                      ondelete="restrict")
     product_id = fields.Many2one("product.product", ondelete="restrict")
-    qty = fields.Integer(default=1, required=True, string="Quantity",
-                         tracking=True)
+    qty = fields.Integer(default=1, required=True, string="Quantity")
     note = fields.Char()
 
     order_datetime = fields.Datetime(default=fields.Datetime.now, required=True,
@@ -38,7 +40,7 @@ class StaffAllowanceOrder(models.Model):
     state = fields.Selection(
         [("draft", "To Approve"), ("done", "Done"),
          ("refused", "Refused"), ("cancel", "Cancelled")],
-        default="done", required=True, tracking=True,
+        default="done", required=True, index=True,
         help="To Approve and Done consume the allowance. "
              "Refused and Cancelled do not.")
     source = fields.Selection(
@@ -93,27 +95,25 @@ class StaffAllowanceOrder(models.Model):
         sees the first order. The constraint having already run does not
         matter, since the whole transaction is thrown away.
         """
-        for table, records in (("hr_employee", self.employee_id),
-                               ("res_partner", self.partner_id)):
-            if records:
-                self.env.cr.execute(SQL(
-                    "UPDATE %s SET write_date = write_date WHERE id IN %s",
-                    SQL.identifier(table), tuple(records.ids)))
+        if self.partner_id:
+            self.env.cr.execute(SQL(
+                "UPDATE res_partner SET write_date = write_date WHERE id IN %s",
+                tuple(self.partner_id.ids)))
 
     def _usage_keys(self):
         keys = set()
         for order in self:
             beneficiary = order._beneficiary()
             if beneficiary and order.pos_category_id and order.order_date:
-                keys.add((beneficiary._name, beneficiary.id,
-                          order.pos_category_id.id, order.order_date))
+                keys.add((beneficiary.id, order.pos_category_id.id,
+                          order.order_date))
         return keys
 
     def _sync_usage(self):
         self.env["staff.allowance.usage"]._refresh_keys(self._usage_keys())
 
     # ------------------------------------------------------------------
-    @api.depends("order_datetime", "employee_id", "partner_id")
+    @api.depends("order_datetime", "partner_id")
     def _compute_order_date(self):
         for order in self:
             beneficiary = order._beneficiary()
@@ -124,8 +124,7 @@ class StaffAllowanceOrder(models.Model):
             order.order_date = (
                 pytz.utc.localize(order.order_datetime).astimezone(tz).date())
 
-    @api.depends("employee_id", "partner_id", "pos_category_id", "qty",
-                 "order_date", "state")
+    @api.depends("partner_id", "pos_category_id", "qty", "order_date", "state")
     def _compute_over_limit(self):
         Rule = self.env["staff.allowance.rule"].sudo()
         for order in self:
@@ -135,9 +134,11 @@ class StaffAllowanceOrder(models.Model):
                 order.is_over_limit = False
                 order.over_by = 0
                 continue
+            # Judged against what was already consumed when this order was
+            # placed: a later order must not flag an earlier one.
             evaluation = Rule._evaluate(
                 beneficiary, order.pos_category_id, increment=order.qty,
-                day=order.order_date, exclude_ids=order.ids)
+                day=order.order_date, exclude_ids=order.ids, before=order)
             order.is_over_limit = evaluation["over_limit"]
             order.over_by = evaluation["overdraft"]
 
@@ -153,8 +154,8 @@ class StaffAllowanceOrder(models.Model):
     # ------------------------------------------------------------------
     # Final safety net for anything written directly (backend, imports).
     # ------------------------------------------------------------------
-    @api.constrains("employee_id", "partner_id", "pos_category_id", "qty",
-                    "order_date", "state")
+    @api.constrains("partner_id", "pos_category_id", "qty", "order_date",
+                    "state")
     def _check_allowance(self):
         Rule = self.env["staff.allowance.rule"].sudo()
         for order in self:
@@ -206,7 +207,7 @@ class StaffAllowanceOrder(models.Model):
         return {
             "id": self.id,
             "reference": self.name,
-            "beneficiary_type": self.beneficiary_type,
+            "partner_id": self.partner_id.id,
             "beneficiary_name": self.beneficiary_name,
             "category_id": self.pos_category_id.id,
             "category_name": self.pos_category_id.display_name,

@@ -28,7 +28,19 @@ class CleaningTeam(models.Model):
     _name = "cleaning.team"
     _description = "Cleaning Team"
 
+    def _auto_init(self):
+        super()._auto_init()
+        # Backfill company_id for existing cleaning teams safely during upgrade
+        self.env.cr.execute("""
+            UPDATE cleaning_team
+            SET company_id = (SELECT id FROM res_company ORDER BY id ASC LIMIT 1)
+            WHERE company_id IS NULL;
+        """)
+
     name = fields.Char(string="Team Name", help="Name of the Team")
+    company_id = fields.Many2one('res.company', string='Company',
+                                 default=lambda self: self.env.company,
+                                 index=True)
     team_head_id = fields.Many2one('res.users', string="Team Head",
                                    help="Choose the Team Head",
                                    domain=lambda self: [

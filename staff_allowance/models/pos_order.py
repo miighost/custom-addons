@@ -70,20 +70,22 @@ class PosOrder(models.Model):
                 if qty <= 0:
                     # Refund and zero lines do not consume an allowance.
                     continue
-                category = Rule._category_of_product(line.product_id)
-                if not category:
-                    continue
-                entry = Allowance.create({
-                    "partner_id": order.partner_id.id,
-                    "pos_category_id": category.id,
-                    "product_id": line.product_id.id,
-                    "qty": qty,
-                    "source": "pos",
-                    "state": "done",
-                    "pos_order_id": order.id,
-                    "order_datetime": order.date_order or fields.Datetime.now(),
-                })
-                over_limit = over_limit or entry.is_over_limit
+                # One entry per category the product counts against for this
+                # customer (a limit on Drinks also covers Drinks / Coffee), and
+                # none at all when no rule or plan of theirs covers it.
+                for category in Rule._counted_categories(order.partner_id,
+                                                         line.product_id):
+                    entry = Allowance.create({
+                        "partner_id": order.partner_id.id,
+                        "pos_category_id": category.id,
+                        "product_id": line.product_id.id,
+                        "qty": qty,
+                        "source": "pos",
+                        "state": "done",
+                        "pos_order_id": order.id,
+                        "order_datetime": order.date_order or fields.Datetime.now(),
+                    })
+                    over_limit = over_limit or entry.is_over_limit
 
             order.with_context(skip_allowance_record=True).write({
                 "allowance_recorded": True,

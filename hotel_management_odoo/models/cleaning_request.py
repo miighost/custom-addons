@@ -30,9 +30,21 @@ class CleaningRequest(models.Model):
     _rec_name = "sequence"
     _description = "Cleaning Request"
 
+    def _auto_init(self):
+        super()._auto_init()
+        # Backfill company_id for existing cleaning requests safely during upgrade
+        self.env.cr.execute("""
+            UPDATE cleaning_request
+            SET company_id = (SELECT id FROM res_company ORDER BY id ASC LIMIT 1)
+            WHERE company_id IS NULL;
+        """)
+
     sequence = fields.Char(string="Sequence", readonly=True, default='New',
                            copy=False, tracking=True,
                            help="Sequence for identifying the request")
+    company_id = fields.Many2one('res.company', string='Company',
+                                 default=lambda self: self.env.company,
+                                 index=True)
     state = fields.Selection([('draft', 'Draft'),
                               ('assign', 'Assigned'),
                               ('ongoing', 'Cleaning'),
@@ -47,6 +59,7 @@ class CleaningRequest(models.Model):
                                      string="Cleaning Type",
                                      help="Choose what is to be cleaned")
     room_id = fields.Many2one('hotel.room', string="Room",
+                              domain="['|', ('company_id', '=', False), ('company_id', '=', company_id)]",
                               help="Choose the room", ondelete="cascade")
     hotel = fields.Char(string="Hotel", help="Cleaning request space in hotel")
     vehicle_id = fields.Many2one('fleet.vehicle.model',
@@ -62,6 +75,7 @@ class CleaningRequest(models.Model):
     description = fields.Char(string="Description",
                               help="Description about the cleaning")
     team_id = fields.Many2one('cleaning.team', string="Team",
+                              domain="['|', ('company_id', '=', False), ('company_id', '=', company_id)]",
                               required=True,
                               tracking=True,
                               help="Choose the team")
@@ -69,8 +83,8 @@ class CleaningRequest(models.Model):
                               related='team_id.team_head_id',
                               help="Head of cleaning team")
     assigned_id = fields.Many2one('res.users', string="Assigned To",
-                                  help="The team member to whom the request is"
-                                       "Assigned To")
+                              help="The team member to whom the request is"
+                                   "Assigned To")
     domain_partner_ids = fields.Many2many('res.users',
                                           relation='cleaning_request_domain_partner_rel',
                                           column1='cleaning_id',
@@ -83,8 +97,9 @@ class CleaningRequest(models.Model):
         """Sequence Generation"""
         for vals in vals_list:
             if vals.get('sequence', 'New') == 'New':
-                vals['sequence'] = self.env['ir.sequence'].next_by_code(
-                    'cleaning.request')
+                comp_id = vals.get('company_id') or self.env.company.id
+                vals['sequence'] = self.env['ir.sequence'].with_company(comp_id).next_by_code(
+                    'cleaning.request') or 'New'
         return super().create(vals_list)
 
     @api.onchange('team_id')

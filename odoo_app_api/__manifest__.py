@@ -1,6 +1,6 @@
 {
     'name': 'App API (Firebase)',
-    'version': '19.0.1.0.0',
+    'version': '19.0.1.3.0',
     'category': 'Sales/Sales',
     'summary': 'REST endpoints for a FlutterFlow client app authenticated with Firebase',
     'author': 'QBH',
@@ -19,6 +19,11 @@
         'wizards/app_wallet_topup_views.xml',
         'views/menus.xml',
     ],
+    'assets': {
+        'web.assets_backend': [
+            'odoo_app_api/static/src/scss/app_dashboard.scss',
+        ],
+    },
     'installable': True,
     'application': True,
 }

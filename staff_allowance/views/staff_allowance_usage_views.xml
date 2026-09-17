@@ -1,6 +1,54 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
+    <record id="view_allowance_usage_search" model="ir.ui.view">
+        <field name="name">staff.allowance.usage.search</field>
+        <field name="model">staff.allowance.usage</field>
+        <field name="arch" type="xml">
+            <search string="Daily Usage">
+                <field name="partner_id"/>
+                <field name="pos_category_id"/>
+                <field name="product_summary"/>
+                <filter string="Today" name="filter_today"
+                        domain="[('day', '&gt;=', 'today'), ('day', '&lt;', 'today +1d')]"/>
+                <filter string="Last 7 Days" name="filter_week"
+                        domain="[('day', '&gt;=', 'today -6d')]"/>
+                <filter string="Last 30 Days" name="filter_month"
+                        domain="[('day', '&gt;=', 'today -29d')]"/>
+                <filter string="Date" name="filter_day" date="day"/>
+                <separator/>
+                <filter string="Over Limit" name="filter_over"
+                        domain="[('status', '=', 'over')]"/>
+                <filter string="At or Over Limit" name="filter_at_limit"
+                        domain="[('status', 'in', ('reached', 'over'))]"/>
+                <filter string="Almost Used Up" name="filter_near"
+                        domain="[('status', '=', 'near')]"/>
+                <separator/>
+                <filter string="Has a Limit" name="filter_capped"
+                        domain="[('status', '!=', 'free')]"/>
+                <filter string="Staff" name="filter_staff"
+                        domain="[('partner_id.employee_ids', '!=', False)]"/>
+                <group>
+                    <filter string="Contact" name="group_partner"
+                            context="{'group_by': 'partner_id'}"/>
+                    <filter string="Status" name="group_status"
+                            context="{'group_by': 'status'}"/>
+                    <filter string="POS Category" name="group_category"
+                            context="{'group_by': 'pos_category_id'}"/>
+                    <filter string="Day" name="group_day"
+                            context="{'group_by': 'day:day'}"/>
+                    <filter string="Week" name="group_week"
+                            context="{'group_by': 'day:week'}"/>
+                </group>
+                <searchpanel view_types="list,pivot,graph">
+                    <field name="status" icon="fa-tachometer" select="multi"
+                           enable_counters="1"/>
+                    <field name="pos_category_id" icon="fa-tags" enable_counters="1"/>
+                </searchpanel>
+            </search>
+        </field>
+    </record>
+
     <record id="view_allowance_usage_list" model="ir.ui.view">
         <field name="name">staff.allowance.usage.list</field>
         <field name="model">staff.allowance.usage</field>
@@ -10,14 +58,14 @@
                   decoration-warning="status == 'reached'"
                   decoration-muted="status == 'free'">
                 <field name="day"/>
-                <field name="beneficiary_name" string="Beneficiary"/>
-                <field name="beneficiary_type" optional="hide"/>
+                <field name="beneficiary_name" string="Contact"/>
                 <field name="pos_category_id"/>
+                <field name="product_summary" optional="show"/>
                 <field name="used" sum="Used"/>
                 <field name="limit_value"/>
                 <field name="remaining"/>
                 <field name="over_by" sum="Over By"/>
-                <field name="order_count" optional="hide"/>
+                <field name="order_count" optional="hide" sum="Orders"/>
                 <field name="status" widget="badge"
                        decoration-success="status == 'ok'"
                        decoration-warning="status == 'near'"
@@ -26,40 +74,72 @@
         </field>
     </record>
 
+    <!-- One person, one category, one day: the figures and the order lines
+         behind them. -->
     <record id="view_allowance_usage_form" model="ir.ui.view">
         <field name="name">staff.allowance.usage.form</field>
         <field name="model">staff.allowance.usage</field>
         <field name="arch" type="xml">
             <form string="Daily Usage" create="false" edit="false">
                 <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_orders" type="object"
+                                class="oe_stat_button" icon="fa-list-ul">
+                            <field name="order_count" widget="statinfo" string="Orders"/>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="partner_id" readonly="1"
+                                   options="{'no_open': True}"/>
+                        </h1>
+                        <h4 class="text-muted">
+                            <field name="pos_category_id" readonly="1"
+                                   options="{'no_open': True}"/>
+                            ·
+                            <field name="day" readonly="1"/>
+                        </h4>
+                    </div>
                     <group>
                         <group>
-                            <field name="employee_id"/>
-                            <field name="partner_id"/>
-                            <field name="pos_category_id"/>
-                            <field name="day"/>
+                            <field name="status" widget="badge"
+                                   decoration-success="status == 'ok'"
+                                   decoration-warning="status == 'near'"
+                                   decoration-danger="status in ('reached', 'over')"/>
+                            <field name="used"/>
+                            <field name="limit_value" invisible="status == 'free'"/>
                         </group>
                         <group>
-                            <field name="used"/>
-                            <field name="limit_value"/>
-                            <field name="remaining"/>
-                            <field name="over_by"/>
-                            <field name="order_count"/>
-                            <field name="status"/>
+                            <field name="remaining" invisible="status == 'free'"/>
+                            <field name="over_by" invisible="not over_by"/>
                         </group>
                     </group>
+                    <separator string="Order Lines"/>
+                    <field name="order_ids" nolabel="1" readonly="1">
+                        <list decoration-danger="is_over_limit"
+                              decoration-warning="state == 'draft'">
+                            <field name="order_datetime" string="Time"/>
+                            <field name="product_id"/>
+                            <field name="qty" sum="Total"/>
+                            <field name="source"/>
+                            <field name="pos_order_id" optional="show"/>
+                            <field name="is_over_limit" string="Over"/>
+                            <field name="state" widget="badge"
+                                   decoration-success="state == 'done'"
+                                   decoration-warning="state == 'draft'"/>
+                        </list>
+                    </field>
                 </sheet>
             </form>
         </field>
     </record>
 
-
     <record id="view_allowance_usage_pivot" model="ir.ui.view">
         <field name="name">staff.allowance.usage.pivot</field>
         <field name="model">staff.allowance.usage</field>
         <field name="arch" type="xml">
-            <pivot string="Daily Usage" sample="1">
-                <field name="beneficiary_name" type="row"/>
+            <pivot string="Usage Analysis" sample="1">
+                <field name="partner_id" type="row"/>
                 <field name="pos_category_id" type="col"/>
                 <field name="used" type="measure"/>
                 <field name="over_by" type="measure"/>
@@ -71,34 +151,40 @@
         <field name="name">staff.allowance.usage.graph</field>
         <field name="model">staff.allowance.usage</field>
         <field name="arch" type="xml">
-            <graph string="Daily Usage" sample="1">
-                <field name="day"/>
+            <graph string="Usage Analysis" sample="1" type="bar" stacked="1">
+                <field name="day" interval="day"/>
                 <field name="pos_category_id"/>
                 <field name="used" type="measure"/>
             </graph>
         </field>
     </record>
 
-    <record id="action_allowance_usage" model="ir.actions.act_window">
-        <field name="name">Daily Usage</field>
+    <!-- The monitoring board: everyone with a limit who used any today,
+         grouped by person. Click a row to see its order lines. -->
+    <record id="action_allowance_usage_today" model="ir.actions.act_window">
+        <field name="name">Today</field>
         <field name="res_model">staff.allowance.usage</field>
         <field name="view_mode">list,pivot,graph,form</field>
+        <field name="search_view_id" ref="view_allowance_usage_search"/>
+        <field name="context">{'search_default_filter_today': 1, 'search_default_filter_capped': 1, 'search_default_group_partner': 1}</field>
         <field name="help" type="html">
-            <p class="o_view_nocontent_smiling_face">No consumption recorded yet</p>
-            <p>One row per person, category and day — searchable, groupable and
-               ready for pivots, unlike a figure recomputed on the fly.</p>
+            <p class="o_view_nocontent_smiling_face">Nothing used yet today</p>
+            <p>As soon as someone with a limit buys from a capped category, they
+               appear here, one line per category. Click a line to see what
+               they took.</p>
         </field>
     </record>
 
-    <record id="action_allowance_usage_reached" model="ir.actions.act_window">
-        <field name="name">At or Over Limit</field>
+    <record id="action_allowance_usage" model="ir.actions.act_window">
+        <field name="name">Usage Analysis</field>
         <field name="res_model">staff.allowance.usage</field>
-        <field name="view_mode">list,pivot,form</field>
-        <field name="domain">[('status', 'in', ['reached', 'over'])]</field>
+        <field name="view_mode">pivot,graph,list,form</field>
+        <field name="search_view_id" ref="view_allowance_usage_search"/>
+        <field name="context">{'search_default_filter_month': 1}</field>
         <field name="help" type="html">
-            <p class="o_view_nocontent_smiling_face">Nobody has hit their limit</p>
-            <p>Everyone who has used up their daily allowance, and by how much
-               they went over where that is permitted.</p>
+            <p class="o_view_nocontent_smiling_face">No consumption recorded yet</p>
+            <p>One row per person, category and day. Last 30 days by default;
+               change the period, group by week, or switch to the list.</p>
         </field>
     </record>
 

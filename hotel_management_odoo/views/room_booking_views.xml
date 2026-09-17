@@ -63,7 +63,6 @@
                     <group>
                         <!-- Invisible Fields -->
                         <field name="is_checkin" invisible="1"/>
-                        <field name="company_id" invisible="1"/>
                         <field name="has_pos_orders" invisible="1"/>
                         <field name="duration" readonly="1" invisible="1"/>
                         <field name="duration_visible" invisible="1"/>
@@ -74,6 +73,7 @@
                                    widget="res_partner_many2one"
                                    context="{'res_partner_search_mode': 'customer', 'show_address': 1, 'show_vat': True}"
                                    options="{'always_reload': True}"/>
+                            <field name="company_id" groups="base.group_multi_company" options="{'no_create': True}" readonly="state not in ['draft']"/>
                             <field name="user_id"
                                    domain="[('parent_id','=',partner_id)]"
                                    context="{'default_type':'invoice'}"
@@ -108,6 +108,7 @@
                                     <field name="is_special" column_invisible="True"/>
                                     <field name="room_id" string="Room"
                                            required="1"
+                                           domain="['|', ('company_id', '=', False), ('company_id', '=', parent.company_id)]"
                                            decoration-info="is_special"
                                            options="{'no_open': True, 'no_create': True}"/>
                                     <field name="checkin_date"/>
@@ -228,6 +229,7 @@
                                 <list editable="bottom">
                                     <field name="service_id" string="Service"
                                            required="1"
+                                           domain="['|', ('company_id', '=', False), ('company_id', '=', parent.company_id)]"
                                            options="{'no_open': True,'no_create': True}"/>
                                     <field name="description"/>
                                     <field name="uom_qty" string="Qty"
@@ -365,6 +367,7 @@
                 <field name="room_rate" string="Rate" widget="monetary" sum="Total Rate" class="text-end text-primary fw-bold"/>
                 <field name="today_balance" string="Today's Balance" widget="monetary" sum="Total Balance" decoration-bf="1" class="text-end"/>
                 <field name="amount_total" string="Total Revenue" widget="monetary" sum="Grand Total" class="text-end fw-bold"/>
+                <field name="company_id" groups="base.group_multi_company" optional="show"/>
                 <field name="state" string="Status" widget="badge"
                        decoration-info="is_special or state == 'draft'"
                        decoration-warning="not is_special and state == 'reserved'"
@@ -387,6 +390,7 @@
                 <field name="room_name" string="Room No"/>
                 <field name="stay_type" string="Category"/>
                 <field name="meal_plan_id" string="Meal Plan"/>
+                <field name="company_id" groups="base.group_multi_company"/>
                 <separator/>
                 <filter name="filter_draft" string="Draft" domain="[('state', '=', 'draft')]"/>
                 <filter name="filter_reserved" string="Reserved" domain="[('state', '=', 'reserved')]"/>
@@ -405,6 +409,7 @@
                 <filter name="group_by_meal_plan" string="Meal Plan" context="{'group_by': 'meal_plan_id'}"/>
                 <filter name="group_by_state" string="Status" context="{'group_by': 'state'}"/>
                 <filter name="group_by_date" string="Order Date" context="{'group_by': 'date_order:month'}"/>
+                <filter name="group_by_company" string="Company" context="{'group_by': 'company_id'}" groups="base.group_multi_company"/>
             </search>
         </field>
     </record>

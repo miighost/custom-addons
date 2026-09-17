@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- Ordinary users only ever see their own consumption. HR Officers and
-         Managers see everything (rules on the same model are OR'ed). -->
+    <!-- Ordinary users only ever see their own consumption: the records of
+         their own contact, which Odoo keeps equal to their employee's work
+         contact. HR Officers and Managers see everything (rules on the same
+         model are OR'ed). -->
 
     <record id="rule_allowance_order_own" model="ir.rule">
         <field name="name">Allowance Orders: own only</field>
         <field name="model_id" ref="model_staff_allowance_order"/>
-        <field name="domain_force">['|',
-            ('employee_id.user_id', '=', user.id),
-            ('partner_id', '=', user.partner_id.id)]</field>
+        <field name="domain_force">[('partner_id', '=', user.partner_id.id)]</field>
         <field name="groups" eval="[(4, ref('base.group_user'))]"/>
     </record>
 
@@ -23,9 +23,7 @@
     <record id="rule_allowance_line_own" model="ir.rule">
         <field name="name">Allowance Rules: own only</field>
         <field name="model_id" ref="model_staff_allowance_rule"/>
-        <field name="domain_force">['|',
-            ('employee_id.user_id', '=', user.id),
-            ('partner_id', '=', user.partner_id.id)]</field>
+        <field name="domain_force">[('partner_id', '=', user.partner_id.id)]</field>
         <field name="groups" eval="[(4, ref('base.group_user'))]"/>
     </record>
 
@@ -39,9 +37,7 @@
     <record id="rule_allowance_attempt_own" model="ir.rule">
         <field name="name">Blocked Attempts: own only</field>
         <field name="model_id" ref="model_staff_allowance_attempt"/>
-        <field name="domain_force">['|',
-            ('employee_id.user_id', '=', user.id),
-            ('partner_id', '=', user.partner_id.id)]</field>
+        <field name="domain_force">[('partner_id', '=', user.partner_id.id)]</field>
         <field name="groups" eval="[(4, ref('base.group_user'))]"/>
     </record>
 
@@ -55,9 +51,7 @@
     <record id="rule_allowance_usage_own" model="ir.rule">
         <field name="name">Daily Usage: own only</field>
         <field name="model_id" ref="model_staff_allowance_usage"/>
-        <field name="domain_force">['|',
-            ('employee_id.user_id', '=', user.id),
-            ('partner_id', '=', user.partner_id.id)]</field>
+        <field name="domain_force">[('partner_id', '=', user.partner_id.id)]</field>
         <field name="groups" eval="[(4, ref('base.group_user'))]"/>
     </record>
 

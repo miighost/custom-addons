@@ -58,8 +58,11 @@
     </record>
 
     <!-- ============================ MENUS ============================= -->
+    <!-- Sales users only: everything below is orders, invoices and wallets,
+         which an ordinary employee cannot open anyway. -->
     <menuitem id="menu_app_root" name="Mobile App" sequence="82"
               action="action_app_dashboard"
+              groups="sales_team.group_sale_salesman"
               web_icon="odoo_app_api,static/description/icon.png"/>
 
     <menuitem id="menu_app_dashboard" name="Dashboard"

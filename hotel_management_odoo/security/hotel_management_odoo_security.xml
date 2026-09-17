@@ -64,4 +64,55 @@
                eval="[(4, ref('hotel_management_odoo.hotel_group_admin'))]"/>
         <field name="domain_force">[(1, '=', 1)]</field>
     </record>
+
+    <!-- ============================================= -->
+    <!--          MULTI-COMPANY RECORD RULES           -->
+    <!-- ============================================= -->
+    <record id="room_booking_company_rule" model="ir.rule">
+        <field name="name">Hotel Booking multi-company</field>
+        <field name="model_id" ref="model_room_booking"/>
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+    </record>
+
+    <record id="room_booking_line_company_rule" model="ir.rule">
+        <field name="name">Hotel Booking Line multi-company</field>
+        <field name="model_id" ref="model_room_booking_line"/>
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+    </record>
+
+    <record id="hotel_room_company_rule" model="ir.rule">
+        <field name="name">Hotel Room multi-company</field>
+        <field name="model_id" ref="model_hotel_room"/>
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+    </record>
+
+    <record id="hotel_floor_company_rule" model="ir.rule">
+        <field name="name">Hotel Floor multi-company</field>
+        <field name="model_id" ref="model_hotel_floor"/>
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+    </record>
+
+    <record id="hotel_service_company_rule" model="ir.rule">
+        <field name="name">Hotel Service multi-company</field>
+        <field name="model_id" ref="model_hotel_service"/>
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+    </record>
+
+    <record id="hotel_night_audit_company_rule" model="ir.rule">
+        <field name="name">Hotel Night Audit multi-company</field>
+        <field name="model_id" ref="model_hotel_night_audit"/>
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+    </record>
+
+    <record id="cleaning_team_company_rule" model="ir.rule">
+        <field name="name">Cleaning Team multi-company</field>
+        <field name="model_id" ref="model_cleaning_team"/>
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+    </record>
+
+    <record id="cleaning_request_company_rule" model="ir.rule">
+        <field name="name">Cleaning Request multi-company</field>
+        <field name="model_id" ref="model_cleaning_request"/>
+        <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
+    </record>
 </odoo>

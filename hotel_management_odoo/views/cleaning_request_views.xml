@@ -9,6 +9,7 @@
                 <field name="sequence"/>
                 <field name="cleaning_type"/>
                 <field name="team_id"/>
+                <field name="company_id" groups="base.group_multi_company" optional="show"/>
                 <field name="state"/>
             </list>
         </field>
@@ -57,6 +58,7 @@
                     <group>
                         <group>
                             <field name="team_id"/>
+                            <field name="company_id" groups="base.group_multi_company" options="{'no_create': True}"/>
                             <field name="cleaning_type"/>
                             <field name="room_id"
                                    invisible="cleaning_type != 'room' "/>

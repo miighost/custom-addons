@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Make the allowance visible on POS orders: an Allowance button and an
+         Over Allowance banner on the order, a column and a filter in the list. -->
+
+    <record id="view_pos_order_form_allowance" model="ir.ui.view">
+        <field name="name">pos.order.form.allowance</field>
+        <field name="model">pos.order</field>
+        <field name="inherit_id" ref="point_of_sale.view_pos_pos_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <field name="allowance_recorded" invisible="1"/>
+                <field name="allowance_over_limit" invisible="1"/>
+                <button name="action_view_allowance_entries" type="object"
+                        class="oe_stat_button" icon="fa-coffee"
+                        invisible="not allowance_recorded"
+                        groups="hr.group_hr_user">
+                    <div class="o_stat_info">
+                        <span class="o_stat_text">Allowance</span>
+                    </div>
+                </button>
+            </xpath>
+            <xpath expr="//div[@name='button_box']" position="after">
+                <widget name="web_ribbon" title="Over Allowance"
+                        bg_color="text-bg-warning"
+                        invisible="not allowance_over_limit"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_pos_order_list_allowance" model="ir.ui.view">
+        <field name="name">pos.order.list.allowance</field>
+        <field name="model">pos.order</field>
+        <field name="inherit_id" ref="point_of_sale.view_pos_order_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//list" position="inside">
+                <field name="allowance_over_limit" string="Over Allowance"
+                       optional="hide"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_pos_order_search_allowance" model="ir.ui.view">
+        <field name="name">pos.order.search.allowance</field>
+        <field name="model">pos.order</field>
+        <field name="inherit_id" ref="point_of_sale.view_pos_order_search"/>
+        <field name="arch" type="xml">
+            <xpath expr="//search" position="inside">
+                <separator/>
+                <filter string="Over Allowance" name="filter_over_allowance"
+                        domain="[('allowance_over_limit', '=', True)]"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_pos_order_filter_allowance" model="ir.ui.view">
+        <field name="name">pos.order.filter.allowance</field>
+        <field name="model">pos.order</field>
+        <field name="inherit_id" ref="point_of_sale.view_pos_order_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//search" position="inside">
+                <separator/>
+                <filter string="Over Allowance" name="filter_over_allowance"
+                        domain="[('allowance_over_limit', '=', True)]"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

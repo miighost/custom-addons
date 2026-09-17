@@ -11,6 +11,7 @@ from odoo.exceptions import AccessError, ConcurrencyError, UserError
 from odoo.http import request
 from odoo.tools import SQL
 
+from ..api_error import ApiError
 from .firebase import current_partner
 
 _logger = logging.getLogger(__name__)
@@ -42,6 +43,9 @@ def api_endpoint(func):
         except (OperationalError, ConcurrencyError):
             # Serialization failure: Odoo rolls back and retries the request.
             raise
+        except ApiError as err:
+            _rollback()
+            return request.make_json_response({'error': err.code, **err.details})
         except HTTPException as err:
             _rollback()
             return request.make_json_response(
@@ -79,6 +83,24 @@ def lock_for_payment(records):
     except LockNotAvailable:
         return False
     return True
+
+
+def owned_order(partner, order_id):
+    """Never browse an id straight from the app - scope it to the caller."""
+    return request.env['sale.order'].sudo().search([
+        ('id', '=', int(order_id or 0)),
+        ('partner_id', 'child_of', partner.commercial_partner_id.id),
+    ], limit=1)
+
+
+def wallet_cards(partner):
+    """The caller's eWallet cards that can still be spent."""
+    return request.env['loyalty.card'].sudo().search([
+        ('program_type', '=', 'ewallet'),
+        ('partner_id', '=', partner.commercial_partner_id.id),
+        '|', ('expiration_date', '=', False),
+             ('expiration_date', '>=', fields.Date.today()),
+    ])
 
 
 class AppApi(http.Controller):
@@ -126,12 +148,7 @@ class AppApi(http.Controller):
     @http.route('/api/v1/wallet', **ROUTE)
     @api_endpoint
     def wallet(self, partner, payload):
-        cards = request.env['loyalty.card'].sudo().search([
-            ('program_type', '=', 'ewallet'),
-            ('partner_id', '=', partner.commercial_partner_id.id),
-            '|', ('expiration_date', '=', False),
-                 ('expiration_date', '>=', fields.Date.today()),
-        ])
+        cards = wallet_cards(partner)
         history = cards.history_ids.sorted('create_date', reverse=True)[:50]
         return {
             'balance': sum(cards.mapped('points')),
@@ -157,30 +174,45 @@ class AppApi(http.Controller):
             order='date_order desc', limit=limit, offset=offset)
         return {'orders': [self._order_dict(o) for o in sale_orders]}
 
+    @http.route('/api/v1/orders/detail', **ROUTE)
+    @api_endpoint
+    def order_detail(self, partner, payload):
+        """Body: {"order_id": 123}"""
+        order = owned_order(partner, payload.get('order_id', 0))
+        if not order:
+            raise ApiError('order_not_found')
+        return self._order_dict(order)
+
     @http.route('/api/v1/orders/create', **ROUTE)
     @api_endpoint
     def order_create(self, partner, payload):
+        """A quotation only. /api/v1/checkout places and pays in one call."""
+        order = self._create_app_order(partner, payload)
+        return self._order_dict(order)
+
+    def _create_app_order(self, partner, payload):
+        """Validate the cart and create the quotation, or raise ApiError."""
         lines = payload.get('lines') or []
         if not lines:
-            return {'error': 'no_lines'}
+            raise ApiError('no_lines')
         try:
             wanted = [(int(line['product_id']), float(line.get('qty', 1)))
                       for line in lines]
         except (AttributeError, KeyError, TypeError, ValueError):
-            return {'error': 'bad_lines'}
+            raise ApiError('bad_lines')
         if any(not (math.isfinite(qty) and qty > 0) for _pid, qty in wanted):
-            return {'error': 'bad_qty'}
+            raise ApiError('bad_qty')
 
         # The same product may sit on two lines; every id must still exist.
         product_ids = list({product_id for product_id, _qty in wanted})
         products = request.env['product.product'].sudo().browse(
             product_ids).exists()
         if len(products) != len(product_ids):
-            return {'error': 'unknown_product'}
+            raise ApiError('unknown_product')
         # Only let the app order things it is allowed to see
         if any(not p.sale_ok or not p.active or not p.available_in_app
                for p in products):
-            return {'error': 'product_not_orderable'}
+            raise ApiError('product_not_orderable')
 
         order = request.env['sale.order'].sudo().create({
             'partner_id': partner.id,
@@ -193,12 +225,13 @@ class AppApi(http.Controller):
                 'product_uom_qty': qty,
             }) for product_id, qty in wanted],
         })
-        # Leave it as a quotation so staff confirm it in Odoo, or call
-        # order.action_confirm() here if the app should place firm orders.
         order.message_post(body="Order placed from the mobile app.")
-        return self._order_dict(order)
+        return order
 
     def _order_dict(self, order):
+        invoices = order.invoice_ids.filtered(
+            lambda m: m.state == 'posted' and m.move_type == 'out_invoice')
+        due = sum(invoices.mapped('amount_residual'))
         return {
             'id': order.id,
             'name': order.name,
@@ -209,6 +242,10 @@ class AppApi(http.Controller):
             ).get(order.state, order.state),
             'amount_total': order.amount_total,
             'currency': order.currency_id.name,
+            'payment_method': order.app_payment_method or '',
+            'payment_status': self._payment_status(order, invoices, due),
+            'amount_due': round(due, 2),
+            'invoice_ids': invoices.ids,
             'lines': [{
                 'product': line.product_id.display_name,
                 'qty': line.product_uom_qty,
@@ -216,3 +253,18 @@ class AppApi(http.Controller):
                 'subtotal': line.price_subtotal,
             } for line in order.order_line if not line.display_type],
         }
+
+    @staticmethod
+    def _payment_status(order, invoices, due):
+        """One word for the order history page."""
+        if order.state == 'cancel':
+            return 'cancelled'
+        if order.state in ('draft', 'sent'):
+            return 'quotation'
+        if not invoices:
+            return 'paid' if order.app_payment_reference else 'not_invoiced'
+        if order.currency_id.is_zero(due):
+            return 'paid'
+        if order.currency_id.compare_amounts(due, sum(invoices.mapped('amount_total'))) < 0:
+            return 'partly_paid'
+        return 'to_pay'

@@ -13,10 +13,27 @@ from markupsafe import Markup
 from odoo import fields, http
 from odoo.http import request
 
-from .main import ROUTE, api_endpoint, lock_for_payment
-from .payment import COMMIT_TIMEOUT, _waafi
+from ..api_error import ApiError
+from .main import ROUTE, api_endpoint, lock_for_payment, wallet_cards
+from .payment import charge, payment_journal, register_payment
 
 _logger = logging.getLogger(__name__)
+
+
+def spend_wallet(cards, amount, description):
+    """Take `amount` off the eWallet cards, soonest-expiring first, with a
+    wallet ledger line for each card touched."""
+    History = request.env['loyalty.history'].sudo()
+    remaining = amount
+    for card in cards.sorted(lambda c: c.expiration_date or date.max):
+        if remaining <= 0:
+            break
+        take = min(card.points, remaining)
+        if take <= 0:
+            continue
+        card.points -= take
+        History.create({'card_id': card.id, 'description': description, 'used': take})
+        remaining -= take
 
 
 class AppAccount(http.Controller):
@@ -34,19 +51,12 @@ class AppAccount(http.Controller):
             self._invoice_domain(partner) + [('id', '=', int(invoice_id))],
             limit=1)
 
-    def _wallet_cards(self, partner):
-        return request.env['loyalty.card'].sudo().search([
-            ('program_type', '=', 'ewallet'),
-            ('partner_id', '=', partner.commercial_partner_id.id),
-            '|', ('expiration_date', '=', False),
-                 ('expiration_date', '>=', fields.Date.today()),
-        ])
-
     def _invoice_dict(self, move):
         return {
             'id': move.id,
             'number': move.name,
             'type': 'refund' if move.move_type == 'out_refund' else 'invoice',
+            'origin': move.invoice_origin or '',
             'date': move.invoice_date.isoformat() if move.invoice_date else '',
             'due_date': (move.invoice_date_due.isoformat()
                          if move.invoice_date_due else ''),
@@ -59,35 +69,6 @@ class AppAccount(http.Controller):
                             and move.amount_residual > 0
                             and move.invoice_date_due < fields.Date.today()),
         }
-
-    def _journal(self, key, partner):
-        """The journal a customer payment is booked through."""
-        param = request.env['ir.config_parameter'].sudo().get_param(
-            'app_api.%s_journal_id' % key)
-        Journal = request.env['account.journal'].sudo()
-        if param:
-            journal = Journal.browse(int(param)).exists()
-            if journal:
-                return journal
-        # Fall back to any bank/cash journal of the right company
-        return Journal.search([
-            ('type', 'in', ('bank', 'cash')),
-            ('company_id', '=', partner.company_id.id
-                                or request.env.company.id),
-        ], limit=1)
-
-    def _register_payment(self, invoice, journal, amount, memo):
-        """Book a customer payment against one invoice and reconcile it."""
-        wizard = request.env['account.payment.register'].sudo().with_context(
-            active_model='account.move',
-            active_ids=invoice.ids,
-        ).create({
-            'journal_id': journal.id,
-            'amount': amount,
-            'payment_date': fields.Date.today(),
-            'communication': memo,
-        })
-        return wizard._create_payments()
 
     # ---------------------------------------------------- home screen call
     @http.route('/api/v1/summary', **ROUTE)
@@ -108,7 +89,7 @@ class AppAccount(http.Controller):
                       if m.move_type == 'out_invoice'
                       and m.invoice_date_due and m.invoice_date_due < today)
 
-        cards = self._wallet_cards(partner)
+        balance = sum(wallet_cards(partner).mapped('points'))
         base = (request.env['ir.config_parameter'].sudo()
                 .get_param('web.base.url') or '').rstrip('/')
         code = commercial.barcode or partner.barcode or ''
@@ -122,13 +103,13 @@ class AppAccount(http.Controller):
             'barcode_image_url': (
                 f"{base}/report/barcode/Code128/{code}"
                 "?width=600&height=150&humanreadable=1" if code else ''),
-            'wallet_balance': sum(cards.mapped('points')),
+            'wallet_balance': balance,
             'total_due': round(due, 2),
             'overdue': round(overdue, 2),
             'credit_notes': round(credit_notes, 2),
             'open_invoice_count': len([m for m in open_invoices
                                        if m.move_type == 'out_invoice']),
-            'can_clear_with_wallet': sum(cards.mapped('points')) >= due > 0,
+            'can_clear_with_wallet': balance >= due > 0,
         }
 
     # -------------------------------------------------------- invoice list
@@ -155,7 +136,7 @@ class AppAccount(http.Controller):
         """Body: {"invoice_id": 42}"""
         move = self._owned_invoice(partner, payload.get('invoice_id', 0))
         if not move:
-            return {'error': 'invoice_not_found'}
+            raise ApiError('invoice_not_found')
         data = self._invoice_dict(move)
         data['lines'] = [{
             'description': line.name or '',
@@ -165,208 +146,113 @@ class AppAccount(http.Controller):
         } for line in move.invoice_line_ids if line.display_type == 'product']
         return data
 
-    # ------------------------------------------------------ pay an invoice
+    # ------------------------------------------------------ pay invoices
     @http.route('/api/v1/invoices/pay', **ROUTE)
     @api_endpoint
-    def pay_invoice(self, partner, payload):
-        """Body: {"invoice_id": 42, "method": "wallet"|"waafi",
-                  "amount": 0, "phone": "2526..."}
+    def pay_invoices(self, partner, payload):
+        """Pay the invoices the customer selected, in full, in one payment.
 
-        `amount` is optional - leave it out to pay the invoice in full.
+        Body: {"invoice_ids": [42, 43], "method": "wallet"|"waafi",
+               "phone": "2526..."}     ("invoice_id": 42 also works)
         """
-        move = self._owned_invoice(partner, payload.get('invoice_id', 0))
-        if not move:
-            return {'error': 'invoice_not_found'}
-        if move.move_type != 'out_invoice':
-            return {'error': 'not_payable'}
-        if move.payment_state == 'paid' or move.amount_residual <= 0:
-            return {'error': 'already_paid'}
+        ids = payload.get('invoice_ids') or [payload.get('invoice_id')]
+        ids = {int(invoice_id) for invoice_id in ids if invoice_id}
+        if not ids:
+            raise ApiError('no_invoices')
+        moves = request.env['account.move'].sudo().search(
+            self._invoice_domain(partner) + [('id', 'in', list(ids))],
+            order='invoice_date asc, id asc')
+        if len(moves) != len(ids):
+            raise ApiError('invoice_not_found')
+        return self._pay(partner, moves, payload)
 
-        method = (payload.get('method') or 'wallet').lower()
-        amount = float(payload.get('amount') or 0) or move.amount_residual
-        amount = min(round(amount, 2), move.amount_residual)
-        if amount <= 0:
-            return {'error': 'invalid_amount'}
-
-        if method == 'wallet':
-            return self._pay_from_wallet(partner, move, amount)
-        if method == 'waafi':
-            return self._pay_from_gateway(partner, move, amount, payload)
-        return {'error': 'unknown_method'}
-
-    # ---- wallet ---------------------------------------------------------
-    def _pay_from_wallet(self, partner, move, amount):
-        if not lock_for_payment(move):
-            return {'error': 'payment_in_progress'}
-        cards = self._wallet_cards(partner)
-        balance = sum(cards.mapped('points'))
-        if balance <= 0:
-            return {'error': 'insufficient_balance', 'balance': 0.0}
-        amount = min(amount, balance)
-
-        journal = self._journal('wallet', partner)
-        if not journal:
-            return {'error': 'wallet_journal_not_configured'}
-
-        # Take the money off the cards first, oldest expiry first.
-        remaining = amount
-        History = request.env['loyalty.history'].sudo()
-        for card in cards.sorted(
-                lambda c: c.expiration_date or date.max):
-            if remaining <= 0:
-                break
-            take = min(card.points, remaining)
-            if take <= 0:
-                continue
-            card.points -= take
-            History.create({
-                'card_id': card.id,
-                'description': f"Invoice {move.name} paid from the mobile app",
-                'used': take,
-            })
-            remaining -= take
-
-        self._register_payment(move, journal, amount,
-                               f"eWallet - {move.name}")
-        move.message_post(
-            body=f"{amount} {move.currency_id.name} paid from the customer's "
-                 f"eWallet via the mobile app.")
-
-        cards = self._wallet_cards(partner)
-        move.invalidate_recordset(['amount_residual', 'payment_state'])
-        return {
-            'paid': True,
-            'method': 'wallet',
-            'amount_paid': amount,
-            'balance_after': sum(cards.mapped('points')),
-            'invoice': self._invoice_dict(move),
-        }
-
-    # ---- gateway --------------------------------------------------------
-    def _pay_from_gateway(self, partner, move, amount, payload):
-        phone = (payload.get('phone') or partner.phone or '').strip()
-        if not phone:
-            return {'error': 'phone_required'}
-
-        journal = self._journal('waafi', partner)
-        if not journal:
-            return {'error': 'payment_journal_not_configured'}
-        # Held until the request ends: a second tap cannot charge again while
-        # the first waits on the customer's handset.
-        if not lock_for_payment(move):
-            return {'error': 'payment_in_progress'}
-
-        try:
-            pre = _waafi('API_PREAUTHORIZE', {
-                'paymentMethod': 'MWALLET_ACCOUNT',
-                'payerInfo': {'accountNo': phone},
-                'transactionInfo': {
-                    'referenceId': move.name,
-                    'invoiceId': move.name,
-                    'amount': amount,
-                    'currency': move.currency_id.name,
-                    'description': f"{move.company_id.name} - {move.name}",
-                },
-            })
-        except ValueError as err:
-            return {'error': str(err)}
-        except Exception as err:                                  # noqa: BLE001
-            _logger.exception("Gateway unreachable for %s", move.name)
-            return {'error': 'gateway_unreachable', 'detail': str(err)}
-
-        transaction_id = (pre.get('params') or {}).get('transactionId')
-        if pre.get('responseCode') != '2001' or not transaction_id:
-            return {'error': 'payment_declined',
-                    'gateway_message': pre.get('responseMsg')}
-
-        try:
-            commit = _waafi('API_PREAUTHORIZE_COMMIT', {
-                'transactionId': transaction_id,
-                'description': f"Commit {move.name}",
-            }, timeout=COMMIT_TIMEOUT)
-        except Exception as err:                                  # noqa: BLE001
-            _logger.exception("Commit failed for %s (tx %s)",
-                              move.name, transaction_id)
-            return {'error': 'commit_failed', 'transaction_id': transaction_id}
-
-        if commit.get('responseCode') != '2001':
-            return {'error': 'commit_refused',
-                    'gateway_message': commit.get('responseMsg')}
-
-        # The customer has been charged. If booking it fails, keep the
-        # transaction id on the invoice for staff rather than rolling the
-        # evidence away with the rest of the request.
-        try:
-            with request.env.cr.savepoint():
-                self._register_payment(move, journal, amount,
-                                       f"WaafiPay {transaction_id}")
-        except Exception:                                         # noqa: BLE001
-            _logger.exception("Invoice %s charged (WaafiPay tx %s) but the "
-                              "payment could not be registered",
-                              move.name, transaction_id)
-            move.message_post(body=Markup(
-                "%s %s was charged through WaafiPay from the mobile app "
-                "(transaction <b>%s</b>) but the payment could not be "
-                "registered. Register it by hand.") % (
-                    amount, move.currency_id.name, transaction_id))
-            return {'error': 'paid_not_recorded',
-                    'transaction_id': transaction_id}
-        move.message_post(body=Markup(
-            "%s %s paid from the mobile app. WaafiPay transaction <b>%s</b>.")
-            % (amount, move.currency_id.name, transaction_id))
-        move.invalidate_recordset(['amount_residual', 'payment_state'])
-        return {
-            'paid': True,
-            'method': 'waafi',
-            'amount_paid': amount,
-            'transaction_id': transaction_id,
-            'invoice': self._invoice_dict(move),
-        }
-
-    # --------------------------------------------------- clear everything
     @http.route('/api/v1/invoices/clear', **ROUTE)
     @api_endpoint
     def clear_balance(self, partner, payload):
-        """Pay off every open invoice, oldest first.
+        """Pay every open invoice at once.
 
         Body: {"method": "wallet"|"waafi", "phone": "2526..."}
         """
-        method = (payload.get('method') or 'wallet').lower()
         moves = request.env['account.move'].sudo().search(
             self._invoice_domain(partner) + [
                 ('move_type', '=', 'out_invoice'),
-                ('payment_state', '!=', 'paid'),
+                ('payment_state', 'not in', ('paid', 'in_payment', 'reversed')),
+                ('amount_residual', '>', 0),
             ], order='invoice_date asc, id asc')
         if not moves:
-            return {'cleared': True, 'paid': [], 'message': 'nothing_due'}
+            return {'cleared': True, 'paid': False, 'amount_paid': 0.0, 'invoices': []}
+        result = self._pay(partner, moves, payload)
+        result['cleared'] = bool(result.get('paid'))
+        return result
 
-        paid, failed = [], []
-        for move in moves:
-            if move.amount_residual <= 0:
-                continue
-            result = (self._pay_from_wallet(partner, move, move.amount_residual)
-                      if method == 'wallet'
-                      else self._pay_from_gateway(partner, move,
-                                                  move.amount_residual, payload))
-            if result.get('paid'):
-                paid.append({'number': move.name,
-                             'amount': result['amount_paid']})
-            else:
-                failed.append({'number': move.name,
-                               'error': result.get('error'),
-                               'gateway_message': result.get('gateway_message')})
-                break        # stop at the first failure, do not keep charging
+    def _pay(self, partner, moves, payload):
+        """Pay `moves` in full, once: a single wallet deduction, or a single
+        WaafiPay charge (one approval on the customer's phone), then one
+        payment across the invoices."""
+        not_payable = moves.filtered(
+            lambda m: m.move_type != 'out_invoice'
+            or m.currency_id.compare_amounts(m.amount_residual, 0) <= 0)
+        if not_payable:
+            raise ApiError('not_payable', invoices=not_payable.mapped('name'))
+        if len(moves.currency_id) > 1:
+            raise ApiError('mixed_currencies')
+        method = (payload.get('method') or 'wallet').lower()
+        if method not in ('wallet', 'waafi'):
+            raise ApiError('unknown_method')
+        if not lock_for_payment(moves):
+            raise ApiError('payment_in_progress')
+        journal = payment_journal(method, partner)
+        if not journal:
+            raise ApiError('payment_journal_not_configured')
 
-        cards = self._wallet_cards(partner)
-        still_open = request.env['account.move'].sudo().search_count(
-            self._invoice_domain(partner) + [
-                ('move_type', '=', 'out_invoice'),
-                ('payment_state', '!=', 'paid'),
-            ])
-        return {
-            'cleared': not failed,
-            'paid': paid,
-            'failed': failed,
-            'invoices_still_open': still_open,
-            'wallet_balance': sum(cards.mapped('points')),
-        }
+        currency = moves.currency_id
+        total = currency.round(sum(moves.mapped('amount_residual')))
+        numbers = ", ".join(moves.mapped('name'))
+
+        if method == 'wallet':
+            cards = wallet_cards(partner)
+            balance = sum(cards.mapped('points'))
+            if currency.compare_amounts(balance, total) < 0:
+                raise ApiError('insufficient_balance', amount_due=total,
+                               wallet_balance=balance,
+                               missing=currency.round(total - balance))
+            spend_wallet(cards, total, f"{numbers} paid from the mobile app")
+            register_payment(moves, journal, f"eWallet - {numbers}")
+            for move in moves:
+                move.message_post(body="Paid from the customer's eWallet via the mobile app.")
+            result = {'paid': True, 'method': 'wallet', 'amount_paid': total,
+                      'balance_after': sum(wallet_cards(partner).mapped('points'))}
+        else:
+            phone = (payload.get('phone') or partner.phone or '').strip()
+            if not phone:
+                raise ApiError('phone_required')
+            reference = moves[0].name if len(moves) == 1 else f"{moves[0].name} +{len(moves) - 1}"
+            transaction_id = charge(phone, total, currency.name, reference,
+                                    f"{moves[0].company_id.name} - {numbers}")
+            # The customer has been charged. If booking it fails, keep the
+            # transaction id on the invoices for staff rather than rolling the
+            # evidence away with the rest of the request.
+            try:
+                with request.env.cr.savepoint():
+                    register_payment(moves, journal, f"WaafiPay {transaction_id}")
+            except Exception:                                     # noqa: BLE001
+                _logger.exception("Invoices %s charged (WaafiPay tx %s) but the "
+                                  "payment could not be registered", numbers, transaction_id)
+                for move in moves:
+                    move.message_post(body=Markup(
+                        "%s %s was charged through WaafiPay from the mobile app "
+                        "(transaction <b>%s</b>, for %s) but the payment could not "
+                        "be registered. Register it by hand.")
+                        % (total, currency.name, transaction_id, numbers))
+                return {'error': 'paid_not_recorded', 'transaction_id': transaction_id,
+                        'amount_paid': total}
+            for move in moves:
+                move.message_post(body=Markup(
+                    "Paid from the mobile app. WaafiPay transaction <b>%s</b>.")
+                    % transaction_id)
+            result = {'paid': True, 'method': 'waafi', 'amount_paid': total,
+                      'transaction_id': transaction_id}
+
+        moves.invalidate_recordset(['amount_residual', 'payment_state'])
+        result['invoices'] = [self._invoice_dict(move) for move in moves]
+        return result

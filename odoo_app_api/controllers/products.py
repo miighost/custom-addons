@@ -61,6 +61,7 @@ class AppProducts(http.Controller):
 
         currency = (pricelist.currency_id if pricelist
                     else request.env.company.currency_id)
+        extras = partner._app_product_extras(products)
 
         result = {
             'total': total,
@@ -79,6 +80,7 @@ class AppProducts(http.Controller):
                 'image_url': f'/api/v1/product/{p.id}/image',
                 'has_image': bool(p.image_128),
                 'in_stock': self._in_stock(p),
+                **extras.get(p.id, {}),
             } for p in products],
         }
         if not total:

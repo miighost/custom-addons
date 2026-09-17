@@ -34,11 +34,12 @@ class HotelRoomTransferWizard(models.TransientModel):
         related="current_room_line_id.room_id",
         readonly=True
     )
+    company_id = fields.Many2one('res.company', related='booking_id.company_id', readonly=True)
     new_room_id = fields.Many2one(
         "hotel.room",
         string="New Room",
         required=True,
-        domain="[('status', '=', 'available'), ('is_room_avail', '=', True)]",
+        domain="[('status', '=', 'available'), ('is_room_avail', '=', True), '|', ('company_id', '=', False), ('company_id', '=', company_id)]",
         help="Select an available room to transfer the guest into"
     )
     send_to_cleaning = fields.Boolean(

@@ -1,19 +1,61 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
+    <record id="view_allowance_order_search" model="ir.ui.view">
+        <field name="name">staff.allowance.order.search</field>
+        <field name="model">staff.allowance.order</field>
+        <field name="arch" type="xml">
+            <search string="Allowance Orders">
+                <field name="partner_id"/>
+                <field name="pos_category_id"/>
+                <field name="product_id"/>
+                <field name="name"/>
+                <filter string="Today" name="filter_today"
+                        domain="[('order_date', '&gt;=', 'today'), ('order_date', '&lt;', 'today +1d')]"/>
+                <filter string="Last 7 Days" name="filter_week"
+                        domain="[('order_date', '&gt;=', 'today -6d')]"/>
+                <filter string="Date" name="filter_order_date" date="order_date"/>
+                <separator/>
+                <filter string="Over Limit" name="filter_over"
+                        domain="[('is_over_limit', '=', True)]"/>
+                <filter string="To Approve" name="filter_to_approve"
+                        domain="[('state', '=', 'draft')]"/>
+                <separator/>
+                <filter string="Staff" name="filter_staff"
+                        domain="[('partner_id.employee_ids', '!=', False)]"/>
+                <group>
+                    <filter string="Contact" name="group_partner"
+                            context="{'group_by': 'partner_id'}"/>
+                    <filter string="POS Category" name="group_category"
+                            context="{'group_by': 'pos_category_id'}"/>
+                    <filter string="Day" name="group_day"
+                            context="{'group_by': 'order_date:day'}"/>
+                    <filter string="Source" name="group_source"
+                            context="{'group_by': 'source'}"/>
+                    <filter string="Status" name="group_state"
+                            context="{'group_by': 'state'}"/>
+                </group>
+                <searchpanel view_types="list,pivot,graph">
+                    <field name="pos_category_id" icon="fa-tags" enable_counters="1"/>
+                    <field name="source" icon="fa-shopping-basket" select="multi"
+                           enable_counters="1"/>
+                </searchpanel>
+            </search>
+        </field>
+    </record>
+
     <record id="view_allowance_order_list" model="ir.ui.view">
         <field name="name">staff.allowance.order.list</field>
         <field name="model">staff.allowance.order</field>
         <field name="arch" type="xml">
-            <list string="Allowance Orders" sample="1"
+            <list string="Allowance Orders" sample="1" create="0"
                   decoration-danger="is_over_limit and state == 'done'"
                   decoration-warning="state == 'draft'"
                   decoration-muted="state in ('cancel', 'refused')">
                 <field name="name"/>
                 <field name="order_datetime"/>
                 <field name="order_date" optional="hide"/>
-                <field name="beneficiary_name" string="Beneficiary"/>
-                <field name="beneficiary_type" optional="hide"/>
+                <field name="beneficiary_name" string="Contact"/>
                 <field name="pos_category_id"/>
                 <field name="product_id" optional="show"/>
                 <field name="qty" sum="Total"/>
@@ -40,7 +82,7 @@
         <field name="name">staff.allowance.order.form</field>
         <field name="model">staff.allowance.order</field>
         <field name="arch" type="xml">
-            <form string="Allowance Order">
+            <form string="Allowance Order" create="0">
                 <header>
                     <button name="action_approve" type="object" string="Approve"
                             class="btn-primary" invisible="state != 'draft'"
@@ -63,12 +105,8 @@
                         <h1><field name="name" readonly="1"/></h1>
                     </div>
                     <group>
-                        <group string="Beneficiary">
-                            <field name="employee_id"
-                                   readonly="partner_id != False"/>
-                            <field name="partner_id"
-                                   readonly="employee_id != False"/>
-                            <field name="beneficiary_type" invisible="1"/>
+                        <group string="Contact">
+                            <field name="partner_id"/>
                         </group>
                         <group string="What">
                             <field name="pos_category_id"/>
@@ -91,20 +129,19 @@
                         </group>
                     </group>
                 </sheet>
-                <chatter/>
             </form>
         </field>
     </record>
-
 
     <record id="view_allowance_order_pivot" model="ir.ui.view">
         <field name="name">staff.allowance.order.pivot</field>
         <field name="model">staff.allowance.order</field>
         <field name="arch" type="xml">
             <pivot string="Consumption" sample="1">
-                <field name="beneficiary_name" type="row"/>
+                <field name="partner_id" type="row"/>
                 <field name="pos_category_id" type="col"/>
                 <field name="qty" type="measure"/>
+                <field name="over_by" type="measure"/>
             </pivot>
         </field>
     </record>
@@ -113,8 +150,8 @@
         <field name="name">staff.allowance.order.graph</field>
         <field name="model">staff.allowance.order</field>
         <field name="arch" type="xml">
-            <graph string="Consumption" sample="1">
-                <field name="order_date"/>
+            <graph string="Consumption" sample="1" type="bar" stacked="1">
+                <field name="order_date" interval="day"/>
                 <field name="pos_category_id"/>
                 <field name="qty" type="measure"/>
             </graph>
@@ -125,25 +162,39 @@
         <field name="name">Orders</field>
         <field name="res_model">staff.allowance.order</field>
         <field name="view_mode">list,pivot,graph,form</field>
+        <field name="search_view_id" ref="view_allowance_order_search"/>
+        <field name="context">{'search_default_group_partner': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No allowance orders yet</p>
+            <p>Sales to people with an allowance appear here once they are
+               paid in the POS or placed in the app.</p>
+        </field>
     </record>
 
     <record id="action_allowance_order_to_approve" model="ir.actions.act_window">
         <field name="name">To Approve</field>
         <field name="res_model">staff.allowance.order</field>
         <field name="view_mode">list,form</field>
-        <field name="domain">[('state', '=', 'draft')]</field>
+        <field name="search_view_id" ref="view_allowance_order_search"/>
+        <field name="context">{'search_default_filter_to_approve': 1}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">Nothing waiting for approval</p>
-            <p>Orders placed beyond the daily limit land here when the category
-               policy is set to "Allow, but require approval".</p>
+            <p>App orders placed beyond the daily limit land here when the rule
+               is set to "Allow, but require approval".</p>
         </field>
     </record>
 
     <record id="action_allowance_order_over" model="ir.actions.act_window">
-        <field name="name">Over Limit</field>
+        <field name="name">Over-Limit Orders</field>
         <field name="res_model">staff.allowance.order</field>
-        <field name="view_mode">list,pivot,form</field>
-        <field name="domain">[('is_over_limit', '=', True)]</field>
+        <field name="view_mode">list,pivot,graph,form</field>
+        <field name="search_view_id" ref="view_allowance_order_search"/>
+        <field name="context">{'search_default_filter_over': 1, 'search_default_group_partner': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Nobody went over their limit</p>
+            <p>Sales recorded past a daily limit — allowed by the rule, or
+               sold anyway at the POS — show here, grouped by person.</p>
+        </field>
     </record>
 
 </odoo>

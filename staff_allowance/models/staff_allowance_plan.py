@@ -17,39 +17,24 @@ class StaffAllowancePlan(models.Model):
     sequence = fields.Integer(default=10)
     active = fields.Boolean(default=True)
     line_ids = fields.One2many("staff.allowance.plan.line", "plan_id", copy=True)
-    employee_count = fields.Integer(compute="_compute_holder_counts")
-    partner_count = fields.Integer(compute="_compute_holder_counts")
+    # Plans are set on contacts, and staff are contacts too (their work
+    # contact), so one count covers everybody on the plan.
+    partner_count = fields.Integer(string="People", compute="_compute_partner_count")
 
-    def _compute_holder_counts(self):
-        employees = self.env["hr.employee"]._read_group(
+    def _compute_partner_count(self):
+        counts = dict(self.env["res.partner"]._read_group(
             [("allowance_plan_id", "in", self.ids)],
-            groupby=["allowance_plan_id"], aggregates=["__count"])
-        partners = self.env["res.partner"]._read_group(
-            [("allowance_plan_id", "in", self.ids)],
-            groupby=["allowance_plan_id"], aggregates=["__count"])
-        emp = {plan.id: count for plan, count in employees}
-        par = {plan.id: count for plan, count in partners}
+            groupby=["allowance_plan_id"], aggregates=["__count"]))
         for plan in self:
-            plan.employee_count = emp.get(plan.id, 0)
-            plan.partner_count = par.get(plan.id, 0)
-
-    def action_view_employees(self):
-        self.ensure_one()
-        return {
-            "type": "ir.actions.act_window",
-            "name": _("Employees on %s", self.name),
-            "res_model": "hr.employee",
-            "view_mode": "kanban,list,form",
-            "domain": [("allowance_plan_id", "=", self.id)],
-        }
+            plan.partner_count = counts.get(plan, 0)
 
     def action_view_partners(self):
         self.ensure_one()
         return {
             "type": "ir.actions.act_window",
-            "name": _("Contacts on %s", self.name),
+            "name": _("People on %s", self.name),
             "res_model": "res.partner",
-            "view_mode": "kanban,list,form",
+            "view_mode": "list,form",
             "domain": [("allowance_plan_id", "=", self.id)],
         }
 

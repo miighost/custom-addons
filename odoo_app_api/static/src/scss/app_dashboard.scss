@@ -1,0 +1,74 @@
+// Mobile App dashboard: KPI cards that open the records behind each figure.
+//
+// Each card has a colour — thick left border, tinted outline, icon and label —
+// so the kind of figure reads at a glance. The colours are Bootstrap's SCSS
+// variables as Odoo sets them, resolved when the bundle is compiled: Odoo's
+// backend does not define the `--bs-*` CSS variables, so `var(--bs-success)`
+// and friends would silently resolve to nothing.
+
+$o-app-kpi-colors: (
+    success: $success,
+    warning: $warning,
+    danger: $danger,
+    info: $info,
+    brand: $primary,
+    people: $blue,
+);
+
+.o_app_dashboard {
+    .o_app_kpi {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+        padding: 1rem 1.25rem;
+        border: 1px solid rgba($gray-500, 0.35);
+        border-left: 0.35rem solid $gray-500;
+        border-radius: 0.75rem;
+        transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+
+        &:hover,
+        &:focus-visible {
+            box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.08);
+        }
+    }
+
+    // One colour per kind of figure.
+    @each $name, $color in $o-app-kpi-colors {
+        .o_app_kpi_#{$name} {
+            border-color: rgba($color, 0.35);
+            border-left-color: $color;
+
+            .o_app_kpi_label {
+                color: $color;
+            }
+
+            &:hover,
+            &:focus-visible {
+                border-color: $color;
+            }
+        }
+    }
+
+    .o_app_kpi_label {
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+
+        .fa {
+            margin-right: 0.25rem;
+        }
+    }
+
+    .o_app_kpi_value {
+        font-size: 1.75rem;
+        font-weight: 700;
+        line-height: 1.2;
+    }
+
+    .o_app_kpi_hint {
+        font-size: 0.875rem;
+        opacity: 0.7;
+    }
+}

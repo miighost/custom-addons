@@ -2,10 +2,17 @@ from datetime import datetime, time
 
 import pytz
 
-from odoo import api, fields, models
+from odoo import _, api, fields, models
 
 
-class AppDashboard(models.TransientModel):
+class AppDashboard(models.Model):
+    """The Mobile App landing screen.
+
+    One record (`app_dashboard_main`) whose figures are computed live each
+    time it is read; nothing is stored on it. The menu opens that record
+    read-only. Opening the form without a record would show an unsaved new
+    record instead - Save / Discard buttons and a technical breadcrumb.
+    """
     _name = 'app.dashboard'
     _description = 'Mobile App Dashboard'
 
@@ -38,6 +45,9 @@ class AppDashboard(models.TransientModel):
     customers_total = fields.Integer(compute='_compute_stats')
     customers_week = fields.Integer(compute='_compute_stats')
 
+    recent_order_ids = fields.Many2many('sale.order', compute='_compute_stats',
+                                        string='Latest App Orders')
+
     @api.depends_context('uid', 'allowed_company_ids')
     def _compute_stats(self):
         today = fields.Date.context_today(self)
@@ -68,6 +78,8 @@ class AppDashboard(models.TransientModel):
         ])
         overdue = open_invoices.filtered(
             lambda m: m.invoice_date_due and m.invoice_date_due < today)
+        recent_orders = Order.search(app_orders, order='date_order desc, id desc',
+                                     limit=8)
 
         for record in self:
             record.currency_id = self.env.company.currency_id
@@ -90,6 +102,11 @@ class AppDashboard(models.TransientModel):
                 ('firebase_uid', '!=', False),
                 ('app_signup_date', '>=', week_start),
             ])
+            record.recent_order_ids = recent_orders
+
+    def _compute_display_name(self):
+        for record in self:
+            record.display_name = _("Mobile App")
 
     def _utc_start_of(self, day):
         """Local midnight of `day`, as the naive UTC datetimes Odoo stores."""
@@ -109,6 +126,14 @@ class AppDashboard(models.TransientModel):
     def action_open_orders(self):
         return self._open('action_app_orders',
                           domain=[('is_app_order', '=', True)])
+
+    def action_open_orders_today(self):
+        """The orders the "Orders today" card counts."""
+        return self._open('action_app_orders', domain=[
+            ('is_app_order', '=', True),
+            ('state', 'in', ('sale', 'done')),
+            ('date_order', '>=', self._utc_start_of(fields.Date.context_today(self))),
+        ])
 
     def action_open_quotations(self):
         return self._open('action_app_orders', domain=[

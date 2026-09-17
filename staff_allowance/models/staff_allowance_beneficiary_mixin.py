@@ -2,16 +2,16 @@ from datetime import datetime, time, timedelta
 
 import pytz
 
-from odoo import _, api, fields, models
-from odoo.exceptions import ValidationError
+from odoo import api, fields, models
 
 
 class AllowanceBeneficiaryMixin(models.AbstractModel):
     """Shared 'who is this for?' behaviour.
 
-    A beneficiary is either an employee or a contact -- exactly one of the two.
-    Every model that belongs to somebody (allowance lines, orders, blocked
-    attempts) inherits this so the resolution logic is written once.
+    An allowance belongs to a contact. An employee is handled through their
+    work contact -- the contact the POS sells to and the one Odoo links to
+    their user -- so a person has one set of limits and one counter, however
+    they order.
     """
 
     _name = "staff.allowance.beneficiary.mixin"
@@ -20,63 +20,50 @@ class AllowanceBeneficiaryMixin(models.AbstractModel):
     # `id` and Odoo cannot build the implicit search field for a search view.
     _rec_name = "beneficiary_name"
 
-    employee_id = fields.Many2one(
-        "hr.employee", string="Employee", index=True, ondelete="cascade"
-    )
     partner_id = fields.Many2one(
-        "res.partner", string="Contact", index=True, ondelete="cascade"
+        "res.partner", string="Contact", required=True, index=True,
+        ondelete="cascade",
     )
-    beneficiary_type = fields.Selection(
-        [("employee", "Employee"), ("partner", "Contact")],
-        compute="_compute_beneficiary",
-        store=True,
-        index=True,
-    )
-    beneficiary_name = fields.Char(compute="_compute_beneficiary", store=True)
+    beneficiary_name = fields.Char(compute="_compute_beneficiary_name", store=True)
 
     # ------------------------------------------------------------------
-    @api.depends("employee_id", "partner_id")
-    def _compute_beneficiary(self):
+    @api.depends("partner_id")
+    def _compute_beneficiary_name(self):
         for record in self:
-            if record.employee_id:
-                record.beneficiary_type = "employee"
-                record.beneficiary_name = record.employee_id.name
-            elif record.partner_id:
-                record.beneficiary_type = "partner"
-                record.beneficiary_name = record.partner_id.display_name
-            else:
-                record.beneficiary_type = False
-                record.beneficiary_name = False
-
-    @api.constrains("employee_id", "partner_id")
-    def _check_beneficiary(self):
-        for record in self:
-            if bool(record.employee_id) == bool(record.partner_id):
-                raise ValidationError(
-                    _("Set exactly one beneficiary: either an employee or a contact.")
-                )
+            record.beneficiary_name = record.partner_id.display_name or False
 
     # ------------------------------------------------------------------
     def _beneficiary(self):
-        """Return the hr.employee or res.partner record behind this line."""
+        """Return the contact behind this line."""
         self.ensure_one()
-        return self.employee_id or self.partner_id
+        return self.partner_id
 
     @api.model
-    def _beneficiary_domain(self, beneficiary):
-        """Domain fragment matching a beneficiary record on this model."""
-        if not beneficiary:
+    def _allowance_contact(self, person):
+        """The contact whose allowance applies to `person`.
+
+        Accepts a contact, an employee (their work contact) or a user (their
+        contact, which Odoo keeps equal to their employee's work contact).
+        """
+        if not person:
+            return self.env["res.partner"]
+        if person._name == "hr.employee":
+            return person.work_contact_id
+        if person._name == "res.users":
+            return person.partner_id
+        return person
+
+    @api.model
+    def _beneficiary_domain(self, partner):
+        """Domain fragment matching a contact on this model."""
+        if not partner:
             return [("id", "=", False)]
-        if beneficiary._name == "hr.employee":
-            return [("employee_id", "=", beneficiary.id)]
-        return [("partner_id", "=", beneficiary.id)]
+        return [("partner_id", "=", partner.id)]
 
     @api.model
-    def _beneficiary_vals(self, beneficiary):
-        """Values dict pointing at a beneficiary, for create()."""
-        if beneficiary._name == "hr.employee":
-            return {"employee_id": beneficiary.id}
-        return {"partner_id": beneficiary.id}
+    def _beneficiary_vals(self, partner):
+        """Values dict pointing at a contact, for create()."""
+        return {"partner_id": partner.id}
 
     # ------------------------------------------------------------------
     # Timezone: the allowance day is the beneficiary's local day

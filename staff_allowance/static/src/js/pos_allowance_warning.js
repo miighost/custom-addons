@@ -1,71 +1,81 @@
 /** @odoo-module **/
 
 /*
- * Warns the cashier when the basket puts the customer over a daily allowance,
- * then lets the sale through. Recording happens server-side either way, so if
- * this file is disabled or fails, consumption and the over-limit flags are
- * still correct -- you just lose the popup.
+ * Before a POS sale is validated, check the customer's daily allowances and
+ * follow the rule's "At the Limit" setting:
  *
- * Every lookup below is defensive and the whole check is wrapped in try/catch,
- * so a renamed POS method degrades to "no warning" rather than a broken POS.
+ *   Block (or tolerance used up)  -> popup, the sale is not validated
+ *   Require approval / Allow      -> popup, "Sell anyway" or "Cancel"
+ *
+ * Patched on OrderPaymentValidation, which both the payment screen and the
+ * quick payment buttons go through. What is sold is recorded on the server
+ * either way. If the check itself fails (server unreachable, unexpected
+ * data), the sale goes through rather than leaving the cashier stuck.
  */
 
+import { _t } from "@web/core/l10n/translation";
 import { patch } from "@web/core/utils/patch";
-import { PaymentScreen } from "@point_of_sale/app/screens/payment_screen/payment_screen";
-import { AlertDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
+import { AlertDialog, ConfirmationDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
+import OrderPaymentValidation from "@point_of_sale/app/utils/order_payment_validation";
 
-patch(PaymentScreen.prototype, {
-    async validateOrder(isForceValidate) {
-        try {
-            const order = this.pos.getOrder
-                ? this.pos.getOrder()
-                : this.pos.get_order();
-            const partner =
-                order && (order.getPartner ? order.getPartner() : order.get_partner());
-
-            if (partner) {
-                const rawLines =
-                    order.lines ||
-                    (order.getOrderlines ? order.getOrderlines() : []);
-                const lines = rawLines
-                    .map((line) => {
-                        const product =
-                            line.product_id ||
-                            (line.get_product ? line.get_product() : null);
-                        const qty =
-                            line.qty !== undefined
-                                ? line.qty
-                                : line.get_quantity
-                                ? line.get_quantity()
-                                : 0;
-                        return product ? { product_id: product.id, qty: qty } : null;
-                    })
-                    .filter(Boolean);
-
-                if (lines.length) {
-                    const result = await this.env.services.orm.call(
-                        "staff.allowance.rule",
-                        "check_pos_basket",
-                        [partner.id, lines]
-                    );
-                    if (result && result.warnings && result.warnings.length) {
-                        await new Promise((resolve) => {
-                            this.env.services.dialog.add(
-                                AlertDialog,
-                                {
-                                    title: "Allowance exceeded",
-                                    body: result.warnings.join("\n"),
-                                },
-                                { onClose: resolve }
-                            );
-                        });
-                    }
-                }
-            }
-        } catch (error) {
-            // Never let the allowance check stop a sale.
-            console.warn("Staff Allowance: basket check skipped", error);
+patch(OrderPaymentValidation.prototype, {
+    async askBeforeValidation() {
+        if ((await super.askBeforeValidation(...arguments)) === false) {
+            return false;
         }
-        return super.validateOrder(...arguments);
+        return this._checkAllowance();
+    },
+
+    /** Resolves to false when the sale must not be validated. */
+    async _checkAllowance() {
+        let result;
+        try {
+            const partner = this.order.getPartner();
+            const lines = this.order.lines
+                .filter((line) => line.product_id && line.qty > 0)
+                .map((line) => ({ product_id: line.product_id.id, qty: line.qty }));
+            if (!partner || !lines.length) {
+                return true;
+            }
+            result = await this.pos.data.call(
+                "staff.allowance.rule",
+                "check_pos_basket",
+                [partner.id, lines]
+            );
+        } catch (error) {
+            console.warn("Staff Allowance: basket check skipped", error);
+            return true;
+        }
+
+        if (result?.blocked) {
+            await new Promise((resolve) => {
+                this.pos.dialog.add(
+                    AlertDialog,
+                    {
+                        title: _t("Allowance limit reached"),
+                        body: result.messages.join("\n\n"),
+                    },
+                    { onClose: resolve }
+                );
+            });
+            return false;
+        }
+
+        if (result?.warnings?.length) {
+            return new Promise((resolve) => {
+                this.pos.dialog.add(
+                    ConfirmationDialog,
+                    {
+                        title: _t("Over the allowance"),
+                        body: result.warnings.join("\n\n"),
+                        confirmLabel: _t("Sell anyway"),
+                        confirm: () => resolve(true),
+                        cancel: () => resolve(false),
+                    },
+                    { onClose: () => resolve(false) }
+                );
+            });
+        }
+        return true;
     },
 });

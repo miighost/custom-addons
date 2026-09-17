@@ -4,3 +4,4 @@ from . import products
 from . import wallet
 from . import payment
 from . import account
+from . import checkout

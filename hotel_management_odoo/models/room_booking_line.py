@@ -36,6 +36,25 @@ class RoomBookingLine(models.Model):
     booking_id = fields.Many2one("room.booking", string="Booking",
                                  help="Indicates the Room",
                                  ondelete="cascade")
+    company_id = fields.Many2one('res.company', string='Company',
+                                 related='booking_id.company_id',
+                                 store=True, index=True, readonly=True)
+
+    def _auto_init(self):
+        super()._auto_init()
+        # Backfill company_id for existing booking lines from parent booking
+        self.env.cr.execute("""
+            UPDATE room_booking_line rbl
+            SET company_id = rb.company_id
+            FROM room_booking rb
+            WHERE rbl.booking_id = rb.id
+              AND rbl.company_id IS NULL;
+        """)
+        self.env.cr.execute("""
+            UPDATE room_booking_line
+            SET company_id = (SELECT id FROM res_company ORDER BY id ASC LIMIT 1)
+            WHERE company_id IS NULL;
+        """)
     checkin_date = fields.Datetime(string="Check In",
                                    help="You can choose the date,"
                                         " Otherwise sets to current Date",

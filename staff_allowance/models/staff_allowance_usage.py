@@ -1,4 +1,4 @@
-from odoo import api, fields, models
+from odoo import _, api, fields, models
 
 
 class StaffAllowanceUsage(models.Model):
@@ -36,12 +36,17 @@ class StaffAllowanceUsage(models.Model):
          ("reached", "Limit Reached"),
          ("over", "Over Limit")],
         readonly=True, index=True)
+    product_summary = fields.Char(
+        string="Products", readonly=True,
+        help="What was taken that day, e.g. \"Espresso ×2, Latte ×1\".")
+    order_ids = fields.Many2many("staff.allowance.order", string="Order Lines",
+                                 compute="_compute_order_ids")
 
     # Enforced by the database, not a Python check: two requests refreshing
     # the same day at once cannot see each other's row.
-    _beneficiary_day_unique = models.UniqueIndex(
-        "(COALESCE(employee_id, 0), COALESCE(partner_id, 0), pos_category_id, day)",
-        "Usage is already recorded for this person, category and day.",
+    _partner_day_unique = models.UniqueIndex(
+        "(partner_id, pos_category_id, day)",
+        "Usage is already recorded for this contact, category and day.",
     )
 
     def _compute_display_name(self):
@@ -51,6 +56,47 @@ class StaffAllowanceUsage(models.Model):
                 usage.pos_category_id.display_name or "", usage.day or "")
 
     # ------------------------------------------------------------------
+    @api.model
+    def _orders_domain(self, partner, pos_category, day):
+        """The orders that make up one usage row."""
+        return self.env["staff.allowance.order"]._beneficiary_domain(partner) + [
+            ("pos_category_id", "=", pos_category.id),
+            ("order_date", "=", day),
+            ("state", "in", ("draft", "done")),
+        ]
+
+    def _compute_order_ids(self):
+        Order = self.env["staff.allowance.order"]
+        for usage in self:
+            usage.order_ids = Order.search(self._orders_domain(
+                usage.partner_id, usage.pos_category_id, usage.day)) \
+                if usage.partner_id and usage.pos_category_id and usage.day \
+                else Order
+
+    @api.model
+    def _product_summary(self, orders):
+        """"Espresso ×2, Latte ×1": what was taken, in the order it was taken."""
+        quantities = {}
+        for order in orders.sorted(lambda o: (o.order_datetime, o.id)):
+            name = (order.product_id.with_context(display_default_code=False).display_name
+                    or _("(no product)"))
+            quantities[name] = quantities.get(name, 0) + order.qty
+        return ", ".join(f"{name} ×{qty}" for name, qty in quantities.items())
+
+    def action_view_orders(self):
+        self.ensure_one()
+        action = self.env["ir.actions.act_window"]._for_xml_id(
+            "staff_allowance.action_allowance_order")
+        action.update({
+            "name": _("%(who)s — %(category)s, %(day)s",
+                      who=self.partner_id.display_name,
+                      category=self.pos_category_id.display_name, day=self.day),
+            "domain": self._orders_domain(self.partner_id, self.pos_category_id,
+                                          self.day),
+            "context": {},
+        })
+        return action
+
     @api.model
     def _refresh(self, beneficiary, pos_category, day):
         if not beneficiary or not pos_category or not day:
@@ -65,11 +111,7 @@ class StaffAllowanceUsage(models.Model):
                 ("pos_category_id", "=", pos_category.id), ("day", "=", day)
             ], limit=1)
 
-        orders = Order.search(Order._beneficiary_domain(beneficiary) + [
-            ("pos_category_id", "=", pos_category.id),
-            ("order_date", "=", day),
-            ("state", "in", ("draft", "done")),
-        ])
+        orders = Order.search(self._orders_domain(beneficiary, pos_category, day))
         if not orders:
             if record:
                 record.unlink()
@@ -98,6 +140,7 @@ class StaffAllowanceUsage(models.Model):
                     "limit_value": limit, "remaining": max(limit - used, 0),
                     "over_by": max(used - limit, 0), "status": status}
 
+        vals["product_summary"] = self._product_summary(orders)
         if record:
             record.write(vals)
             return record
@@ -108,11 +151,12 @@ class StaffAllowanceUsage(models.Model):
 
     @api.model
     def _refresh_keys(self, keys):
-        """keys: iterable of (model_name, res_id, pos_category_id, day)."""
+        """keys: iterable of (partner_id, pos_category_id, day)."""
+        Partner = self.env["res.partner"].sudo()
         Category = self.env["pos.category"].sudo()
-        for model_name, res_id, category_id, day in keys:
-            beneficiary = self.env[model_name].sudo().browse(res_id).exists()
-            self._refresh(beneficiary, Category.browse(category_id).exists(), day)
+        for partner_id, category_id, day in keys:
+            self._refresh(Partner.browse(partner_id).exists(),
+                          Category.browse(category_id).exists(), day)
 
     @api.model
     def action_rebuild(self):
@@ -122,7 +166,7 @@ class StaffAllowanceUsage(models.Model):
         for order in Order.search([("state", "in", ("draft", "done"))]):
             beneficiary = order._beneficiary()
             if beneficiary and order.pos_category_id and order.order_date:
-                keys.add((beneficiary._name, beneficiary.id,
-                          order.pos_category_id.id, order.order_date))
+                keys.add((beneficiary.id, order.pos_category_id.id,
+                          order.order_date))
         self._refresh_keys(keys)
         return True

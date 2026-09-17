@@ -1,22 +1,54 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
+    <record id="view_allowance_attempt_search" model="ir.ui.view">
+        <field name="name">staff.allowance.attempt.search</field>
+        <field name="model">staff.allowance.attempt</field>
+        <field name="arch" type="xml">
+            <search string="Blocked Attempts">
+                <field name="partner_id"/>
+                <field name="pos_category_id"/>
+                <filter string="Today" name="filter_today"
+                        domain="[('attempt_date', '&gt;=', 'today'), ('attempt_date', '&lt;', 'today +1d')]"/>
+                <filter string="Last 7 Days" name="filter_week"
+                        domain="[('attempt_date', '&gt;=', 'today -6d')]"/>
+                <filter string="Date" name="filter_attempt_date" date="attempt_date"/>
+                <separator/>
+                <filter string="Point of Sale" name="filter_pos"
+                        domain="[('source', '=', 'pos')]"/>
+                <filter string="Mobile App" name="filter_app"
+                        domain="[('source', '=', 'app')]"/>
+                <group>
+                    <filter string="Contact" name="group_partner"
+                            context="{'group_by': 'partner_id'}"/>
+                    <filter string="POS Category" name="group_category"
+                            context="{'group_by': 'pos_category_id'}"/>
+                    <filter string="Reason" name="group_reason"
+                            context="{'group_by': 'reason'}"/>
+                    <filter string="Day" name="group_day"
+                            context="{'group_by': 'attempt_date:day'}"/>
+                    <filter string="Source" name="group_source"
+                            context="{'group_by': 'source'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
     <record id="view_allowance_attempt_list" model="ir.ui.view">
         <field name="name">staff.allowance.attempt.list</field>
         <field name="model">staff.allowance.attempt</field>
         <field name="arch" type="xml">
-            <list string="Blocked Attempts" sample="1" create="false"
-                  decoration-danger="True">
+            <list string="Blocked Attempts" sample="1" create="false">
                 <field name="attempt_datetime"/>
                 <field name="attempt_date" optional="hide"/>
-                <field name="beneficiary_name" string="Beneficiary"/>
+                <field name="beneficiary_name" string="Contact"/>
                 <field name="pos_category_id"/>
                 <field name="qty"/>
                 <field name="used_at_attempt"/>
                 <field name="limit_at_attempt"/>
-                <field name="reason"/>
+                <field name="reason" widget="badge" decoration-danger="True"/>
                 <field name="message" optional="show"/>
-                <field name="source" optional="hide"/>
+                <field name="source" optional="show"/>
             </list>
         </field>
     </record>
@@ -29,7 +61,6 @@
                 <sheet>
                     <group>
                         <group>
-                            <field name="employee_id"/>
                             <field name="partner_id"/>
                             <field name="pos_category_id"/>
                             <field name="product_id"/>
@@ -44,7 +75,7 @@
                             <field name="source"/>
                         </group>
                     </group>
-                    <group string="Message Returned to the App">
+                    <group string="Message Shown">
                         <field name="message" nolabel="1" readonly="1"/>
                     </group>
                 </sheet>
@@ -52,16 +83,28 @@
         </field>
     </record>
 
+    <record id="view_allowance_attempt_pivot" model="ir.ui.view">
+        <field name="name">staff.allowance.attempt.pivot</field>
+        <field name="model">staff.allowance.attempt</field>
+        <field name="arch" type="xml">
+            <pivot string="Blocked Attempts" sample="1">
+                <field name="partner_id" type="row"/>
+                <field name="pos_category_id" type="col"/>
+            </pivot>
+        </field>
+    </record>
 
     <record id="action_allowance_attempt" model="ir.actions.act_window">
         <field name="name">Blocked Attempts</field>
         <field name="res_model">staff.allowance.attempt</field>
-        <field name="view_mode">list,form</field>
+        <field name="view_mode">list,pivot,form</field>
+        <field name="search_view_id" ref="view_allowance_attempt_search"/>
+        <field name="context">{'search_default_filter_week': 1}</field>
         <field name="help" type="html">
-            <p class="o_view_nocontent_smiling_face">No blocked attempts today</p>
-            <p>Every order the app refused is logged here with the exact message
-               that was sent back, so you can see who ran out and adjust their
-               limit if needed.</p>
+            <p class="o_view_nocontent_smiling_face">No blocked attempts this week</p>
+            <p>Every sale refused by a limit — at the POS or in the app — is
+               logged here with the message that was shown, so you can see who
+               keeps hitting their limit.</p>
         </field>
     </record>
 

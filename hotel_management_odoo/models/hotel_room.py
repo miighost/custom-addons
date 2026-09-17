@@ -45,6 +45,15 @@ class HotelRoom(models.Model):
             return self._search(expression.AND([name_domain, domain]), limit=limit, order=order)
         return super()._name_search(name, domain=domain, operator=operator, limit=limit, order=order)
 
+    def _auto_init(self):
+        super()._auto_init()
+        # Backfill company_id for existing rooms safely during upgrade
+        self.env.cr.execute("""
+            UPDATE hotel_room
+            SET company_id = (SELECT id FROM res_company ORDER BY id ASC LIMIT 1)
+            WHERE company_id IS NULL;
+        """)
+
     def _get_default_uom_id(self):
         """Method for getting the default uom id"""
         return self.env.ref('uom.product_uom_unit', raise_if_not_found=False) or self.env['uom.uom'].search([], limit=1)
@@ -61,6 +70,9 @@ class HotelRoom(models.Model):
 
     name = fields.Char(string='Name', help="Name of the Room", index='trigram',
                        required=True, translate=True)
+    company_id = fields.Many2one('res.company', string='Company',
+                                 default=lambda self: self.env.company,
+                                 index=True)
     status = fields.Selection([("available", "Available"),
                                ("reserved", "Reserved"),
                                ("occupied", "Occupied")],
@@ -75,7 +87,8 @@ class HotelRoom(models.Model):
     active = fields.Boolean(default=True, string="Active",
                             help="Check to keep room active, uncheck to archive.")
     currency_id = fields.Many2one('res.currency', string='Currency',
-                                  default=lambda self: self.env.company.currency_id)
+                                  related='company_id.currency_id',
+                                  store=True, readonly=True)
     list_price = fields.Float(string='Rent', digits='Product Price',
                               help="The rent of the room.")
     uom_id = fields.Many2one('uom.uom', string='Unit of Measure',
@@ -95,6 +108,7 @@ class HotelRoom(models.Model):
                                           string="Room Amenities",
                                           help="List of room amenities.")
     floor_id = fields.Many2one('hotel.floor', string='Floor',
+                               domain="['|', ('company_id', '=', False), ('company_id', '=', company_id)]",
                                help="Automatically selects the Floor",
                                tracking=True)
     user_id = fields.Many2one('res.users', string="User",

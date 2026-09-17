@@ -67,7 +67,7 @@ class StaffAllowanceRule(models.Model):
     # ------------------------------------------------------------------
     # Constraints
     # ------------------------------------------------------------------
-    @api.constrains("employee_id", "partner_id", "pos_category_id")
+    @api.constrains("partner_id", "pos_category_id")
     def _check_unique_rule(self):
         for rule in self:
             duplicate = self.with_context(active_test=False).search(
@@ -97,8 +97,8 @@ class StaffAllowanceRule(models.Model):
     # ------------------------------------------------------------------
     # Live figures for the Allowance tab
     # ------------------------------------------------------------------
-    @api.depends("employee_id", "partner_id", "pos_category_id", "daily_limit",
-                 "count_mode", "active")
+    @api.depends("partner_id", "pos_category_id", "daily_limit", "count_mode",
+                 "active")
     def _compute_today(self):
         for rule in self:
             beneficiary = rule._beneficiary()
@@ -149,8 +149,7 @@ class StaffAllowanceRule(models.Model):
         for rule in self:
             beneficiary = rule._beneficiary()
             if beneficiary and rule.pos_category_id:
-                keys.add((beneficiary._name, beneficiary.id,
-                          rule.pos_category_id.id,
+                keys.add((beneficiary.id, rule.pos_category_id.id,
                           rule._local_today(beneficiary)))
         return keys
 
@@ -161,16 +160,40 @@ class StaffAllowanceRule(models.Model):
     # THE ENGINE
     # ==================================================================
     @api.model
-    def _category_of_product(self, product):
-        """The POS category an order should be counted against."""
+    def _categories_of_product(self, product):
+        """All the POS categories a product sits in."""
         if not product:
             return self.env["pos.category"]
         template = product.product_tmpl_id
         if "pos_categ_ids" in template._fields:
-            return template.pos_categ_ids[:1]
+            return template.pos_categ_ids
         if "pos_categ_id" in template._fields:  # older field name
             return template.pos_categ_id
         return self.env["pos.category"]
+
+    @api.model
+    def _category_of_product(self, product):
+        """The product's first POS category."""
+        return self._categories_of_product(product)[:1]
+
+    @api.model
+    def _counted_categories(self, beneficiary, product):
+        """The POS categories a sale of `product` counts against for `beneficiary`.
+
+        A product can sit in several POS categories, and a category can have
+        parents ("Drinks / Coffee"). The sale counts against every one of them
+        that caps this person, so a limit on Drinks also covers Coffee. When
+        none does, it counts against nothing: people without a rule or plan
+        for it leave no allowance records at all.
+        """
+        beneficiary = self._allowance_contact(beneficiary)
+        categories = self.env["pos.category"]
+        for category in self._categories_of_product(product):
+            while category and category not in categories:
+                categories |= category
+                category = category.parent_id
+        return categories.filtered(
+            lambda category: self._resolve(beneficiary, category)[0] != "free")
 
     @api.model
     def _resolve(self, beneficiary, pos_category):
@@ -210,7 +233,7 @@ class StaffAllowanceRule(models.Model):
 
     @api.model
     def _used_on(self, beneficiary, pos_category, day, count_mode="qty",
-                 exclude_ids=None):
+                 exclude_ids=None, before=None):
         Order = self.env["staff.allowance.order"].sudo()
         domain = Order._beneficiary_domain(beneficiary) + [
             ("pos_category_id", "=", pos_category.id),
@@ -219,18 +242,23 @@ class StaffAllowanceRule(models.Model):
         ]
         if exclude_ids:
             domain.append(("id", "not in", list(exclude_ids)))
+        if before and isinstance(before.id, int):
+            # Only orders placed before `before`.
+            domain += ["|", ("order_datetime", "<", before.order_datetime),
+                       "&", ("order_datetime", "=", before.order_datetime),
+                       ("id", "<", before.id)]
         orders = Order.search(domain)
         return len(orders) if count_mode == "order" else sum(orders.mapped("qty"))
 
     @api.model
     def _evaluate(self, beneficiary, pos_category, increment=0, day=None,
-                  exclude_ids=None):
+                  exclude_ids=None, before=None):
         """Describe the quota, and whether `increment` more would fit.
 
         When no rule applies, `restricted` is False and `limit`/`remaining`
         are null — the app must not treat that as "nothing left".
         """
-        Order = self.env["staff.allowance.order"].sudo()
+        beneficiary = self._allowance_contact(beneficiary)
         day = day or self._local_today(beneficiary)
         origin, config = self._resolve(beneficiary, pos_category)
 
@@ -264,13 +292,13 @@ class StaffAllowanceRule(models.Model):
             # No rule for this person and this category: nothing to enforce.
             if pos_category and beneficiary:
                 result["used"] = self._used_on(beneficiary, pos_category, day,
-                                               "qty", exclude_ids)
+                                               "qty", exclude_ids, before)
             return result
 
         limit = config["limit"]
         count_mode = config["count_mode"]
         used = self._used_on(beneficiary, pos_category, day, count_mode,
-                             exclude_ids)
+                             exclude_ids, before)
         step = increment if count_mode == "qty" else (1 if increment else 0)
         overdraft = max(used + step - limit, 0)
 
@@ -310,9 +338,10 @@ class StaffAllowanceRule(models.Model):
     def _place_order(self, beneficiary, pos_category=None, product=None, qty=1,
                      source="backend", note=None):
         """Record an order, or log a blocked attempt. Never raises."""
+        beneficiary = self._allowance_contact(beneficiary)
         Order = self.env["staff.allowance.order"].sudo()
         Attempt = self.env["staff.allowance.attempt"].sudo()
-        pos_category = pos_category or self._category_of_product(product)
+        pos_category = pos_category or self._counted_categories(beneficiary, product)[:1]
 
         qty = int(qty or 0)
         result = self._evaluate(beneficiary, pos_category, increment=qty)
@@ -335,6 +364,10 @@ class StaffAllowanceRule(models.Model):
                 "limit_at_attempt": result["limit"] or 0,
                 "used_at_attempt": result["used"],
             })
+            return result
+
+        if not result["restricted"]:
+            # No rule or plan covers this: allowed, and nothing to track.
             return result
 
         try:
@@ -385,20 +418,52 @@ class StaffAllowanceRule(models.Model):
             ],
         }
 
+    @api.model
+    def _log_pos_block(self, partner, category, qty, evaluation, message, source="pos"):
+        """Record a refused basket in Blocked Attempts.
+
+        The cashier (or app user) may try again on the same basket; within a
+        few minutes that is the same attempt, not a new one.
+        """
+        Attempt = self.env["staff.allowance.attempt"].sudo()
+        recent = fields.Datetime.subtract(fields.Datetime.now(), minutes=5)
+        if Attempt.search_count([
+                ("partner_id", "=", partner.id),
+                ("pos_category_id", "=", category.id),
+                ("qty", "=", qty), ("source", "=", source),
+                ("attempt_datetime", ">=", recent)], limit=1):
+            return
+        Attempt.create({
+            **Attempt._beneficiary_vals(partner),
+            "pos_category_id": category.id,
+            "qty": qty,
+            "reason": evaluation["reason"],
+            "message": message,
+            "source": source,
+            "limit_at_attempt": evaluation["limit"] or 0,
+            "used_at_attempt": evaluation["used"],
+        })
+
     # ------------------------------------------------------------------
     # Called from the POS screen to warn the cashier
     # ------------------------------------------------------------------
     @api.model
-    def check_pos_basket(self, partner_id, lines):
-        """Return warnings for a basket, without recording anything.
+    def check_pos_basket(self, partner_id, lines, source="pos"):
+        """What the POS should tell the cashier about a basket.
+
+        Records nothing, except a Blocked Attempt when the basket is refused.
 
         lines: [{"product_id": int, "qty": number}]
-        Returns {"warnings": [str], "details": [ ... ]} -- empty when the
-        customer has no rules covering anything in the basket.
+        Returns {"blocked": bool, "messages": [str], "warnings": [str],
+        "details": [...]}. `blocked` means a rule set to Block, or a used-up
+        tolerance, refuses the basket: `messages` say why and the sale must
+        not go through. Otherwise `warnings` list what goes over and the
+        cashier may sell anyway. Everything is empty when nothing is capped.
         """
+        result = {"blocked": False, "messages": [], "warnings": [], "details": []}
         partner = self.env["res.partner"].sudo().browse(int(partner_id or 0)).exists()
         if not partner or not lines:
-            return {"warnings": [], "details": []}
+            return result
 
         Product = self.env["product.product"].sudo()
         wanted = {}
@@ -407,31 +472,39 @@ class StaffAllowanceRule(models.Model):
             qty = int(round(float(line.get("qty") or 0)))
             if not product or qty <= 0:
                 continue
-            category = self._category_of_product(product)
-            if category:
-                wanted[category.id] = wanted.get(category.id, 0) + qty
+            for category in self._counted_categories(partner, product):
+                wanted[category] = wanted.get(category, 0) + qty
 
-        warnings, details = [], []
-        for category_id, qty in wanted.items():
-            category = self.env["pos.category"].sudo().browse(category_id)
+        for category, qty in wanted.items():
             evaluation = self._evaluate(partner, category, increment=qty)
-            if not evaluation["restricted"]:
+            if not evaluation["restricted"] or (
+                    evaluation["ok"] and not evaluation["over_limit"]):
                 continue
-            details.append({
-                "category_id": category_id,
+            blocked = not evaluation["ok"]
+            result["details"].append({
+                "category_id": category.id,
                 "category_name": category.display_name,
                 "limit": evaluation["limit"],
                 "used": evaluation["used"],
                 "in_basket": qty,
                 "over_limit": evaluation["over_limit"],
                 "overdraft": evaluation["overdraft"],
+                "blocked": blocked,
             })
-            if evaluation["over_limit"]:
-                warnings.append(_(
+            values = dict(who=partner.display_name, category=category.display_name,
+                          used=evaluation["used"], limit=evaluation["limit"],
+                          basket=qty)
+            if blocked:
+                message = _(
+                    "%(who)s cannot take %(basket)s more %(category)s today: "
+                    "the daily limit is %(limit)s and %(used)s already used.",
+                    **values)
+                result["blocked"] = True
+                result["messages"].append(message)
+                self._log_pos_block(partner, category, qty, evaluation, message, source)
+            else:
+                result["warnings"].append(_(
                     "%(who)s is over the daily %(category)s allowance: "
                     "%(used)s already used of %(limit)s, %(basket)s more in "
-                    "this order.",
-                    who=partner.display_name, category=category.display_name,
-                    used=evaluation["used"], limit=evaluation["limit"],
-                    basket=qty))
-        return {"warnings": warnings, "details": details}
+                    "this order.", **values))
+        return result

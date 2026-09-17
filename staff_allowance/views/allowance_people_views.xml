@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- People: every contact with a rule or a plan. These views are used
+         only by the People action (priority 100 keeps them out of Contacts). -->
+
+    <record id="view_partner_allowance_list" model="ir.ui.view">
+        <field name="name">res.partner.list.allowance.people</field>
+        <field name="model">res.partner</field>
+        <field name="priority">100</field>
+        <field name="arch" type="xml">
+            <list string="People with an Allowance" create="0">
+                <header>
+                    <button name="%(action_allowance_give)d" type="action"
+                            string="Give an Allowance" class="btn-primary"
+                            display="always"/>
+                </header>
+                <field name="display_name" string="Name"/>
+                <field name="allowance_plan_id" string="Plan"/>
+                <field name="allowance_summary"/>
+                <field name="allowance_status" widget="badge"
+                       decoration-success="allowance_status == 'ok'"
+                       decoration-warning="allowance_status == 'near'"
+                       decoration-danger="allowance_status in ('reached', 'over')"
+                       decoration-muted="allowance_status == 'none'"/>
+                <field name="allowance_over_count" string="Over-Limit Orders"
+                       optional="show"/>
+                <field name="phone" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_partner_allowance_search" model="ir.ui.view">
+        <field name="name">res.partner.search.allowance.people</field>
+        <field name="model">res.partner</field>
+        <field name="priority">100</field>
+        <field name="arch" type="xml">
+            <search string="People with an Allowance">
+                <field name="name"/>
+                <field name="allowance_plan_id"/>
+                <filter string="On a Plan" name="filter_plan"
+                        domain="[('allowance_plan_id', '!=', False)]"/>
+                <filter string="Personal Limits" name="filter_rules"
+                        domain="[('allowance_rule_ids', '!=', False)]"/>
+                <separator/>
+                <filter string="Staff" name="filter_staff"
+                        domain="[('employee_ids', '!=', False)]"/>
+                <group>
+                    <filter string="Plan" name="group_plan"
+                            context="{'group_by': 'allowance_plan_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_allowance_people" model="ir.actions.act_window">
+        <field name="name">People</field>
+        <field name="res_model">res.partner</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">['|', ('allowance_rule_ids', '!=', False), ('allowance_plan_id', '!=', False)]</field>
+        <field name="context">{'create': False}</field>
+        <field name="search_view_id" ref="view_partner_allowance_search"/>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('view_partner_allowance_list')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('base.view_partner_form')})]"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Nobody has an allowance yet</p>
+            <p>Click <b>Give an Allowance</b>, pick the person, and choose a plan
+               or add personal limits. Only these people are tracked.</p>
+        </field>
+    </record>
+
+</odoo>

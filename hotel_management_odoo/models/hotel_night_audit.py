@@ -50,6 +50,16 @@ class HotelNightAudit(models.Model):
         default=lambda self: self.env.company,
         required=True
     )
+
+    def _auto_init(self):
+        super()._auto_init()
+        # Backfill company_id for existing night audits safely during upgrade
+        self.env.cr.execute("""
+            UPDATE hotel_night_audit
+            SET company_id = (SELECT id FROM res_company ORDER BY id ASC LIMIT 1)
+            WHERE company_id IS NULL;
+        """)
+
     currency_id = fields.Many2one(
         "res.currency",
         related="company_id.currency_id",
@@ -128,9 +138,11 @@ class HotelNightAudit(models.Model):
             target_date = rec.date
             dt_start = datetime.combine(target_date, time.min)
             dt_end = datetime.combine(target_date, time.max)
+            cid = rec.company_id.id if rec.company_id else self.env.company.id
 
             # 1. Check-Ins today
             rec.check_ins_count = self.env["room.booking"].search_count([
+                ("company_id", "=", cid),
                 ("checkin_date", ">=", dt_start),
                 ("checkin_date", "<=", dt_end),
                 ("state", "in", ["check_in", "reserved", "check_out", "done"]),
@@ -138,6 +150,7 @@ class HotelNightAudit(models.Model):
 
             # 2. Check-Outs today
             rec.check_outs_count = self.env["room.booking"].search_count([
+                ("company_id", "=", cid),
                 ("checkout_date", ">=", dt_start),
                 ("checkout_date", "<=", dt_end),
                 ("state", "in", ["check_out", "done", "check_in"]),
@@ -145,12 +158,14 @@ class HotelNightAudit(models.Model):
 
             # 3. In-house active bookings & daily room rent
             active_bookings = self.env["room.booking"].search([
+                ("company_id", "=", cid),
                 ("checkin_date", "<=", dt_end),
                 ("checkout_date", ">=", dt_start),
                 ("state", "in", ["check_in", "reserved", "check_out", "done"]),
             ])
 
             inhouse_b_count = self.env["room.booking"].search_count([
+                ("company_id", "=", cid),
                 ("state", "=", "check_in"),
             ])
             rec.in_house_guests_count = inhouse_b_count
@@ -173,18 +188,25 @@ class HotelNightAudit(models.Model):
             # 4. POS / Restaurant revenue
             total_pos = 0.0
             if "pos.order" in self.env:
-                pos_orders = self.env["pos.order"].search([
+                pos_domain = [
                     ("date_order", ">=", dt_start),
                     ("date_order", "<=", dt_end),
                     ("state", "in", ["paid", "done", "invoiced"]),
-                ])
+                ]
+                if "company_id" in self.env["pos.order"]._fields:
+                    pos_domain.append(("company_id", "=", cid))
+                pos_orders = self.env["pos.order"].search(pos_domain)
                 total_pos += sum(pos_orders.mapped("amount_total"))
 
-            food_lines = self.env["food.booking.line"].search([
-                ("booking_id.checkin_date", "<=", dt_end),
-                ("booking_id.checkout_date", ">=", dt_start),
-            ])
-            total_pos += sum(food_lines.mapped("price_total"))
+            if "food.booking.line" in self.env:
+                food_domain = [
+                    ("booking_id.checkin_date", "<=", dt_end),
+                    ("booking_id.checkout_date", ">=", dt_start),
+                ]
+                if "company_id" in self.env["food.booking.line"]._fields:
+                    food_domain.append(("company_id", "=", cid))
+                food_lines = self.env["food.booking.line"].search(food_domain)
+                total_pos += sum(food_lines.mapped("price_total"))
             rec.daily_pos_revenue = total_pos
 
             # 5. Grand Total Day Revenue
@@ -208,6 +230,7 @@ class HotelNightAudit(models.Model):
         # Use wizard data builder logic
         wizard = self.env["night.audit.wizard"].new({
             "date": self.date,
+            "company_id": self.company_id.id,
             "user_id": self.user_id.id,
             "notes": self.notes,
         })

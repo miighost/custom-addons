@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_allowance_give_form" model="ir.ui.view">
+        <field name="name">staff.allowance.give.form</field>
+        <field name="model">staff.allowance.give</field>
+        <field name="arch" type="xml">
+            <form string="Give an Allowance">
+                <group>
+                    <field name="partner_id" options="{'no_create': True}"
+                           placeholder="Pick the person — staff are listed under their own name"/>
+                    <field name="plan_id" options="{'no_create': True}"
+                           placeholder="Optional: a ready-made set of limits"/>
+                </group>
+                <separator string="Personal Limits"/>
+                <field name="line_ids">
+                    <list editable="bottom">
+                        <field name="pos_category_id"/>
+                        <field name="daily_limit"/>
+                        <field name="policy"/>
+                        <field name="tolerance" optional="hide"
+                               invisible="policy == 'block'"/>
+                    </list>
+                </field>
+                <div class="text-muted">
+                    A personal limit wins over the plan for the same category.
+                    Categories in neither stay free and are not tracked. Taking a
+                    limit off this list archives it.
+                </div>
+                <footer>
+                    <button name="action_give" type="object" string="Save"
+                            class="btn-primary" data-hotkey="q"/>
+                    <button string="Cancel" special="cancel" class="btn-secondary"
+                            data-hotkey="x"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_allowance_give" model="ir.actions.act_window">
+        <field name="name">Give an Allowance</field>
+        <field name="res_model">staff.allowance.give</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+</odoo>

@@ -1,9 +1,10 @@
 /** @odoo-module */
 import { registry } from '@web/core/registry';
 import { useService } from "@web/core/utils/hooks";
-const { Component, onWillStart, onMounted, useState } = owl;
-import { rpc } from "@web/core/network/rpc";
+const { Component, onWillStart, onMounted } = owl;
 import { _t } from "@web/core/l10n/translation";
+import { user } from "@web/core/user";
+import { session } from "@web/session";
 
 export class CustomDashBoard extends Component {
     _getFormattedToday() {
@@ -12,6 +13,28 @@ export class CustomDashBoard extends Component {
         const month = String(today.getMonth() + 1).padStart(2, '0');
         const year = today.getFullYear();
         return `${year}-${month}-${day}`;
+    }
+
+    get currentCompanyId() {
+        return (
+            (typeof user !== "undefined" && user.currentCompany && user.currentCompany.id) ||
+            (typeof user !== "undefined" && user.companyId) ||
+            (typeof user !== "undefined" && user.context && user.context.allowed_company_ids && user.context.allowed_company_ids[0]) ||
+            (typeof session !== "undefined" && session.user_companies && (session.user_companies.current_company?.id || session.user_companies.current_company)) ||
+            (typeof session !== "undefined" && session.company_id) ||
+            (typeof session !== "undefined" && session.user_context && session.user_context.allowed_company_ids && session.user_context.allowed_company_ids[0]) ||
+            false
+        );
+    }
+
+    _getContext(extra = {}) {
+        const baseCtx = (typeof user !== "undefined" && user.context) ? { ...user.context } : (typeof session !== "undefined" && session.user_context ? { ...session.user_context } : {});
+        const cid = this.currentCompanyId;
+        if (cid) {
+            baseCtx.company_id = cid;
+            baseCtx.default_company_id = cid;
+        }
+        return Object.assign(baseCtx, extra);
     }
 
     /**
@@ -36,11 +59,8 @@ export class CustomDashBoard extends Component {
 
     async fetch_data() {
         var self = this;
-        const result = await rpc('/web/dataset/call_kw/room.booking/get_details', {
-            model: 'room.booking',
-            method: 'get_details',
-            args: [{}],
-            kwargs: {},
+        const result = await this.orm.call('room.booking', 'get_details', [[]], {
+            context: this._getContext(),
         });
 
         if (result) {
@@ -79,6 +99,7 @@ export class CustomDashBoard extends Component {
     total_rooms(e) {
         e.stopPropagation();
         e.preventDefault();
+        const cid = this.currentCompanyId;
         var options = { on_reverse_breadcrum: this.on_reverse_breadcrum };
         this.action.doAction({
             name: _t("JPH Rooms"),
@@ -87,6 +108,8 @@ export class CustomDashBoard extends Component {
             view_mode: 'list,form',
             views: [[false, 'list'], [false, 'form']],
             search_view_id: [false, 'search'],
+            domain: cid ? [['company_id', '=', cid]] : [],
+            context: this._getContext(),
             target: 'current'
         }, options);
     }
@@ -94,7 +117,10 @@ export class CustomDashBoard extends Component {
     check_ins(e) {
         e.stopPropagation();
         e.preventDefault();
+        const cid = this.currentCompanyId;
         var options = { on_reverse_breadcrum: this.on_reverse_breadcrum };
+        const domain = [['state', '=', 'check_in']];
+        if (cid) domain.push(['company_id', '=', cid]);
         this.action.doAction({
             name: _t("Occupied Rooms"),
             type: 'ir.actions.act_window',
@@ -102,7 +128,8 @@ export class CustomDashBoard extends Component {
             view_mode: 'list,form',
             views: [[false, 'list'], [false, 'form']],
             search_view_id: [false, 'search'],
-            domain: [['state', '=', 'check_in']],
+            domain: domain,
+            context: this._getContext(),
             target: 'current'
         }, options);
     }
@@ -111,6 +138,7 @@ export class CustomDashBoard extends Component {
     view_total_events(e) {
         e.stopPropagation();
         e.preventDefault();
+        const cid = this.currentCompanyId;
         var options = { on_reverse_breadcrum: this.on_reverse_breadcrum };
         this.action.doAction({
             name: _t("Total Events"),
@@ -119,7 +147,8 @@ export class CustomDashBoard extends Component {
             view_mode: 'kanban,list,form',
             views: [[false, 'kanban'], [false, 'list'], [false, 'form']],
             search_view_id: [false, 'search'],
-            domain: [],
+            domain: cid ? [['company_id', 'in', [cid, false]]] : [],
+            context: this._getContext(),
             target: 'current'
         }, options);
     }
@@ -129,7 +158,10 @@ export class CustomDashBoard extends Component {
         e.stopPropagation();
         e.preventDefault();
         const formattedDate = this._getFormattedToday();
+        const cid = this.currentCompanyId;
         var options = { on_reverse_breadcrum: this.on_reverse_breadcrum };
+        const domain = [['date_end', '>=', formattedDate + ' 00:00:00'], ['date_end', '<=', formattedDate + ' 23:59:59']];
+        if (cid) domain.push(['company_id', 'in', [cid, false]]);
         this.action.doAction({
             name: _t("Today's Events"),
             type: 'ir.actions.act_window',
@@ -137,7 +169,8 @@ export class CustomDashBoard extends Component {
             view_mode: 'kanban,list,form',
             views: [[false, 'kanban'], [false, 'list'], [false, 'form']],
             search_view_id: [false, 'search'],
-            domain: [['date_end', '>=', formattedDate + ' 00:00:00'], ['date_end', '<=', formattedDate + ' 23:59:59']],
+            domain: domain,
+            context: this._getContext(),
             target: 'current'
         }, options);
     }
@@ -147,7 +180,10 @@ export class CustomDashBoard extends Component {
         e.stopPropagation();
         e.preventDefault();
         const formattedDate = this._getFormattedToday();
+        const cid = this.currentCompanyId;
         var options = { on_reverse_breadcrum: this.on_reverse_breadcrum };
+        const domain = [['date_end', '>=', formattedDate]];
+        if (cid) domain.push(['company_id', 'in', [cid, false]]);
         this.action.doAction({
             name: _t("Pending Events"),
             type: 'ir.actions.act_window',
@@ -155,7 +191,8 @@ export class CustomDashBoard extends Component {
             view_mode: 'kanban,list,form',
             views: [[false, 'kanban'], [false, 'list'], [false, 'form']],
             search_view_id: [false, 'search'],
-            domain: [['date_end', '>=', formattedDate]],
+            domain: domain,
+            context: this._getContext(),
             target: 'current'
         }, options);
     }
@@ -164,7 +201,10 @@ export class CustomDashBoard extends Component {
     fetch_lsr_rooms(e) {
         e.stopPropagation();
         e.preventDefault();
+        const cid = this.currentCompanyId;
         var options = { on_reverse_breadcrum: this.on_reverse_breadcrum };
+        const domain = [['state', '=', 'check_in'], ['is_long_stay', '=', true]];
+        if (cid) domain.push(['company_id', '=', cid]);
         this.action.doAction({
             name: _t("Long Stay Rooms (LSR)"),
             type: 'ir.actions.act_window',
@@ -172,7 +212,8 @@ export class CustomDashBoard extends Component {
             view_mode: 'list,form',
             views: [[false, 'list'], [false, 'form']],
             search_view_id: [false, 'search'],
-            domain: [['state', '=', 'check_in'], ['is_long_stay', '=', true]],
+            domain: domain,
+            context: this._getContext(),
             target: 'current'
         }, options);
     }
@@ -181,7 +222,10 @@ export class CustomDashBoard extends Component {
     fetch_prr_rooms(e) {
         e.stopPropagation();
         e.preventDefault();
+        const cid = this.currentCompanyId;
         var options = { on_reverse_breadcrum: this.on_reverse_breadcrum };
+        const domain = [['state', '=', 'check_in'], ['is_private_reserved', '=', true]];
+        if (cid) domain.push(['company_id', '=', cid]);
         this.action.doAction({
             name: _t("Reserved Rooms (RR)"),
             type: 'ir.actions.act_window',
@@ -189,7 +233,8 @@ export class CustomDashBoard extends Component {
             view_mode: 'list,form',
             views: [[false, 'list'], [false, 'form']],
             search_view_id: [false, 'search'],
-            domain: [['state', '=', 'check_in'], ['is_private_reserved', '=', true]],
+            domain: domain,
+            context: this._getContext(),
             target: 'current'
         }, options);
     }
@@ -198,7 +243,10 @@ export class CustomDashBoard extends Component {
     fetch_cr_rooms(e) {
         e.stopPropagation();
         e.preventDefault();
+        const cid = this.currentCompanyId;
         var options = { on_reverse_breadcrum: this.on_reverse_breadcrum };
+        const domain = [['state', '=', 'check_in'], ['is_cr', '=', true]];
+        if (cid) domain.push(['company_id', '=', cid]);
         this.action.doAction({
             name: _t("Complimentary Rooms (CR)"),
             type: 'ir.actions.act_window',
@@ -206,7 +254,8 @@ export class CustomDashBoard extends Component {
             view_mode: 'list,form',
             views: [[false, 'list'], [false, 'form']],
             search_view_id: [false, 'search'],
-            domain: [['state', '=', 'check_in'], ['is_cr', '=', true]],
+            domain: domain,
+            context: this._getContext(),
             target: 'current'
         }, options);
     }
@@ -215,7 +264,10 @@ export class CustomDashBoard extends Component {
     fetch_nr_rooms(e) {
         e.stopPropagation();
         e.preventDefault();
+        const cid = this.currentCompanyId;
         var options = { on_reverse_breadcrum: this.on_reverse_breadcrum };
+        const domain = [['state', '=', 'check_in'], ['is_long_stay', '=', false], ['is_private_reserved', '=', false], ['is_cr', '=', false]];
+        if (cid) domain.push(['company_id', '=', cid]);
         this.action.doAction({
             name: _t("Normal Rooms (NR)"),
             type: 'ir.actions.act_window',
@@ -223,7 +275,8 @@ export class CustomDashBoard extends Component {
             view_mode: 'list,form',
             views: [[false, 'list'], [false, 'form']],
             search_view_id: [false, 'search'],
-            domain: [['state', '=', 'check_in'], ['is_long_stay', '=', false], ['is_private_reserved', '=', false], ['is_cr', '=', false]],
+            domain: domain,
+            context: this._getContext(),
             target: 'current'
         }, options);
     }
@@ -231,7 +284,14 @@ export class CustomDashBoard extends Component {
     // Today's Departure
     check_outs(e) {
         const formattedDate = this._getFormattedToday();
+        const cid = this.currentCompanyId;
         var options = { on_reverse_breadcrum: this.on_reverse_breadcrum };
+        const domain = [
+            ['room_line_ids.checkout_date', '>=', formattedDate + ' 00:00:00'],
+            ['room_line_ids.checkout_date', '<=', formattedDate + ' 23:59:59'],
+            ['state', 'not in', ['cancel', 'draft']]
+        ];
+        if (cid) domain.push(['company_id', '=', cid]);
         this.action.doAction({
             name: _t("Today's Departure"),
             type: 'ir.actions.act_window',
@@ -239,11 +299,8 @@ export class CustomDashBoard extends Component {
             view_mode: 'list,form',
             views: [[false, 'list'], [false, 'form']],
             search_view_id: [false, 'search'],
-            domain: [
-                ['room_line_ids.checkout_date', '>=', formattedDate + ' 00:00:00'],
-                ['room_line_ids.checkout_date', '<=', formattedDate + ' 23:59:59'],
-                ['state', 'not in', ['cancel', 'draft']]
-            ],
+            domain: domain,
+            context: this._getContext(),
             target: 'current'
         }, options);
     }
@@ -253,7 +310,14 @@ export class CustomDashBoard extends Component {
         e.stopPropagation();
         e.preventDefault();
         const formattedDate = this._getFormattedToday();
+        const cid = this.currentCompanyId;
         var options = { on_reverse_breadcrum: this.on_reverse_breadcrum };
+        const domain = [
+            ['room_line_ids.checkin_date', '>=', formattedDate + ' 00:00:00'],
+            ['room_line_ids.checkin_date', '<=', formattedDate + ' 23:59:59'],
+            ['state', 'not in', ['cancel', 'draft']]
+        ];
+        if (cid) domain.push(['company_id', '=', cid]);
         this.action.doAction({
             name: _t("Today's Arrival"),
             type: 'ir.actions.act_window',
@@ -261,11 +325,8 @@ export class CustomDashBoard extends Component {
             view_mode: 'list,form',
             views: [[false, 'list'], [false, 'form']],
             search_view_id: [false, 'search'],
-            domain: [
-                ['room_line_ids.checkin_date', '>=', formattedDate + ' 00:00:00'],
-                ['room_line_ids.checkin_date', '<=', formattedDate + ' 23:59:59'],
-                ['state', 'not in', ['cancel', 'draft']]
-            ],
+            domain: domain,
+            context: this._getContext(),
             target: 'current'
         }, options);
     }
@@ -274,7 +335,10 @@ export class CustomDashBoard extends Component {
     available_rooms(e) {
         e.stopPropagation();
         e.preventDefault();
+        const cid = this.currentCompanyId;
         var options = { on_reverse_breadcrum: this.on_reverse_breadcrum };
+        const domain = [['status', '=', 'available']];
+        if (cid) domain.push(['company_id', '=', cid]);
         this.action.doAction({
             name: _t("Vacant Rooms"),
             type: 'ir.actions.act_window',
@@ -282,7 +346,8 @@ export class CustomDashBoard extends Component {
             view_mode: 'list,form',
             views: [[false, 'list'], [false, 'form']],
             search_view_id: [false, 'search'],
-            domain: [['status', '=', 'available']],
+            domain: domain,
+            context: this._getContext(),
             target: 'current'
         }, options);
     }
@@ -291,7 +356,10 @@ export class CustomDashBoard extends Component {
     reservations(e) {
         e.stopPropagation();
         e.preventDefault();
+        const cid = this.currentCompanyId;
         var options = { on_reverse_breadcrum: this.on_reverse_breadcrum };
+        const domain = [['state', '=', 'reserved']];
+        if (cid) domain.push(['company_id', '=', cid]);
         this.action.doAction({
             name: _t("Reserved Rooms"),
             type: 'ir.actions.act_window',
@@ -299,7 +367,8 @@ export class CustomDashBoard extends Component {
             view_mode: 'list,form',
             views: [[false, 'list'], [false, 'form']],
             search_view_id: [false, 'search'],
-            domain: [['state', '=', 'reserved']],
+            domain: domain,
+            context: this._getContext(),
             target: 'current'
         }, options);
     }
@@ -308,7 +377,9 @@ export class CustomDashBoard extends Component {
     fetch_night_audit(e) {
         e.stopPropagation();
         e.preventDefault();
+        const cid = this.currentCompanyId;
         var options = { on_reverse_breadcrum: this.on_reverse_breadcrum };
+        const domain = cid ? [['company_id', '=', cid]] : [];
         this.action.doAction({
             name: _t("Night Audit"),
             type: 'ir.actions.act_window',
@@ -316,7 +387,8 @@ export class CustomDashBoard extends Component {
             view_mode: 'list,form',
             views: [[false, 'list'], [false, 'form']],
             search_view_id: [false, 'search'],
-            domain: [],
+            domain: domain,
+            context: this._getContext(),
             target: 'current'
         }, options);
     }
@@ -325,7 +397,10 @@ export class CustomDashBoard extends Component {
     async fetch_food_order(e) {
         e.stopPropagation();
         e.preventDefault();
+        const cid = this.currentCompanyId;
         var options = { on_reverse_breadcrum: this.on_reverse_breadcrum };
+        const domain = [['booking_id', '!=', false]];
+        if (cid) domain.push(['company_id', '=', cid]);
         this.action.doAction({
             name: _t("Guest POS Orders"),
             type: 'ir.actions.act_window',
@@ -333,11 +408,11 @@ export class CustomDashBoard extends Component {
             view_mode: 'list,form',
             views: [[false, 'list'], [false, 'form']],
             search_view_id: [false, 'search'],
-            domain: [['booking_id', '!=', false]],
-            context: {
+            domain: domain,
+            context: this._getContext({
                 'search_default_hotel_orders': 1,
                 'group_by': 'date_order:month',
-            },
+            }),
             target: 'current'
         }, options);
     }
@@ -380,7 +455,10 @@ export class CustomDashBoard extends Component {
     fetch_total_revenue(e) {
         e.stopPropagation();
         e.preventDefault();
+        const cid = this.currentCompanyId;
         var options = { on_reverse_breadcrum: this.on_reverse_breadcrum };
+        const domain = [['state', 'in', ['check_in', 'check_out', 'done']]];
+        if (cid) domain.push(['company_id', '=', cid]);
         this.action.doAction({
             name: _t("Total Hotel Revenue by Stay Category"),
             type: 'ir.actions.act_window',
@@ -388,10 +466,10 @@ export class CustomDashBoard extends Component {
             view_mode: 'list,form',
             views: [[false, 'list'], [false, 'form']],
             search_view_id: [false, 'search'],
-            domain: [['state', 'in', ['check_in', 'check_out', 'done']]],
-            context: {
+            domain: domain,
+            context: this._getContext({
                 'group_by': 'stay_type',
-            },
+            }),
             target: 'current'
         }, options);
     }
@@ -401,7 +479,17 @@ export class CustomDashBoard extends Component {
         e.stopPropagation();
         e.preventDefault();
         const formattedDate = this._getFormattedToday();
+        const cid = this.currentCompanyId;
         var options = { on_reverse_breadcrum: this.on_reverse_breadcrum };
+        let domain = [
+            '|',
+            ['state', '=', 'check_in'],
+            '&', ['state', 'in', ['check_out', 'done']],
+            '&', ['checkout_date', '>=', formattedDate + ' 00:00:00'], ['checkout_date', '<=', formattedDate + ' 23:59:59']
+        ];
+        if (cid) {
+            domain = ['&', ['company_id', '=', cid], ...domain];
+        }
         this.action.doAction({
             name: _t("Today's Revenue by Stay Category"),
             type: 'ir.actions.act_window',
@@ -409,15 +497,10 @@ export class CustomDashBoard extends Component {
             view_mode: 'list,form',
             views: [[false, 'list'], [false, 'form']],
             search_view_id: [false, 'search'],
-            domain: [
-                '&', ['state', 'not in', ['cancel', 'draft']],
-                '|',
-                '&', ['checkin_date', '>=', formattedDate + ' 00:00:00'], ['checkin_date', '<=', formattedDate + ' 23:59:59'],
-                '&', ['checkout_date', '>=', formattedDate + ' 00:00:00'], ['checkout_date', '<=', formattedDate + ' 23:59:59']
-            ],
-            context: {
+            domain: domain,
+            context: this._getContext({
                 'group_by': 'stay_type',
-            },
+            }),
             target: 'current'
         }, options);
     }
@@ -426,7 +509,10 @@ export class CustomDashBoard extends Component {
     fetch_pending_payment(e) {
         e.stopPropagation();
         e.preventDefault();
+        const cid = this.currentCompanyId;
         var options = { on_reverse_breadcrum: this.on_reverse_breadcrum };
+        const domain = [['state', 'in', ['check_in', 'reserved', 'check_out']], ['today_balance', '>', 0]];
+        if (cid) domain.push(['company_id', '=', cid]);
         this.action.doAction({
             name: _t("Bookings with Due Balance"),
             type: 'ir.actions.act_window',
@@ -434,7 +520,8 @@ export class CustomDashBoard extends Component {
             view_mode: 'list,form',
             views: [[false, 'list'], [false, 'form']],
             search_view_id: [false, 'search'],
-            domain: [['state', 'in', ['check_in', 'reserved', 'check_out']], ['today_balance', '>', 0]],
+            domain: domain,
+            context: this._getContext(),
             target: 'current'
         }, options);
     }

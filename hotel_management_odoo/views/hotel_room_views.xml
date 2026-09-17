@@ -20,6 +20,7 @@
                        decoration-warning="not is_special and status == 'reserved'"
                        decoration-danger="not is_special and status == 'occupied'"
                        class="text-center fw-bold"/>
+                <field name="company_id" groups="base.group_multi_company" optional="show"/>
                 <field name="active" column_invisible="True"/>
             </list>
         </field>
@@ -55,6 +56,7 @@
                                     <field name="floor_id" string="Floor"/>
                                     <field name="is_special" string="Special Room (Sea View)" widget="boolean_toggle"/>
                                     <field name="user_id" string="Room Manager"/>
+                                    <field name="company_id" groups="base.group_multi_company" options="{'no_create': True}"/>
                                     <field name="taxes_ids"
                                            widget="many2many_tags"
                                            string="Customer Taxes"/>
@@ -113,6 +115,7 @@
                 <field name="name" string="Room"/>
                 <field name="room_type"/>
                 <field name="floor_id"/>
+                <field name="company_id" groups="base.group_multi_company"/>
                 <separator/>
                 <filter name="filter_available" string="Available" domain="[('status', '=', 'available')]"/>
                 <filter name="filter_occupied" string="Occupied" domain="[('status', '=', 'occupied')]"/>
@@ -121,6 +124,7 @@
                 <filter name="group_by_status" string="Status" context="{'group_by': 'status'}"/>
                 <filter name="group_by_floor" string="Floor" context="{'group_by': 'floor_id'}"/>
                 <filter name="group_by_room_type" string="Room Type" context="{'group_by': 'room_type'}"/>
+                <filter name="group_by_company" string="Company" context="{'group_by': 'company_id'}" groups="base.group_multi_company"/>
             </search>
         </field>
     </record>

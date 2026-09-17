@@ -9,31 +9,16 @@ actually reconcile against.
 import logging
 import math
 
-from odoo import fields, http
+from odoo import http
 from odoo.http import request
 
-from .main import AppApi, ROUTE, api_endpoint, lock_for_payment
+from ..api_error import ApiError
+from .main import AppApi, ROUTE, api_endpoint, lock_for_payment, owned_order, wallet_cards
 
 _logger = logging.getLogger(__name__)
 
 
 class AppWallet(http.Controller):
-
-    # ------------------------------------------------------------------
-    def _active_cards(self, partner):
-        return request.env['loyalty.card'].sudo().search([
-            ('program_type', '=', 'ewallet'),
-            ('partner_id', '=', partner.commercial_partner_id.id),
-            '|', ('expiration_date', '=', False),
-                 ('expiration_date', '>=', fields.Date.today()),
-        ])
-
-    def _owned_order(self, partner, order_id):
-        """Never browse an id straight from the app - scope it to the caller."""
-        return request.env['sale.order'].sudo().search([
-            ('id', '=', int(order_id)),
-            ('partner_id', 'child_of', partner.commercial_partner_id.id),
-        ], limit=1)
 
     # ------------------------------------------------------- pay an order
     @http.route('/api/v1/wallet/pay', **ROUTE)
@@ -42,20 +27,23 @@ class AppWallet(http.Controller):
         """Apply the customer's eWallet to one of their quotations.
 
         Body: {"order_id": 123, "confirm": true}
-        """
-        order = self._owned_order(partner, payload.get('order_id', 0))
-        if not order:
-            return {'error': 'order_not_found'}
-        if not lock_for_payment(order):
-            return {'error': 'payment_in_progress'}
-        if order.state not in ('draft', 'sent'):
-            return {'error': 'order_not_editable'}
 
-        cards = self._active_cards(partner)
+        /api/v1/checkout with "payment": "wallet" does this for a new cart in
+        one call; this route stays for quotations created earlier.
+        """
+        order = owned_order(partner, payload.get('order_id', 0))
+        if not order:
+            raise ApiError('order_not_found')
+        if not lock_for_payment(order):
+            raise ApiError('payment_in_progress')
+        if order.state not in ('draft', 'sent'):
+            raise ApiError('order_not_editable')
+
+        cards = wallet_cards(partner)
         if not cards:
-            return {'error': 'no_wallet'}
+            raise ApiError('no_wallet')
         if sum(cards.mapped('points')) <= 0:
-            return {'error': 'insufficient_balance', 'balance': 0.0}
+            raise ApiError('insufficient_balance', balance=0.0)
 
         order._app_apply_wallet(cards.filtered(lambda c: c.points > 0))
 
@@ -63,14 +51,16 @@ class AppWallet(http.Controller):
         # quotation still reports what the wallet covers.
         applied = -sum(order.order_line.filtered(
             lambda line: line.coupon_id in cards).mapped('price_total'))
-        if not applied:
-            _logger.info("No eWallet reward applicable to %s", order.name)
         remaining = order.amount_total
         fully_covered = order.currency_id.compare_amounts(remaining, 0) <= 0
 
         if payload.get('confirm') and fully_covered:
+            allowance = order._app_check_allowance()
+            if allowance['blocked']:
+                # Returned, not raised, so the refusal logged in Blocked Attempts stays.
+                return {'error': 'allowance_limit_reached', 'messages': allowance['messages']}
             order.write({'app_payment_method': 'wallet'})
-            order.action_confirm()
+            order._app_confirm_and_invoice()
             order.message_post(body="Paid in full from the eWallet via the mobile app.")
 
         return {
@@ -106,23 +96,23 @@ class AppWallet(http.Controller):
     @api_endpoint
     def topup(self, partner, payload):
         """Create a top-up order. The balance is credited when it is PAID -
-        do not confirm this from the app without a real payment.
+        pay it with /api/v1/pay.
 
         Body: {"product_id": 55, "qty": 1}
         """
         qty = float(payload.get('qty', 1))
         if not (math.isfinite(qty) and qty > 0):
-            return {'error': 'bad_qty'}
+            raise ApiError('bad_qty')
         product = request.env['product.product'].sudo().browse(
             int(payload.get('product_id', 0))).exists()
         if not product:
-            return {'error': 'unknown_product'}
+            raise ApiError('unknown_product')
 
         programs = request.env['loyalty.program'].sudo().search([
             ('program_type', '=', 'ewallet'), ('active', '=', True),
         ])
         if product not in programs.mapped('trigger_product_ids'):
-            return {'error': 'not_a_topup_product'}
+            raise ApiError('not_a_topup_product')
 
         order = request.env['sale.order'].sudo().create({
             'partner_id': partner.id,

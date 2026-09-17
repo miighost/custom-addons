@@ -28,6 +28,13 @@ app can never ask for someone else's data.
    as `app_api.*` system parameters, but the Settings page is the place to
    edit them.)
 
+3. **Make sure Odoo can pick the database without a login.** The app sends a
+   Firebase token, not an Odoo session cookie. With a single database that
+   is automatic; with several, start Odoo with a `--db-filter` that selects
+   the right one for your API domain — `--db-filter=^%d$` matches the
+   subdomain, `--db-filter=^mycompany$` names it outright. Without it every
+   `/api/v1/...` call answers with an HTML 404 page instead of JSON.
+
 ## Endpoints
 
 All are `POST`, all take `Authorization: Bearer <firebase_id_token>`.
@@ -37,8 +44,11 @@ All are `POST`, all take `Authorization: Bearer <firebase_id_token>`.
 | `/api/v1/me` | `{}` | profile; creates/links the contact on first call |
 | `/api/v1/me/update` | `{"phone":"...","city":"..."}` | `{"ok":true}` |
 | `/api/v1/wallet` | `{}` | `balance`, `currency`, `transactions[]` |
-| `/api/v1/orders` | `{"limit":20,"offset":0}` | `orders[]` |
-| `/api/v1/orders/create` | `{"lines":[{"product_id":42,"qty":2}]}` | the created order |
+| `/api/v1/payment/methods` | `{}` | how this customer can pay: wallet balance, credit left, WaafiPay |
+| `/api/v1/checkout` | `{"lines":[{"product_id":42,"qty":2}],"payment":"wallet"}` | places **and pays** the order — see *Ordering and paying* |
+| `/api/v1/orders` | `{"limit":20,"offset":0}` | `orders[]` with `payment_status` and `amount_due` |
+| `/api/v1/orders/detail` | `{"order_id":123}` | one order |
+| `/api/v1/orders/create` | `{"lines":[{"product_id":42,"qty":2}]}` | a quotation only, for staff to confirm |
 
 Errors come back as `{"error": "..."}` — no JSON-RPC envelope, so FlutterFlow
 JSON paths are flat: `$.balance`, `$.orders[:].name`.
@@ -71,9 +81,32 @@ could sign up with your best customer's address and inherit their records.
 ## Staff side
 
 Orders from the app are ordinary `sale.order` records with `origin = "Mobile
-app"` and a chatter note, landing in Sales → Orders → Quotations. They are
-left as quotations so staff confirm them; call `action_confirm()` in
-`order_create` if the app should place firm orders instead.
+app"` and a chatter note. `/api/v1/checkout` confirms and invoices them as it
+takes payment, so they land in Sales → Orders already confirmed;
+`/api/v1/orders/create` still leaves a quotation for staff to confirm.
+
+## Ordering and paying
+
+`/api/v1/checkout` places the order and pays for it in one call. `payment` is:
+
+| `payment` | What happens | Refused with |
+|---|---|---|
+| `wallet` | The eWallet covers the whole order: confirmed, invoiced, paid. | `insufficient_balance` (+ `amount_due`, `wallet_balance`, `missing`) |
+| `account` | Customer Account, pay later: confirmed and invoiced; the invoice shows on the Balance page. | `credit_limit_exceeded` (+ `message`) when a customer credit limit would be passed |
+| `waafi` | One WaafiPay charge, then confirmed, invoiced, and the payment registered. | `payment_declined`, `phone_required`, … |
+
+A refusal before money moves leaves nothing behind — no stray quotation. With
+Staff Allowance installed, checkout also follows each rule's *At the Limit*
+setting: `allowance_limit_reached` (+ `messages`), or `allowance_warnings` on an
+order that is allowed but over.
+
+Invoicing straight away needs the products' **Invoicing Policy = Ordered
+quantities** (the default for goods); otherwise checkout answers
+`not_invoiceable`.
+
+Each order in `/api/v1/orders` carries `payment_method` (`wallet`, `waafi`,
+`account`), `payment_status` (`paid`, `to_pay`, `partly_paid`, `quotation`,
+`not_invoiced`, `cancelled`) and `amount_due`.
 
 ## FlutterFlow wiring
 
@@ -287,7 +320,9 @@ POST /api/v1/pay   {"order_id": 123, "phone": "25261xxxxxxx"}
 Odoo calls WaafiPay itself: `API_PREAUTHORIZE` (customer approves on their
 handset), then `API_PREAUTHORIZE_COMMIT`. The order is confirmed only when the
 gateway's own answer says the money moved. The transaction id is written to
-**App Payment Reference** on the order and posted to the chatter.
+**App Payment Reference** on the order and posted to the chatter. The order is
+then invoiced and the payment registered on the WaafiPay journal, so the
+customer never sees a paid order as owed.
 
 **Do not call WaafiPay from FlutterFlow.** Two reasons:
 
@@ -369,8 +404,8 @@ domain and not `localhost:8069`.
 | `/api/v1/summary` | `{}` | one call for the home screen |
 | `/api/v1/invoices` | `{"only_unpaid":true,"limit":20}` | invoice list |
 | `/api/v1/invoices/detail` | `{"invoice_id":42}` | one invoice with its lines |
-| `/api/v1/invoices/pay` | `{"invoice_id":42,"method":"wallet"}` | pay one invoice |
-| `/api/v1/invoices/clear` | `{"method":"wallet"}` | pay every open invoice, oldest first |
+| `/api/v1/invoices/pay` | `{"invoice_ids":[42,43],"method":"wallet"}` | pay the selected invoices in one go |
+| `/api/v1/invoices/clear` | `{"method":"wallet"}` | pay every open invoice in one go |
 
 `/api/v1/summary` is the one to build the home screen on — it replaces four
 separate calls:
@@ -395,20 +430,20 @@ wallet" button — the app never has to do that arithmetic itself.
 
 ### Paying
 
-`method` is `"wallet"` or `"waafi"`. Both register a real
-`account.payment` through Odoo's own payment-register wizard, so the invoice
-reconciles exactly as it would if your accountant had done it by hand — the
-payment shows in the journal, on the invoice, and in the customer's
-statement.
+`method` is `"wallet"` or `"waafi"`. The selected invoices are paid **in full,
+together**: one wallet deduction, or **one** WaafiPay charge — a single
+approval on the customer's phone — then one `account.payment` across them
+through Odoo's own payment-register wizard, so they reconcile exactly as if
+your accountant had done it by hand.
 
-Add `"amount": 500` to pay part of an invoice; leave it out to pay the
-balance in full. Paying from the wallet also debits the loyalty card and
-writes a `loyalty.history` line, so the wallet ledger and the accounting
-entry always agree.
+A wallet that does not cover the whole selection is refused with
+`insufficient_balance` (+ `amount_due`, `wallet_balance`, `missing`) and
+nothing is taken. Paying from the wallet also debits the loyalty card and
+writes a `loyalty.history` line, so the wallet ledger and the accounting entry
+always agree.
 
-`/api/v1/invoices/clear` walks the open invoices oldest-first and **stops at
-the first failure** rather than continuing to charge a customer whose payment
-is already failing. Read `failed[0].error` to see why it stopped.
+`/api/v1/invoices/clear` does the same for every open invoice; `cleared` is
+`true` once nothing is left open.
 
 ### Configure the journals first
 
@@ -443,7 +478,8 @@ An invoice id is only ever looked up *inside* that domain, never with
 
 ## The Mobile App menu in Odoo
 
-Installing the module adds a top-level **Mobile App** menu for your staff:
+Installing the module adds a top-level **Mobile App** menu for your sales team
+(it is visible to Sales users):
 
 ```
 Mobile App
@@ -485,18 +521,26 @@ env['sale.order'].search([('origin', 'like', 'Mobile app')]).write(
 ## Dashboard
 
 Clicking **Mobile App** in the menu bar lands on a dashboard built from live
-records — no stored snapshot, nothing to refresh:
+records — no stored snapshot, nothing to refresh, and nothing to save: it
+opens read-only, so there are no Save / Discard buttons.
 
-| Section | Shows |
-|---|---|
-| Today | orders confirmed, their value, orders this week |
-| Needs attention | quotations awaiting confirmation, overdue invoice total |
-| Money | eWallet balances held (money you owe), outstanding from app customers |
-| Customers | app users, and how many joined in the last 7 days |
+| Card | Colour | Shows | Opens |
+|---|---|---|---|
+| Orders today | green | app orders confirmed today, their value, and this week's count | today's confirmed app orders |
+| To confirm | amber | quotations from the app waiting for staff, and their value | those quotations |
+| Overdue | red — green when nothing is overdue | unpaid app-customer invoices past their due date | those invoices |
+| Outstanding | teal | everything app customers still owe | their open invoices |
+| Wallet balances | brand colour | eWallet money held for customers — money you owe | the wallets |
+| App customers | blue | contacts using the app, and how many joined in the last 7 days | those contacts |
 
-Every card's button opens the real records behind the number, pre-filtered —
-"Chase overdue" opens exactly the overdue invoices it counted, so the figure
-and the list can never disagree.
+The colour is the card's left border, outline, icon and label, so the kind of
+figure reads at a glance: amber and red mean something needs doing.
+
+Below the cards, **Latest app orders** lists the eight most recent orders.
+
+The whole card is the button, and it opens exactly the records behind the
+number — Overdue opens the overdue invoices it counted — so the figure and the
+list can never disagree.
 
 The two figures to watch are **eWallet balances held** (reconcile it against
 your wallet liability account) and **Overdue** (money already earned and not
@@ -572,3 +616,20 @@ Filters and extra columns can be added on top later, from the UI: open a list,
 set up the filters and grouping you want, then **Favorites → Save current
 search → Shared with all users**. That survives module upgrades and needs no
 code.
+
+---
+
+## Automated tests
+
+`tests/test_app_api.py` calls every endpoint over real HTTP against a running
+Odoo: token checks, `me`, catalogue, orders, wallet, top-up, WaafiPay, summary,
+invoices, paying and clearing them, plus a malformed body and a call that
+crashes halfway (it must save nothing and leak no details). Firebase tokens are
+signed with a key made for the test run; WaafiPay is replaced by a fake
+gateway, so no money moves.
+
+```bash
+odoo -d YOUR_TEST_DB -u odoo_app_api --test-tags /odoo_app_api --stop-after-init
+```
+
+Use a test database. Everything a test creates is rolled back at the end.
