@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- List View -->
+    <record id="view_app_api_endpoint_tree" model="ir.ui.view">
+        <field name="name">app.api.endpoint.list</field>
+        <field name="model">app.api.endpoint</field>
+        <field name="arch" type="xml">
+            <list string="API Endpoints" sample="1">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="route" class="font-monospace text-primary fw-bold"/>
+                <field name="method" widget="badge"
+                       decoration-success="method == 'GET'"
+                       decoration-info="method == 'POST'"
+                       decoration-warning="method == 'PUT'"
+                       decoration-danger="method == 'DELETE'"/>
+                <field name="category" widget="badge"/>
+                <field name="auth_type" optional="show"/>
+                <field name="model_ids" widget="many2many_tags" optional="show"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="view_app_api_endpoint_form" model="ir.ui.view">
+        <field name="name">app.api.endpoint.form</field>
+        <field name="model">app.api.endpoint</field>
+        <field name="arch" type="xml">
+            <form string="API Endpoint">
+                <sheet>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
+                    <div class="oe_title">
+                        <label for="name" string="Endpoint Name"/>
+                        <h1>
+                            <field name="name" placeholder="e.g. Unified Menu &amp; Bootstrap"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Endpoint Definition">
+                            <field name="route" class="font-monospace fw-bold text-primary"/>
+                            <field name="method"/>
+                            <field name="category"/>
+                            <field name="auth_type"/>
+                            <field name="active"/>
+                        </group>
+                        <group string="Model Permissions">
+                            <field name="model_ids" widget="many2many_tags" placeholder="Select target Odoo models..."/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Payload Schema &amp; Example" name="payloads">
+                            <group>
+                                <group string="Sample Request Body (JSON)">
+                                    <field name="sample_request" nolabel="1" class="font-monospace"
+                                           placeholder="{\n  &quot;limit&quot;: 30\n}"/>
+                                </group>
+                                <group string="Sample Response Data (JSON)">
+                                    <field name="sample_response" nolabel="1" class="font-monospace"
+                                           placeholder="{\n  &quot;total&quot;: 1\n}"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Description &amp; Business Rules" name="description">
+                            <field name="description" placeholder="Document the behavior, parameters, and workflows of this endpoint..."/>
+                        </page>
+                        <page string="Error Codes &amp; Troubleshooting" name="errors">
+                            <field name="error_codes" class="font-monospace"
+                                   placeholder="insufficient_balance: The customer's eWallet balance is below the order total."/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="view_app_api_endpoint_search" model="ir.ui.view">
+        <field name="name">app.api.endpoint.search</field>
+        <field name="model">app.api.endpoint</field>
+        <field name="arch" type="xml">
+            <search string="Search Endpoints">
+                <field name="name"/>
+                <field name="route"/>
+                <field name="category"/>
+                <separator/>
+                <filter string="Archived" name="filter_archived" domain="[('active', '=', False)]"/>
+                <group>
+                    <filter string="Category" name="group_by_category" context="{'group_by': 'category'}"/>
+                    <filter string="HTTP Method" name="group_by_method" context="{'group_by': 'method'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Window Action -->
+    <record id="action_app_api_endpoints" model="ir.actions.act_window">
+        <field name="name">API Endpoints &amp; Models</field>
+        <field name="res_model">app.api.endpoint</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_app_api_endpoint_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No API endpoints configured</p>
+            <p>Define and document the mobile API endpoints, their allowed models, and sample payloads.</p>
+        </field>
+    </record>
+
+</odoo>

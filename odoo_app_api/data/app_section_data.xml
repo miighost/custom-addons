@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- 1. Today's Best -->
+        <record id="section_todays_best" model="app.section">
+            <field name="name">Today's Best</field>
+            <field name="code">todays_best</field>
+            <field name="subtitle">Chef's highlights &amp; daily top choices</field>
+            <field name="badge_text">HOT</field>
+            <field name="mode">manual</field>
+            <field name="sequence">10</field>
+            <field name="color">1</field>
+            <field name="active" eval="True"/>
+        </record>
+
+        <!-- 2. Most Recent -->
+        <record id="section_most_recent" model="app.section">
+            <field name="name">Most Recent</field>
+            <field name="code">most_recent</field>
+            <field name="subtitle">Latest arrivals added to the menu</field>
+            <field name="badge_text">NEW</field>
+            <field name="mode">recent</field>
+            <field name="sequence">20</field>
+            <field name="color">4</field>
+            <field name="active" eval="True"/>
+        </record>
+
+        <!-- 3. Featured -->
+        <record id="section_featured" model="app.section">
+            <field name="name">Featured</field>
+            <field name="code">featured</field>
+            <field name="subtitle">Our most loved customer favorites</field>
+            <field name="badge_text">POPULAR</field>
+            <field name="mode">manual</field>
+            <field name="sequence">30</field>
+            <field name="color">10</field>
+            <field name="active" eval="True"/>
+        </record>
+
+        <!-- 4. Special Offers -->
+        <record id="section_special_offers" model="app.section">
+            <field name="name">Special Offers</field>
+            <field name="code">special_offers</field>
+            <field name="subtitle">Exclusive deals &amp; limited time discounts</field>
+            <field name="badge_text">OFFER</field>
+            <field name="mode">manual</field>
+            <field name="sequence">40</field>
+            <field name="color">2</field>
+            <field name="active" eval="True"/>
+        </record>
+    </data>
+</odoo>

@@ -14,8 +14,10 @@ from odoo.http import request
 
 from ..api_error import ApiError
 from .main import AppApi, ROUTE, api_endpoint, lock_for_payment, owned_order, wallet_cards
+from .payment import charge, payment_journal, settle_waafi_order
 
 _logger = logging.getLogger(__name__)
+
 
 
 class AppWallet(http.Controller):
@@ -98,33 +100,78 @@ class AppWallet(http.Controller):
         """Create a top-up order. The balance is credited when it is PAID -
         pay it with /api/v1/pay.
 
-        Body: {"product_id": 55, "qty": 1}
+        Body:
+            {"amount": 25.0}                     (custom price/amount)
+            {"product_id": 55, "amount": 25.0}   (specific product with custom price)
+            {"product_id": 55, "qty": 1}         (standard preset product by qty)
         """
-        qty = float(payload.get('qty', 1))
-        if not (math.isfinite(qty) and qty > 0):
-            raise ApiError('bad_qty')
-        product = request.env['product.product'].sudo().browse(
-            int(payload.get('product_id', 0))).exists()
-        if not product:
-            raise ApiError('unknown_product')
-
         programs = request.env['loyalty.program'].sudo().search([
             ('program_type', '=', 'ewallet'), ('active', '=', True),
         ])
-        if product not in programs.mapped('trigger_product_ids'):
-            raise ApiError('not_a_topup_product')
+        trigger_products = programs.mapped('trigger_product_ids').filtered(
+            lambda p: p.active and p.sale_ok)
+
+        product_id = payload.get('product_id')
+        if product_id:
+            product = request.env['product.product'].sudo().browse(
+                int(product_id)).exists()
+            if not product:
+                raise ApiError('unknown_product')
+            if product not in trigger_products:
+                raise ApiError('not_a_topup_product')
+        else:
+            if not trigger_products:
+                raise ApiError('not_a_topup_product')
+            product = trigger_products[:1]
+
+        amount_raw = payload.get('amount') if 'amount' in payload else payload.get('price')
+        if amount_raw is not None:
+            try:
+                amount = float(amount_raw)
+            except (ValueError, TypeError):
+                raise ApiError('bad_amount')
+            if not (math.isfinite(amount) and amount > 0):
+                raise ApiError('bad_amount')
+            line_vals = {
+                'product_id': product.id,
+                'product_uom_qty': 1,
+                'price_unit': amount,
+            }
+        else:
+            qty = float(payload.get('qty', 1))
+            if not (math.isfinite(qty) and qty > 0):
+                raise ApiError('bad_qty')
+            line_vals = {
+                'product_id': product.id,
+                'product_uom_qty': qty,
+            }
 
         order = request.env['sale.order'].sudo().create({
             'partner_id': partner.id,
             'is_app_order': True,
             'origin': 'Mobile app - eWallet top-up',
-            'order_line': [(0, 0, {
-                'product_id': product.id,
-                'product_uom_qty': qty,
-            })],
+            'order_line': [(0, 0, line_vals)],
         })
         order.message_post(body="eWallet top-up requested from the mobile app.")
+
+        phone = str(payload.get('phone') or '').strip()
+        if phone:
+            if not payment_journal('waafi', partner):
+                raise ApiError('payment_journal_not_configured')
+            if order.currency_id.compare_amounts(order.amount_total, 0) <= 0:
+                raise ApiError('nothing_to_pay')
+            transaction_id = charge(
+                phone, order.amount_total, order.currency_id.name,
+                order.name, f"{order.company_id.name} - {order.name}")
+            return {
+                **settle_waafi_order(order, transaction_id),
+                'topup': True,
+                'balance_after': sum(wallet_cards(partner).mapped('points')),
+            }
+
         return {
             'order': AppApi()._order_dict(order),
             'note': 'Balance is credited once this order is paid and confirmed.',
         }
+
+

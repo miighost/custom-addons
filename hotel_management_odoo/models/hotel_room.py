@@ -118,6 +118,7 @@ class HotelRoom(models.Model):
     room_type = fields.Selection([('deluxe_suite', 'DELUXE SUITE'),
                                   ('deluxe_single', 'DELUXE SINGLE'),
                                   ('standard_room', 'STANDARD ROOM'),
+                                  ('office_space', 'OFFICE SPACE'),
                                   ('single', 'DELUXE SINGLE'),
                                   ('double', 'STANDARD ROOM'),
                                   ('dormitory', 'DELUXE SUITE')],
@@ -153,7 +154,7 @@ class HotelRoom(models.Model):
         """Based on selected room type, number of person will be updated.
 
         @param self: object pointer"""
-        if self.room_type in ["deluxe_single", "single"]:
+        if self.room_type in ["deluxe_single", "single", "office_space"]:
             self.num_person = 1
         elif self.room_type in ["standard_room", "double"]:
             self.num_person = 2

@@ -1,0 +1,311 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+    <!-- Unified Menu / App Bootstrap -->
+    <record id="endpoint_menu" model="app.api.endpoint">
+        <field name="name">Unified Menu &amp; Bootstrap</field>
+        <field name="sequence">1</field>
+        <field name="route">/api/v1/menu</field>
+        <field name="method">POST</field>
+        <field name="category">bootstrap</field>
+        <field name="auth_type">bearer</field>
+        <field name="model_ids" eval="[(4, ref('base.model_res_partner')), (4, ref('product.model_product_product')), (4, ref('loyalty.model_loyalty_card'))]"/>
+        <field name="description">All-in-one app initialization. Returns customer profile, live eWallet balance, staff allowance daily limits, open POS register session, dining tables, categories, and products.</field>
+        <field name="sample_request"><![CDATA[{
+  "search": "",
+  "limit": 100
+}]]></field>
+        <field name="sample_response"><![CDATA[{
+  "customer": {
+    "partner_id": 15,
+    "name": "Ahmed",
+    "wallet_balance": 50.0,
+    "currency": "USD",
+    "has_allowance": true,
+    "allowance": { "summary": "1 Drink remaining today", "limits": [...] }
+  },
+  "pos": {
+    "is_open": true,
+    "session_id": 14,
+    "pos_name": "Main Restaurant",
+    "tables": [{ "table_id": 101, "table_number": "1", "seats": 4 }]
+  },
+  "categories": [{ "id": 1, "name": "Coffee", "icon": "coffee" }],
+  "products": [{ "id": 42, "name": "Americano", "price": 6.30, "in_stock": true }]
+}]]></field>
+        <field name="error_codes"><![CDATA[401 Unauthorized: Missing or invalid Firebase Bearer token.
+400 Bad Request: Malformed JSON request body.]]></field>
+    </record>
+
+    <!-- Checkout & Order Placement -->
+    <record id="endpoint_checkout" model="app.api.endpoint">
+        <field name="name">Checkout &amp; Instant Payment</field>
+        <field name="sequence">5</field>
+        <field name="route">/api/v1/checkout</field>
+        <field name="method">POST</field>
+        <field name="category">orders</field>
+        <field name="auth_type">bearer</field>
+        <field name="model_ids" eval="[(4, ref('sale.model_sale_order')), (4, ref('loyalty.model_loyalty_card'))]"/>
+        <field name="description">Places an order and pays for it in one atomic transaction. Supports POS Kitchen orders (order_type='pos') and standard Sales Orders. Directly settles via eWallet, Customer Account, or WaafiPay.</field>
+        <field name="sample_request"><![CDATA[{
+  "order_type": "pos",
+  "payment": "wallet",
+  "table_no": "Table 1",
+  "note": "Less ice please",
+  "lines": [
+    { "product_id": 42, "qty": 1 }
+  ]
+}]]></field>
+        <field name="sample_response"><![CDATA[{
+  "paid": true,
+  "payment": "wallet",
+  "order_type": "pos",
+  "sent_to_kitchen": true,
+  "balance_after": 43.7,
+  "order": { "id": 89, "name": "Order 00089-001-0001", "amount_total": 6.3 }
+}]]></field>
+        <field name="error_codes"><![CDATA[insufficient_balance: Wallet balance is less than order amount_total.
+allowance_limit_reached: Customer has exceeded their daily staff allowance quota.
+out_of_stock: One or more storable products are out of stock.
+unknown_payment_method: Payment method must be wallet, account, or waafi.
+no_open_pos_session: Restaurant register is closed.]]></field>
+    </record>
+
+    <!-- Product Catalogue -->
+    <record id="endpoint_products" model="app.api.endpoint">
+        <field name="name">Product Catalogue</field>
+        <field name="sequence">10</field>
+        <field name="route">/api/v1/products</field>
+        <field name="method">POST</field>
+        <field name="category">catalogue</field>
+        <field name="auth_type">bearer</field>
+        <field name="model_ids" eval="[(4, ref('product.model_product_product')), (4, ref('product.model_product_pricelist'))]"/>
+        <field name="description">Lists active, saleable products flagged with Show in Mobile App. Prices are calculated dynamically using the customer's negotiated pricelist.</field>
+        <field name="sample_request"><![CDATA[{
+  "search": "Americano",
+  "pos_category_id": 1,
+  "limit": 30,
+  "offset": 0
+}]]></field>
+        <field name="sample_response"><![CDATA[{
+  "total": 1,
+  "products": [
+    {
+      "id": 42,
+      "name": "Americano",
+      "code": "COF-01",
+      "price": 6.30,
+      "currency": "USD",
+      "image_url": "https://erp.domain.com/api/v1/product/42/image",
+      "in_stock": true,
+      "allowance": { "restricted": true, "remaining": 2 }
+    }
+  ]
+}]]></field>
+        <field name="error_codes"><![CDATA[hint: Explains why no products were returned if search/category yielded empty results.]]></field>
+    </record>
+
+    <!-- POS Categories -->
+    <record id="endpoint_pos_categories" model="app.api.endpoint">
+        <field name="name">POS Product Categories</field>
+        <field name="sequence">15</field>
+        <field name="route">/api/v1/pos/categories</field>
+        <field name="method">GET</field>
+        <field name="category">pos</field>
+        <field name="auth_type">bearer</field>
+        <field name="description">Lists Point of Sale menu categories with Material icons, public image URLs, and active product counts.</field>
+        <field name="sample_request"><![CDATA[{}]]></field>
+        <field name="sample_response"><![CDATA[{
+  "total": 3,
+  "categories": [
+    { "id": 1, "name": "Coffee & Drinks", "icon": "coffee", "product_count": 8 }
+  ]
+}]]></field>
+        <field name="error_codes"><![CDATA[]]></field>
+    </record>
+
+    <!-- POS Open Sessions & Tables -->
+    <record id="endpoint_pos_tables" model="app.api.endpoint">
+        <field name="name">POS Sessions &amp; Dining Tables</field>
+        <field name="sequence">20</field>
+        <field name="route">/api/v1/pos/tables</field>
+        <field name="method">POST</field>
+        <field name="category">pos</field>
+        <field name="auth_type">bearer</field>
+        <field name="description">Lists currently opened POS register sessions and available restaurant dining tables with floor names and seat counts.</field>
+        <field name="sample_request"><![CDATA[{}]]></field>
+        <field name="sample_response"><![CDATA[{
+  "is_open": true,
+  "session_count": 1,
+  "sessions": [{ "session_id": 14, "pos_name": "Main Shop", "tables": [...] }]
+}]]></field>
+        <field name="error_codes"><![CDATA[]]></field>
+    </record>
+
+    <!-- eWallet Balance & Transactions -->
+    <record id="endpoint_wallet" model="app.api.endpoint">
+        <field name="name">eWallet Balance &amp; History</field>
+        <field name="sequence">25</field>
+        <field name="route">/api/v1/wallet</field>
+        <field name="method">POST</field>
+        <field name="category">wallet</field>
+        <field name="auth_type">bearer</field>
+        <field name="model_ids" eval="[(4, ref('loyalty.model_loyalty_card')), (4, ref('loyalty.model_loyalty_history'))]"/>
+        <field name="description">Returns total active eWallet points and the last 20 transaction ledger lines for the authenticated customer.</field>
+        <field name="sample_request"><![CDATA[{}]]></field>
+        <field name="sample_response"><![CDATA[{
+  "balance": 50.0,
+  "currency": "USD",
+  "has_wallet": true,
+  "history": [{ "description": "Top-up", "points": 50.0, "date": "2026-09-20T10:00:00" }]
+}]]></field>
+        <field name="error_codes"><![CDATA[]]></field>
+    </record>
+
+    <!-- Orders List -->
+    <record id="endpoint_orders" model="app.api.endpoint">
+        <field name="name">Order History</field>
+        <field name="sequence">30</field>
+        <field name="route">/api/v1/orders</field>
+        <field name="method">POST</field>
+        <field name="category">orders</field>
+        <field name="auth_type">bearer</field>
+        <field name="model_ids" eval="[(4, ref('sale.model_sale_order'))]"/>
+        <field name="description">Returns past sales orders placed by this customer, including payment status (paid, to_pay, quotation) and invoiced amount due.</field>
+        <field name="sample_request"><![CDATA[{
+  "limit": 20,
+  "offset": 0
+}]]></field>
+        <field name="sample_response"><![CDATA[{
+  "total": 5,
+  "orders": [{ "id": 105, "name": "S00105", "amount_total": 6.30, "payment_status": "paid" }]
+}]]></field>
+        <field name="error_codes"><![CDATA[]]></field>
+    </record>
+
+    <!-- User Profile & Barcode -->
+    <record id="endpoint_me" model="app.api.endpoint">
+        <field name="name">User Profile &amp; Barcode</field>
+        <field name="sequence">35</field>
+        <field name="route">/api/v1/me</field>
+        <field name="method">POST</field>
+        <field name="category">profile</field>
+        <field name="auth_type">bearer</field>
+        <field name="model_ids" eval="[(4, ref('base.model_res_partner'))]"/>
+        <field name="description">Called immediately after Firebase sign-in. Resolves or creates the contact in Odoo, initializes the membership barcode, and returns profile data.</field>
+        <field name="sample_request"><![CDATA[{}]]></field>
+        <field name="sample_response"><![CDATA[{
+  "partner_id": 15,
+  "name": "Ahmed",
+  "email": "ahmed@example.com",
+  "barcode": "JPH000015",
+  "barcode_image_url": "https://erp.domain.com/report/barcode/Code128/JPH000015?width=600&height=150&humanreadable=1",
+  "currency": "USD"
+}]]></field>
+        <field name="error_codes"><![CDATA[]]></field>
+    </record>
+
+    <!-- Pay Order / Assign to Customer -->
+    <record id="endpoint_orders_pay" model="app.api.endpoint">
+        <field name="name">Assign Order &amp; Pay</field>
+        <field name="sequence">32</field>
+        <field name="route">/api/v1/orders/pay</field>
+        <field name="method">POST</field>
+        <field name="category">orders</field>
+        <field name="auth_type">bearer</field>
+        <field name="model_ids" eval="[(4, ref('point_of_sale.model_pos_order')), (4, ref('loyalty.model_loyalty_card'))]"/>
+        <field name="description">Assign an open POS table or quotation order to a customer and pay with Wallet or Customer Account in one transaction.</field>
+        <field name="sample_request"><![CDATA[{
+  "order_id": 30265,
+  "payment_method": "wallet",
+  "customer_id": 42
+}]]></field>
+        <field name="sample_response"><![CDATA[{
+  "paid": true,
+  "payment": "wallet",
+  "amount_paid": 25.0,
+  "balance_after": 45.0,
+  "customer": { "id": 42, "name": "Fatima" },
+  "order": { "id": 30265, "state": "paid", "pos_reference": "260-7-000016" }
+}]]></field>
+        <field name="error_codes"><![CDATA[]]></field>
+    </record>
+
+    <!-- Customer Lookup -->
+    <record id="endpoint_customer_lookup" model="app.api.endpoint">
+        <field name="name">Customer Lookup &amp; Wallet Check</field>
+        <field name="sequence">38</field>
+        <field name="route">/api/v1/customers/lookup</field>
+        <field name="method">POST</field>
+        <field name="category">profile</field>
+        <field name="auth_type">bearer</field>
+        <field name="model_ids" eval="[(4, ref('base.model_res_partner')), (4, ref('loyalty.model_loyalty_card'))]"/>
+        <field name="description">Search customers by phone number, barcode, name, or ID. Returns live wallet balance, credit limit, and allowance status.</field>
+        <field name="sample_request"><![CDATA[{
+  "query": "252611234567"
+}]]></field>
+        <field name="sample_response"><![CDATA[{
+  "total": 1,
+  "customer": {
+    "id": 42,
+    "name": "Fatima",
+    "barcode": "JPH000042",
+    "wallet_balance": 70.0,
+    "credit_available": 150.0
+  }
+}]]></field>
+        <field name="error_codes"><![CDATA[]]></field>
+    </record>
+
+    <!-- POS Bill Search (Printed Receipt) -->
+    <record id="endpoint_pos_bill" model="app.api.endpoint">
+        <field name="name">POS Bill Lookup (Pay at Table)</field>
+        <field name="sequence">33</field>
+        <field name="route">/api/v1/pos/bill</field>
+        <field name="method">POST</field>
+        <field name="category">orders</field>
+        <field name="auth_type">bearer</field>
+        <field name="model_ids" eval="[(4, ref('point_of_sale.model_pos_order'))]"/>
+        <field name="description">1-call bill search by receipt number or table. Returns ordered items, total, amount due, and caller's live wallet balance.</field>
+        <field name="sample_request"><![CDATA[{
+  "search": "260-7-000016"
+}]]></field>
+        <field name="sample_response"><![CDATA[{
+  "found": true,
+  "bill_no": "260-7-000016",
+  "table_name": "Table 1",
+  "amount_total": 25.0,
+  "amount_due": 25.0,
+  "customer_wallet_balance": 80.0,
+  "can_pay_with_wallet": true,
+  "lines": [...]
+}]]></field>
+        <field name="error_codes"><![CDATA[]]></field>
+    </record>
+
+    <!-- POS Bill Pay & Auto-Assign -->
+    <record id="endpoint_pos_bill_pay" model="app.api.endpoint">
+        <field name="name">POS Bill Pay (Auto-Assign to Phone)</field>
+        <field name="sequence">34</field>
+        <field name="route">/api/v1/pos/bill/pay</field>
+        <field name="method">POST</field>
+        <field name="category">orders</field>
+        <field name="auth_type">bearer</field>
+        <field name="model_ids" eval="[(4, ref('point_of_sale.model_pos_order')), (4, ref('loyalty.model_loyalty_card'))]"/>
+        <field name="description">1-call checkout: auto-assigns the POS bill to the customer paying on their phone and settles via eWallet or Customer Account.</field>
+        <field name="sample_request"><![CDATA[{
+  "bill_no": "260-7-000016",
+  "payment": "wallet"
+}]]></field>
+        <field name="sample_response"><![CDATA[{
+  "paid": true,
+  "bill_no": "260-7-000016",
+  "amount_paid": 25.0,
+  "wallet_balance_after": 55.0,
+  "customer_name": "Fatima",
+  "message": "Bill paid successfully!"
+}]]></field>
+        <field name="error_codes"><![CDATA[]]></field>
+    </record>
+
+</odoo>

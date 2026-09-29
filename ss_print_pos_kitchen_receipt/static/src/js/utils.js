@@ -231,6 +231,9 @@ export function exportForKitchenPrinting(pos, order, filterOrGroup = null) {
         ? order.getCashierName()
         : (pos.get_cashier ? pos.get_cashier()?.name : "");
 
+    const partner = order.get_partner ? order.get_partner() : (order.partner || order.partner_id);
+    const customerName = partner ? (partner.name || (typeof partner === "string" ? partner : "")) : "";
+
     const isAddition = Boolean(order.was_kot_printed && (hasNewItems || hasCancelledItems));
 
     let printCount = order.kot_print_count;
@@ -256,6 +259,7 @@ export function exportForKitchenPrinting(pos, order, filterOrGroup = null) {
         table_name: tableName,
         floor_name: floorName,
         cashier: cashierName,
+        customer: customerName,
         general_note: order.general_customer_note || "",
         orderlines: orderlines,
         new_lines: newLines,

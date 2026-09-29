@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Search View -->
+    <record id="view_app_section_search" model="ir.ui.view">
+        <field name="name">app.section.search</field>
+        <field name="model">app.section</field>
+        <field name="arch" type="xml">
+            <search string="Search App Sections">
+                <field name="name"/>
+                <field name="code"/>
+                <field name="badge_text"/>
+                <filter string="Active" name="active" domain="[('active', '=', True)]"/>
+                <filter string="Archived" name="archived" domain="[('active', '=', False)]"/>
+                <filter string="Manual Selection" name="manual" domain="[('mode', '=', 'manual')]"/>
+                <filter string="Automatic (Recent)" name="recent" domain="[('mode', '=', 'recent')]"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- Tree / List View -->
+    <record id="view_app_section_tree" model="ir.ui.view">
+        <field name="name">app.section.tree</field>
+        <field name="model">app.section</field>
+        <field name="arch" type="xml">
+            <list string="App Sections &amp; Offers" default_order="sequence, id">
+                <field name="sequence" widget="handle"/>
+                <field name="name" string="Section Title"/>
+                <field name="code"/>
+                <field name="subtitle"/>
+                <field name="badge_text" widget="badge"/>
+                <field name="mode"/>
+                <field name="product_count" string="Products"/>
+                <field name="date_start" optional="show"/>
+                <field name="date_end" optional="show"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="view_app_section_form" model="ir.ui.view">
+        <field name="name">app.section.form</field>
+        <field name="model">app.section</field>
+        <field name="arch" type="xml">
+            <form string="App Section">
+                <sheet>
+                    <field name="active" invisible="1"/>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
+                    <field name="banner_image" widget="image" class="oe_avatar" options="{'preview_image': 'banner_image'}"/>
+                    <div class="oe_title">
+                        <label for="name" string="Section Title"/>
+                        <h1><field name="name" placeholder="e.g. Today's Best, Featured, Special Offers"/></h1>
+                        <field name="subtitle" placeholder="Short tagline or promotional subtitle shown to customers"/>
+                    </div>
+                    <group>
+                        <group string="Configuration">
+                            <field name="code" placeholder="e.g. todays_best"/>
+                            <field name="badge_text" placeholder="e.g. HOT, NEW, 20% OFF"/>
+                            <field name="mode"/>
+                            <field name="sequence"/>
+                        </group>
+                        <group string="Schedule &amp; Promotion (Optional)">
+                            <field name="date_start"/>
+                            <field name="date_end"/>
+                            <field name="has_banner" invisible="1"/>
+                            <field name="banner_url" widget="CopyClipboardChar" invisible="not has_banner"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Assigned Products" invisible="mode != 'manual'">
+                            <p class="text-muted">
+                                Select products to display under this section in the mobile app.
+                                You can change, add, or remove products anytime.
+                            </p>
+                            <field name="product_ids" widget="many2many">
+                                <list string="Products">
+                                    <field name="name"/>
+                                    <field name="default_code" optional="show"/>
+                                    <field name="categ_id"/>
+                                    <field name="list_price" string="Price"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Automatic Rules" invisible="mode != 'recent'">
+                            <div class="alert alert-info" role="alert">
+                                <b>Automatic Mode:</b> This section automatically displays the latest products in your catalog, sorted newest first. No manual product management needed.
+                            </div>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action Window -->
+    <record id="action_app_section" model="ir.actions.act_window">
+        <field name="name">App Sections &amp; Offers</field>
+        <field name="res_model">app.section</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_active': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Create your first App Section</p>
+            <p>Manage curated product carousels (Today's Best, Featured, Special Offers) directly on the mobile app. Add or swap products anytime without breaking the app.</p>
+        </field>
+    </record>
+
+</odoo>

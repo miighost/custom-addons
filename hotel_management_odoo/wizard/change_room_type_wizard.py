@@ -11,7 +11,8 @@ class ChangeRoomTypeWizard(models.TransientModel):
     room_type = fields.Selection([
         ('deluxe_suite', 'DELUXE SUITE'),
         ('deluxe_single', 'DELUXE SINGLE'),
-        ('standard_room', 'STANDARD ROOM')
+        ('standard_room', 'STANDARD ROOM'),
+        ('office_space', 'OFFICE SPACE'),
     ], string="New Room Type", required=True, default="deluxe_single")
 
     def action_apply_room_type(self):

@@ -150,22 +150,27 @@ def _render_line_group(ticket, title, lines, marker=""):
     if title:
         ticket.text(title, bold=True, underline=True)
     for line in lines:
-        qty = line.get("qty") or line.get("qty_num") or ""
+        qty = line.get("qty") or line.get("qty_num") or "1"
         name = line.get("product_name") or ""
-        prefix = "%s%-4s" % (marker, str(qty))
-        # Product name is the thing the kitchen reads across the room:
-        # double height, and wrapped so nothing is silently lost.
-        ticket.text("%s%s" % (prefix, name[: ticket.width - len(prefix)]),
-                    bold=True, double=True)
-        overflow = name[ticket.width - len(prefix):]
-        if overflow:
-            ticket.wrap(overflow, indent=len(prefix), bold=True)
+        qty_str = str(qty).strip()
+        prefix = f"{marker}{qty_str}x " if not qty_str.endswith("x") else f"{marker}{qty_str} "
+        
+        # Clean, crisp, legible product line: bold font without over-inked double-bleeding
+        line_text = f"{prefix}{name}"
+        if len(line_text) <= ticket.width:
+            ticket.text(line_text, bold=True)
+        else:
+            ticket.text(line_text[:ticket.width], bold=True)
+            overflow = line_text[ticket.width:]
+            if overflow:
+                ticket.wrap(overflow, indent=len(prefix), bold=True)
+
         attrs = line.get("attribute_values")
         if attrs:
-            ticket.wrap("(%s)" % attrs, indent=len(prefix))
+            ticket.wrap(f"({attrs})", indent=len(prefix))
         note = line.get("note")
         if note:
-            ticket.wrap("** %s" % note, indent=len(prefix), bold=True)
+            ticket.wrap(f"Note: {note}", indent=len(prefix), bold=True)
     ticket.blank(1)
 
 
@@ -173,7 +178,7 @@ def render_kot(data, width=48, codepage="cp437", station="KITCHEN"):
     """Render a kitchen/bar ticket from the dict produced by utils.js.
 
     `data` is the object returned by exportForKitchenPrinting(): it carries
-    name, table_name, floor_name, cashier, datetime, print_label and the
+    name, table_name, floor_name, cashier, customer, datetime, print_label and the
     new_lines / cancelled_lines / sent_lines groups.
     """
     data = data or {}
@@ -192,8 +197,14 @@ def render_kot(data, width=48, codepage="cp437", station="KITCHEN"):
 
     ticket.columns("Order:", data.get("name") or "")
     ticket.columns("Time:", data.get("datetime") or "")
-    if data.get("cashier"):
-        ticket.columns("Staff:", data.get("cashier"))
+
+    # Customer Name (fallback to Staff/Cashier if Walk-in / unassigned)
+    customer = (data.get("customer") or "").strip()
+    cashier = (data.get("cashier") or "").strip()
+    if customer:
+        ticket.columns("Customer:", customer)
+    elif cashier:
+        ticket.columns("Staff:", cashier)
 
     print_label = data.get("print_label")
     if print_label:

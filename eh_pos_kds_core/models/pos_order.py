@@ -1,22 +1,55 @@
 import logging
 
-from odoo import models
+from odoo import api, models
 
 _logger = logging.getLogger(__name__)
 
 PAID_STATES = ("paid", "done", "invoiced")
 
 
+
 class PosOrder(models.Model):
     """Intake seam from POS into the kitchen.
 
-    When an order reaches a paid state it is routed to the matching boards. The
-    intake diffs the order lines against what the kitchen already knows, keyed by
-    the order line uuid, so re syncs never duplicate and removed quantity is
-    absorbed and voided rather than deleted.
+    When an order reaches a paid state or is created via external APIs/mobile apps,
+    it is routed to the matching boards. The intake diffs the order lines against
+    what the kitchen already knows, keyed by the order line uuid, so re syncs never
+    duplicate and removed quantity is absorbed and voided rather than deleted.
     """
 
     _inherit = "pos.order"
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        orders = super().create(vals_list)
+        for order in orders:
+            if order.lines:
+                try:
+                    order.sudo()._eh_kds_intake()
+                except Exception:
+                    _logger.exception("eh_pos_kds: API create intake failed for pos.order %s", order.id)
+        return orders
+
+    def write(self, vals):
+        res = super().write(vals)
+        if any(f in vals for f in ("state", "lines", "table_id", "partner_id")):
+            for order in self:
+                if order.lines:
+                    try:
+                        order.sudo()._eh_kds_intake()
+                    except Exception:
+                        _logger.exception("eh_pos_kds: API write intake failed for pos.order %s", order.id)
+        return res
+
+    def action_pos_order_paid(self):
+        res = super().action_pos_order_paid()
+        for order in self:
+            if order.lines:
+                try:
+                    order.sudo()._eh_kds_intake()
+                except Exception:
+                    _logger.exception("eh_pos_kds: action_pos_order_paid intake failed for pos.order %s", order.id)
+        return res
 
     def _process_order(self, order, existing_order):
         order_id = super()._process_order(order, existing_order)
@@ -28,6 +61,7 @@ class PosOrder(models.Model):
                 # A kitchen routing problem must never block a sale.
                 _logger.exception("eh_pos_kds: intake failed for pos.order %s", order_id)
         return order_id
+
 
     def _eh_kds_ref(self):
         self.ensure_one()
@@ -129,3 +163,30 @@ class PosOrder(models.Model):
             )
             board._kds_push(board.access_token, "kds.status", {"ticket_ref": ticket.ticket_ref})
         return ticket
+
+
+class PosOrderLine(models.Model):
+    _inherit = "pos.order.line"
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        lines = super().create(vals_list)
+        orders = lines.mapped("order_id")
+        for order in orders:
+            try:
+                order.sudo()._eh_kds_intake()
+            except Exception:
+                _logger.exception("eh_pos_kds: line create intake failed for pos.order %s", order.id)
+        return lines
+
+    def write(self, vals):
+        res = super().write(vals)
+        if any(f in vals for f in ("qty", "note", "customer_note", "price_unit", "product_id")):
+            orders = self.mapped("order_id")
+            for order in orders:
+                try:
+                    order.sudo()._eh_kds_intake()
+                except Exception:
+                    _logger.exception("eh_pos_kds: line write intake failed for pos.order %s", order.id)
+        return res
+

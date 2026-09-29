@@ -56,7 +56,7 @@ class StatementAccountWizard(models.TransientModel):
 
         primary_booking = bookings[0] if bookings else False
 
-        card_no = primary_booking.name if primary_booking else (self.booking_id.name if self.booking_id else "-")
+        card_no = (primary_booking.folio_no or primary_booking.name) if primary_booking else (self.booking_id.folio_no or self.booking_id.name if self.booking_id else "-")
         guest_no = self.partner_id.ref or f"GST{self.partner_id.id}"
         guest_name = self.partner_id.name
         nationality = self.partner_id.country_id.name if self.partner_id.country_id else "-"
@@ -207,11 +207,13 @@ class StatementAccountWizard(models.TransientModel):
                 })
 
             # 7. Payments / Invoices
-            if booking.hotel_invoice_id:
-                inv = booking.hotel_invoice_id
+            invs = self.env['account.move'].search([('ref', '=', booking.name), ('move_type', '=', 'out_invoice')])
+            if booking.hotel_invoice_id and booking.hotel_invoice_id not in invs:
+                invs |= booking.hotel_invoice_id
+            for inv in invs:
                 paid_amt = inv.amount_total - inv.amount_residual
                 if paid_amt > 0:
-                    dt = booking.checkout_date or booking.checkin_date
+                    dt = inv.invoice_date or booking.checkout_date or booking.checkin_date
                     raw_lines.append({
                         "date_sort": dt,
                         "date": dt.strftime("%d/%m/%Y") if dt else "-",

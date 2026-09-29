@@ -29,3 +29,27 @@ class AppAllowance(http.Controller):
                 'resets_at': evaluation['resets_at'],
             })
         return {'has_allowance': bool(limits), 'limits': limits}
+
+    @http.route('/api/v1/allowance/history', **ROUTE)
+    @api_endpoint
+    def allowance_history(self, partner, payload):
+        """Past allowance orders and consumption for this customer."""
+        limit = min(int(payload.get('limit', 20)), 100)
+        offset = int(payload.get('offset', 0))
+        only_today = bool(payload.get('only_today'))
+
+        Order = request.env['staff.allowance.order'].sudo()
+        domain = Order._beneficiary_domain(partner)
+        if only_today:
+            domain.append(('order_date', '=', Order._local_today(partner)))
+
+        total = Order.search_count(domain)
+        orders = Order.search(
+            domain, order='order_datetime desc, id desc', limit=limit, offset=offset)
+        return {
+            'total': total,
+            'limit': limit,
+            'offset': offset,
+            'orders': [o._to_json() for o in orders],
+        }
+

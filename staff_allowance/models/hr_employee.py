@@ -11,12 +11,25 @@ class HrEmployee(models.Model):
 
     _inherit = "hr.employee"
 
-    allowance_plan_id = fields.Many2one(related="work_contact_id.allowance_plan_id")
+    allowance_plan_id = fields.Many2one(
+        related="work_contact_id.allowance_plan_id",
+        readonly=False,
+        string="Allowance Plan",
+        help="Assign an allowance plan to this employee. Daily category limits apply automatically.",
+    )
     allowance_rule_ids = fields.One2many(related="work_contact_id.allowance_rule_ids")
     allowance_order_count = fields.Integer(
         related="work_contact_id.allowance_order_count")
     allowance_over_count = fields.Integer(
         related="work_contact_id.allowance_over_count")
+    allowance_summary = fields.Char(
+        related="work_contact_id.allowance_summary",
+        string="Daily Limits Summary",
+    )
+    allowance_status = fields.Selection(
+        related="work_contact_id.allowance_status",
+        string="Today's Status",
+    )
 
     def action_edit_allowance(self):
         self.ensure_one()

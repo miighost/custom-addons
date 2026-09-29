@@ -500,6 +500,7 @@ class SsEscposPrinter(models.Model):
         sock = None
         try:
             sock = socket.create_connection((host, port), timeout=timeout)
+            sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
             sock.settimeout(timeout)
             sock.sendall(payload)
         except OSError as err:
@@ -528,6 +529,93 @@ class SsEscposPrinter(models.Model):
                 except OSError:
                     pass
         return True
+
+    def _kot_data(self, order):
+        """Build KOT dict from a pos.order record for backend printing."""
+        self.ensure_one()
+        routed_cats = self._routed_category_ids()
+
+        lines = []
+        for line in order.lines:
+            if routed_cats:
+                product_cats = []
+                if hasattr(line.product_id, "pos_categ_ids") and line.product_id.pos_categ_ids:
+                    product_cats.extend(line.product_id.pos_categ_ids.ids)
+                if hasattr(line.product_id, "pos_categ_id") and line.product_id.pos_categ_id:
+                    product_cats.append(line.product_id.pos_categ_id.id)
+                if not product_cats and hasattr(line.product_id, "categ_id") and line.product_id.categ_id:
+                    product_cats.append(line.product_id.categ_id.id)
+
+                if not (set(routed_cats) & set(product_cats)):
+                    continue
+
+            attr_values = ""
+            if hasattr(line.product_id, "product_template_attribute_value_ids"):
+                attr_values = ", ".join(line.product_id.product_template_attribute_value_ids.mapped("name"))
+
+            lines.append({
+                "qty": str(int(line.qty) if hasattr(line.qty, "is_integer") and line.qty.is_integer() else line.qty),
+                "product_name": getattr(line, "full_product_name", False) or line.product_id.display_name,
+                "attribute_values": attr_values,
+                "note": getattr(line, "customer_note", "") or getattr(line, "note", "") or "",
+            })
+
+        if not lines:
+            return None
+
+        table_str = ""
+        floor_str = ""
+        if hasattr(order, "table_id") and order.table_id:
+            table_str = str(getattr(order.table_id, "table_number", False) or order.table_id.name or "")
+            if hasattr(order.table_id, "floor_id") and order.table_id.floor_id:
+                floor_str = order.table_id.floor_id.name or ""
+
+        customer_name = order.partner_id.name if order.partner_id else ""
+        cashier_name = ""
+        for attr in ("employee_id", "user_id"):
+            rec = getattr(order, attr, False)
+            if rec:
+                cashier_name = rec.name
+                break
+
+        return {
+            "name": order.pos_reference or order.name or "",
+            "datetime": fields.Datetime.to_string(order.date_order or fields.Datetime.now()),
+            "table_name": table_str,
+            "floor_name": floor_str,
+            "customer": customer_name,
+            "cashier": cashier_name,
+            "print_label": "1st Print (Original)",
+            "orderlines": lines,
+            "general_note": getattr(order, "general_customer_note", "") or getattr(order, "note", "") or "",
+        }
+
+    @api.model
+    def print_order_kot(self, order):
+        """Automatically print KOT to all matching network kitchen printers."""
+        printers = self.search([
+            ("active", "=", True),
+            ("role", "=", "kitchen"),
+        ]).filtered(
+            lambda p: bool((p.ip or "").strip()) and (p.connection == "network" or p.transport == "server_socket")
+        )
+        if order.config_id:
+            printers = printers.filtered(
+                lambda p: not p.pos_config_ids or order.config_id.id in p.pos_config_ids.ids
+            )
+        sent_count = 0
+        for printer in printers:
+            kot_data = printer._kot_data(order)
+            if kot_data:
+                try:
+                    payload = printer._render_bytes(kot_data)
+                    printer._send_socket(payload)
+                    sent_count += 1
+                    _logger.info("Automatic server KOT sent to %s for order %s", printer.name, order.name)
+                except Exception as e:
+                    _logger.warning("Could not auto-print KOT to %s: %s", printer.name, e)
+        return sent_count
+
 
     @api.model
     def print_ticket(self, printer_id, data):

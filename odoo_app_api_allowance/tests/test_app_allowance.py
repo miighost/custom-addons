@@ -27,16 +27,47 @@ class TestAppAllowance(AppApiCase):
         partner = self._me()
         self.assertEqual(self._call("/api/v1/allowance")[1], {"has_allowance": False, "limits": []})
 
+        # Before rule: me and summary show no allowance
+        me_data = self._call("/api/v1/me")[1]
+        self.assertFalse(me_data.get("has_allowance"))
+        summary_data = self._call("/api/v1/summary")[1]
+        self.assertFalse(summary_data.get("has_allowance"))
+
         self._limit(partner, 3)
         limits = self._call("/api/v1/allowance")[1]["limits"]
         self.assertEqual([(l["category_id"], l["limit"], l["remaining"], l["at_the_limit"])
                           for l in limits], [(self.drinks.id, 3, 3, "block")])
+
+        # After rule: me and summary reflect the allowance
+        me_data = self._call("/api/v1/me")[1]
+        self.assertTrue(me_data.get("has_allowance"))
+        summary_data = self._call("/api/v1/summary")[1]
+        self.assertTrue(summary_data.get("has_allowance"))
+        self.assertEqual(summary_data.get("allowance_status"), "none")
 
         products = {p["id"]: p for p in self._call(
             "/api/v1/products", {"search": self.tag, "limit": 50})[1]["products"]}
         self.assertEqual((products[self.coffee.id]["allowance"]["restricted"],
                           products[self.coffee.id]["allowance"]["remaining"]), (True, 3))
         self.assertEqual(products[self.topup_product.id]["allowance"], {"restricted": False})
+
+    def test_allowance_history(self):
+        partner = self._me()
+        self._limit(partner, 5)
+        # Empty history initially
+        status, data = self._call("/api/v1/allowance/history")
+        self.assertEqual(status, 200)
+        self.assertEqual(data["total"], 0)
+        self.assertEqual(data["orders"], [])
+
+        # Checkout 2 items
+        self._checkout("account", 2)
+        status, data = self._call("/api/v1/allowance/history")
+        self.assertEqual(status, 200)
+        self.assertEqual(data["total"], 1)
+        self.assertEqual(len(data["orders"]), 1)
+        self.assertEqual(data["orders"][0]["qty"], 2)
+        self.assertEqual(data["orders"][0]["category_id"], self.drinks.id)
 
     def test_checkout_follows_the_limit_and_counts_app_orders(self):
         partner = self._me()
@@ -67,3 +98,20 @@ class TestAppAllowance(AppApiCase):
 
         order._action_cancel()
         self.assertFalse(order.allowance_order_ids, "cancelling an order gives the allowance back")
+
+    def test_menu_shows_allowance(self):
+        partner = self._me()
+        self._limit(partner, 3)
+        self._card(partner, 40)
+        status, data = self._call("/api/v1/menu", {"search": self.tag})
+        self.assertEqual(status, 200, data)
+        self.assertTrue(data["customer"]["has_allowance"])
+        self.assertEqual(data["customer"]["wallet_balance"], 40)
+        limits = data["customer"]["allowance"]["limits"]
+        self.assertEqual([(l["category_id"], l["limit"], l["remaining"]) for l in limits],
+                         [(self.drinks.id, 3, 3)])
+        # Check product allowance
+        coffee = next(p for p in data["products"] if p["id"] == self.coffee.id)
+        self.assertTrue(coffee["allowance"]["restricted"])
+        self.assertEqual(coffee["allowance"]["remaining"], 3)
+

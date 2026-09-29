@@ -11,7 +11,10 @@
                             invisible="state != 'draft'" type="object"
                             class="btn-primary"/>
                     <button name="action_print_reservation_acknowledgement" string="Print Acknowledgement"
-                            invisible="state not in ['reserved', 'check_in']" type="object"
+                            invisible="state != 'reserved'" type="object"
+                            class="btn-primary"/>
+                    <button name="action_print_statement" string="Print Statement"
+                            invisible="state not in ['check_in', 'check_out', 'done']" type="object"
                             class="btn-primary"/>
                     <button name="action_compute_bill" string="COMPUTE BILL"
                             invisible="state not in ['check_in', 'check_out', 'done'] or has_pos_orders == False"

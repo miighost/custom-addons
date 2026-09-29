@@ -71,4 +71,87 @@ $o-app-kpi-colors: (
         font-size: 0.875rem;
         opacity: 0.7;
     }
+
+    // Expandable Customer Groups
+    div[name="pos_orders_grouped_html"],
+    div[name="sale_orders_grouped_html"] {
+        pointer-events: auto !important;
+    }
+
+    .o_app_customer_group {
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        border-radius: 0.5rem;
+        margin-bottom: 0.75rem;
+        background-color: #fff;
+        overflow: hidden;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        transition: box-shadow 0.15s ease-in-out;
+        pointer-events: auto !important;
+
+        &:hover {
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        summary {
+            list-style: none;
+            cursor: pointer !important;
+            pointer-events: auto !important;
+            padding: 0.85rem 1.15rem;
+            background-color: #f8f9fa;
+            user-select: none;
+            outline: none;
+            transition: background-color 0.15s ease-in-out;
+
+            &::-webkit-details-marker {
+                display: none;
+            }
+
+            &:hover {
+                background-color: #f1f3f5;
+            }
+
+            .toggle-icon {
+                font-size: 0.75rem;
+                transition: transform 0.2s ease;
+            }
+        }
+
+        &[open] summary {
+            border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+            background-color: #e9ecef;
+
+            .toggle-icon {
+                transform: rotate(90deg);
+            }
+        }
+
+        .table {
+            margin-bottom: 0;
+
+            th {
+                font-weight: 600;
+                padding-top: 0.6rem;
+                padding-bottom: 0.6rem;
+            }
+
+            td {
+                padding-top: 0.6rem;
+                padding-bottom: 0.6rem;
+            }
+        }
+    }
+
+    .o_app_order_count_badge {
+        background-color: #FFD83D !important;
+        color: #111827 !important;
+        padding: 3px 10px;
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 12px;
+        display: inline-block;
+        vertical-align: middle;
+        margin-left: 8px;
+        line-height: 1.2;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+    }
 }

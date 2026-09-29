@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_pos_category_form_app" model="ir.ui.view">
+        <field name="name">pos.category.form.app.api</field>
+        <field name="model">pos.category</field>
+        <field name="inherit_id" ref="point_of_sale.product_pos_category_form_view"/>
+        <field name="arch" type="xml">
+            <field name="parent_id" position="after">
+                <field name="available_in_app" widget="boolean_toggle"/>
+            </field>
+        </field>
+    </record>
+
+    <record id="view_pos_category_tree_app" model="ir.ui.view">
+        <field name="name">pos.category.list.app.api</field>
+        <field name="model">pos.category</field>
+        <field name="inherit_id" ref="point_of_sale.product_pos_category_tree_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//list | //tree" position="inside">
+                <field name="available_in_app" widget="boolean_toggle"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

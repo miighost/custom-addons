@@ -98,6 +98,19 @@ class ResPartner(models.Model):
         App API: Staff Allowance module adds the allowance left today."""
         return {}
 
+    def _app_me_extras(self):
+        """Extra customer-specific facts returned by /api/v1/me."""
+        return {}
+
+    def _app_summary_extras(self):
+        """Extra facts for the home screen summary returned by /api/v1/summary."""
+        return {}
+
+    def _app_allowance_extras(self):
+        """Extra allowance details for the app bootstrap. Overridden in odoo_app_api_allowance."""
+        return {'has_allowance': False, 'status': 'none', 'summary': '', 'limits': []}
+
+
     def _ensure_app_barcode(self):
         """Give every app customer a membership number they can be scanned by.
 

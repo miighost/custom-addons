@@ -19,14 +19,73 @@
                   class="o_app_dashboard">
                 <field name="currency_id" invisible="1"/>
                 <field name="overdue_count" invisible="1"/>
+                <field name="date_filter" invisible="1"/>
+                <field name="is_expanded" invisible="1"/>
                 <div class="container-fluid px-4 py-4">
+
+                    <!-- Period Filter Toolbar & Expand Toggle -->
+                    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-3 border-bottom">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="text-muted fw-bold small text-uppercase me-2"><i class="fa fa-calendar me-1"/> Filter:</span>
+                            <div class="btn-group" role="group">
+                                <button name="action_filter_today" type="object" string="Today"
+                                        class="btn btn-sm btn-primary" invisible="date_filter != 'today'"/>
+                                <button name="action_filter_today" type="object" string="Today"
+                                        class="btn btn-sm btn-outline-secondary" invisible="date_filter == 'today'"/>
+
+                                <button name="action_filter_week" type="object" string="This Week"
+                                        class="btn btn-sm btn-primary" invisible="date_filter != 'week'"/>
+                                <button name="action_filter_week" type="object" string="This Week"
+                                        class="btn btn-sm btn-outline-secondary" invisible="date_filter == 'week'"/>
+
+                                <button name="action_filter_month" type="object" string="This Month"
+                                        class="btn btn-sm btn-primary" invisible="date_filter != 'month'"/>
+                                <button name="action_filter_month" type="object" string="This Month"
+                                        class="btn btn-sm btn-outline-secondary" invisible="date_filter == 'month'"/>
+
+                                <button name="action_filter_all" type="object" string="All Time"
+                                        class="btn btn-sm btn-primary" invisible="date_filter != 'all'"/>
+                                <button name="action_filter_all" type="object" string="All Time"
+                                        class="btn btn-sm btn-outline-secondary" invisible="date_filter == 'all'"/>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2 mt-2 mt-sm-0">
+                            <button name="action_toggle_expand" type="object"
+                                    class="btn btn-sm btn-outline-dark"
+                                    invisible="is_expanded">
+                                <i class="fa fa-expand me-1"/> Expand All Groups
+                            </button>
+                            <button name="action_toggle_expand" type="object"
+                                    class="btn btn-sm btn-outline-dark"
+                                    invisible="not is_expanded">
+                                <i class="fa fa-compress me-1"/> Collapse All Groups
+                            </button>
+                        </div>
+                    </div>
+
                     <div class="row g-3">
 
+                        <!-- Card 1: POS Orders (Restaurant) -->
                         <div class="col-12 col-sm-6 col-xl-4">
-                            <button name="action_open_orders_today" type="object"
+                            <button name="action_open_pos_orders_today" type="object"
                                     class="o_app_kpi o_app_kpi_success btn w-100 h-100 text-start">
                                 <span class="o_app_kpi_label">
-                                    <i class="fa fa-shopping-cart" title="Orders"/> Orders today
+                                    <i class="fa fa-cutlery" title="POS Orders"/> POS Orders today
+                                </span>
+                                <field name="pos_orders_today" class="o_app_kpi_value"/>
+                                <span class="o_app_kpi_hint">
+                                    <field name="pos_revenue_today" widget="monetary"/> confirmed ·
+                                    <field name="pos_orders_week"/> this week
+                                </span>
+                            </button>
+                        </div>
+
+                        <!-- Card 2: Sale Orders -->
+                        <div class="col-12 col-sm-6 col-xl-4">
+                            <button name="action_open_orders_today" type="object"
+                                    class="o_app_kpi o_app_kpi_info btn w-100 h-100 text-start">
+                                <span class="o_app_kpi_label">
+                                    <i class="fa fa-shopping-cart" title="Sale Orders"/> Sale Orders today
                                 </span>
                                 <field name="orders_today" class="o_app_kpi_value"/>
                                 <span class="o_app_kpi_hint">
@@ -36,6 +95,7 @@
                             </button>
                         </div>
 
+                        <!-- Card 3: Quotations / To confirm -->
                         <div class="col-12 col-sm-6 col-xl-4">
                             <button name="action_open_quotations" type="object"
                                     class="o_app_kpi o_app_kpi_warning btn w-100 h-100 text-start">
@@ -49,44 +109,22 @@
                             </button>
                         </div>
 
-                        <!-- Red while something is overdue, green when nothing is. -->
+                        <!-- Card 4: eWallet Spent Today (Replaces Outstanding) -->
                         <div class="col-12 col-sm-6 col-xl-4">
-                            <button name="action_open_overdue" type="object"
-                                    class="o_app_kpi o_app_kpi_danger btn w-100 h-100 text-start"
-                                    invisible="not overdue_count">
-                                <span class="o_app_kpi_label">
-                                    <i class="fa fa-exclamation-triangle" title="Overdue"/> Overdue
+                            <button name="action_open_wallet_spent" type="object"
+                                    class="o_app_kpi o_app_kpi_warning btn w-100 h-100 text-start"
+                                    style="border-left-color: #FFD83D;">
+                                <span class="o_app_kpi_label" style="color: #b45309;">
+                                    <i class="fa fa-credit-card" title="eWallet Spent"/> eWallet Spent Today
                                 </span>
-                                <field name="overdue_total" widget="monetary"
-                                       class="o_app_kpi_value text-danger"/>
+                                <field name="wallet_spent_today" widget="monetary" class="o_app_kpi_value"/>
                                 <span class="o_app_kpi_hint">
-                                    <field name="overdue_count"/> invoices past their due date
-                                </span>
-                            </button>
-                            <button name="action_open_overdue" type="object"
-                                    class="o_app_kpi o_app_kpi_success btn w-100 h-100 text-start"
-                                    invisible="overdue_count">
-                                <span class="o_app_kpi_label">
-                                    <i class="fa fa-check-circle" title="Overdue"/> Overdue
-                                </span>
-                                <field name="overdue_total" widget="monetary" class="o_app_kpi_value"/>
-                                <span class="o_app_kpi_hint">nothing past its due date</span>
-                            </button>
-                        </div>
-
-                        <div class="col-12 col-sm-6 col-xl-4">
-                            <button name="action_open_invoices" type="object"
-                                    class="o_app_kpi o_app_kpi_info btn w-100 h-100 text-start">
-                                <span class="o_app_kpi_label">
-                                    <i class="fa fa-file-text-o" title="Outstanding"/> Outstanding
-                                </span>
-                                <field name="due_total" widget="monetary" class="o_app_kpi_value"/>
-                                <span class="o_app_kpi_hint">
-                                    <field name="due_count"/> unpaid invoices from app customers
+                                    <field name="wallet_spent_count"/> eWallet payments from customers
                                 </span>
                             </button>
                         </div>
 
+                        <!-- Card 5: Wallet balances -->
                         <div class="col-12 col-sm-6 col-xl-4">
                             <button name="action_open_wallets" type="object"
                                     class="o_app_kpi o_app_kpi_brand btn w-100 h-100 text-start">
@@ -100,6 +138,7 @@
                             </button>
                         </div>
 
+                        <!-- Card 6: App customers -->
                         <div class="col-12 col-sm-6 col-xl-4">
                             <button name="action_open_customers" type="object"
                                     class="o_app_kpi o_app_kpi_people btn w-100 h-100 text-start">
@@ -115,28 +154,29 @@
 
                     </div>
 
+                    <!-- POS Orders (Restaurant) -->
                     <div class="d-flex align-items-center mt-5 mb-2">
-                        <h4 class="mb-0 flex-grow-1">Latest app orders</h4>
-                        <button name="action_open_orders" type="object"
-                                string="All orders" class="btn-link"/>
+                        <h4 class="mb-0 flex-grow-1"><i class="fa fa-cutlery me-2"/> POS orders (Restaurant)</h4>
+                        <button name="action_toggle_expand" type="object"
+                                string="Expand All" class="btn-link me-3" invisible="is_expanded"/>
+                        <button name="action_toggle_expand" type="object"
+                                string="Collapse All" class="btn-link me-3" invisible="not is_expanded"/>
+                        <button name="action_open_pos_orders" type="object"
+                                string="All POS orders" class="btn-link"/>
                     </div>
-                    <field name="recent_order_ids" nolabel="1" readonly="1"
-                           invisible="not recent_order_ids">
-                        <list>
-                            <field name="name"/>
-                            <field name="date_order" string="Date"/>
-                            <field name="partner_id"/>
-                            <field name="app_payment_method" string="Paid With"/>
-                            <field name="currency_id" column_invisible="1"/>
-                            <field name="amount_total" widget="monetary"/>
-                            <field name="state" widget="badge"
-                                   decoration-success="state == 'sale'"
-                                   decoration-info="state in ('draft', 'sent')"/>
-                        </list>
-                    </field>
-                    <p class="text-muted" invisible="recent_order_ids">
-                        No orders from the app yet.
-                    </p>
+                    <field name="pos_orders_grouped_html" widget="html" nolabel="1" readonly="1"/>
+
+                    <!-- Sale Orders -->
+                    <div class="d-flex align-items-center mt-4 mb-2">
+                        <h4 class="mb-0 flex-grow-1"><i class="fa fa-shopping-cart me-2"/> Sale orders</h4>
+                        <button name="action_toggle_expand" type="object"
+                                string="Expand All" class="btn-link me-3" invisible="is_expanded"/>
+                        <button name="action_toggle_expand" type="object"
+                                string="Collapse All" class="btn-link me-3" invisible="not is_expanded"/>
+                        <button name="action_open_orders" type="object"
+                                string="All Sale orders" class="btn-link"/>
+                    </div>
+                    <field name="sale_orders_grouped_html" widget="html" nolabel="1" readonly="1" class="mb-4"/>
                 </div>
             </form>
         </field>

@@ -28,7 +28,7 @@ class StaffAllowanceRule(models.Model):
         ondelete="cascade",
     )
     daily_limit = fields.Integer(
-        required=True, default=10,
+        required=True, default=1,
         help="Units allowed per day. 0 blocks this category for this person.",
     )
     count_mode = fields.Selection(

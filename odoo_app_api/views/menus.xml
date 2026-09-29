@@ -16,6 +16,17 @@
         </field>
     </record>
 
+    <record id="action_app_pos_orders" model="ir.actions.act_window">
+        <field name="name">POS Orders</field>
+        <field name="res_model">pos.order</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">['|', ('is_app_order', '=', True), ('session_id.config_id', '=', 7)]</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No POS orders from the app yet</p>
+            <p>Table and restaurant orders placed by customers in the mobile app appear here.</p>
+        </field>
+    </record>
+
     <!-- ========================== CUSTOMERS =========================== -->
 
     <record id="action_app_customers" model="ir.actions.act_window">
@@ -68,11 +79,21 @@
     <menuitem id="menu_app_dashboard" name="Dashboard"
               parent="menu_app_root" action="action_app_dashboard" sequence="5"/>
 
+    <menuitem id="menu_app_sections" name="App Sections &amp; Offers"
+              parent="menu_app_root" action="action_app_section" sequence="8"/>
+
+    <!-- Direct shortcut in Point of Sale app navbar for easy access -->
+    <menuitem id="menu_pos_app_sections" name="Ads / Sections"
+              parent="point_of_sale.menu_point_root"
+              action="action_app_section" sequence="22"/>
+
     <menuitem id="menu_app_operations" name="Operations"
               parent="menu_app_root" sequence="10"/>
 
-    <menuitem id="menu_app_orders" name="Orders"
+    <menuitem id="menu_app_orders" name="Sale Orders"
               parent="menu_app_operations" action="action_app_orders" sequence="10"/>
+    <menuitem id="menu_app_pos_orders" name="POS Orders"
+              parent="menu_app_operations" action="action_app_pos_orders" sequence="15"/>
     <menuitem id="menu_app_invoices" name="Invoices"
               parent="menu_app_operations" action="action_app_invoices" sequence="20"/>
 
@@ -92,7 +113,9 @@
 
     <menuitem id="menu_app_configuration" name="Configuration"
               parent="menu_app_root" sequence="90"
-              groups="base.group_system"/>
+              groups="odoo_app_api.group_app_api_viewer,base.group_system"/>
+    <menuitem id="menu_app_api_endpoints" name="API Endpoints &amp; Models"
+              parent="menu_app_configuration" action="action_app_api_endpoints" sequence="2"/>
     <menuitem id="menu_app_wallet_programs" name="Wallet Programs"
               parent="menu_app_configuration" action="action_wallet_programs" sequence="5"/>
     <menuitem id="menu_app_settings" name="Settings"

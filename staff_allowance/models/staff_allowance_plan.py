@@ -49,7 +49,10 @@ class StaffAllowancePlanLine(models.Model):
     pos_category_id = fields.Many2one("pos.category", string="POS Category",
                                       required=True, ondelete="cascade",
                                       index=True)
-    daily_limit = fields.Integer(required=True, default=10)
+    daily_limit = fields.Integer(
+        required=True, default=1,
+        help="Allowed units per day for this POS category (e.g. 1 breakfast, 1 lunch, 3 coffees).",
+    )
     count_mode = fields.Selection(
         [("qty", "Units ordered"), ("order", "Number of orders")],
         default="qty", required=True)

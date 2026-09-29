@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Viewer Role (Read Only) -->
+    <record id="group_app_api_viewer" model="res.groups">
+        <field name="name">Mobile App API: Viewer</field>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+        <field name="comment">Can inspect API endpoints, target models, sample payloads, and error documentation.</field>
+    </record>
+
+    <!-- Manager Role (Full Management) -->
+    <record id="group_app_api_manager" model="res.groups">
+        <field name="name">Mobile App API: Manager</field>
+        <field name="implied_ids" eval="[(4, ref('group_app_api_viewer'))]"/>
+        <field name="comment">Full access to create, edit, disable, or delete API endpoints and configure allowed models.</field>
+    </record>
+</odoo>

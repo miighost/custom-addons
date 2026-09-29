@@ -41,6 +41,7 @@ All are `POST`, all take `Authorization: Bearer <firebase_id_token>`.
 
 | Route | Body | Returns |
 |---|---|---|
+| `/api/v1/menu` | `{"search":"","limit":100}` | **All-in-one bootstrap**: customer, wallet balance, allowance, POS status & tables, categories, products |
 | `/api/v1/me` | `{}` | profile; creates/links the contact on first call |
 | `/api/v1/me/update` | `{"phone":"...","city":"..."}` | `{"ok":true}` |
 | `/api/v1/wallet` | `{}` | `balance`, `currency`, `transactions[]` |
@@ -248,10 +249,14 @@ catalogue.
 
 The image route is deliberately **not** token-protected, so FlutterFlow's
 `Image.network` widget can load it directly without a custom header — but it
-only ever serves products that pass the catalogue filter. Put the returned
-`image_url` behind your base URL:
+only ever serves products that pass the catalogue filter. `image_url` is a
+full address, ready to bind to an image widget as it is:
 
     https://erp.yourdomain.com/api/v1/product/42/image
+
+It is built from **web.base.url**, so set that system parameter to the address
+the phones reach (Settings → Technical → System Parameters); a wrong value
+there is the usual reason product images stay blank in the app.
 
 Add `?size=128` (128 / 256 / 512 / 1024) for list thumbnails; the default is
 512. `has_image` tells the app whether to show a placeholder instead.

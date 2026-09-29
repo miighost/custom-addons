@@ -78,7 +78,12 @@ class TestAppApi(AppApiCase):
         self.assertNotIn(self.hidden.id, listed)
         self.assertEqual(listed[self.coffee.id]["price"], 10.0)
         self.assertIn("reason", self._call("/api/v1/products", {"search": f"none-{self.tag}"})[1]["hint"])
-        self.assertTrue(self._call("/api/v1/categories")[1]["categories"])
+        cats = self._call("/api/v1/categories")[1]["categories"]
+        self.assertTrue(cats)
+        self.assertIn("icon", cats[0])
+        self.assertIn("image_url", cats[0])
+        self.assertIn("has_image", cats[0])
+        self.assertIn("categories", self._call("/api/v1/pos/categories")[1])
         self.assertEqual(self.url_open(f"/api/v1/product/{self.coffee.id}/image").status_code, 200)
         self.assertEqual(self.url_open(f"/api/v1/product/{self.hidden.id}/image").status_code, 404)
 
@@ -95,6 +100,23 @@ class TestAppApi(AppApiCase):
                 self.assertEqual(self._call("/api/v1/checkout", {**body, "payment": "account"})[1],
                                  {"error": error})
         self.assertEqual(self._checkout("cash", 1)[1], {"error": "unknown_payment_method"})
+
+    def test_flutterflow_text_variables_are_accepted(self):
+        """FlutterFlow can send JSON and list variables as text; both work."""
+        partner = self._me()
+        status, data = self._call("/api/v1/checkout", {
+            "lines": '[{"product_id": %d, "qty": 2}]' % self.coffee.id, "payment": "account"})
+        self.assertEqual(status, 200, data)
+        self.assertEqual(data["amount_due"], 20.0)
+        self.assertEqual(self._call("/api/v1/checkout", {"lines": "not json", "payment": "account"})[1],
+                         {"error": "bad_lines"})
+
+        first = self._invoice(partner, 30)
+        second = self._invoice(partner, 40)
+        self._card(partner, 100)
+        status, data = self._call("/api/v1/invoices/pay", {
+            "invoice_ids": f"{first.id},{second.id}", "method": "wallet"})
+        self.assertEqual((status, data.get("amount_paid")), (200, 70.0), data)
 
     def test_malformed_body_is_a_clean_400(self):
         response = self.url_open("/api/v1/checkout", data="{not json", method="POST",
@@ -189,13 +211,52 @@ class TestAppApi(AppApiCase):
                          {"error": "payment_declined", "gateway_message": "Customer rejected"})
         self.assertEqual(self._orders_of(partner), before)
 
+    def test_pos_tables_and_checkout(self):
+        self._me()
+        # POS tables & open sessions list (authenticated)
+        status, data = self._call("/api/v1/pos/tables")
+        self.assertEqual(status, 200)
+        self.assertIn("sessions", data)
+        self.assertIn("table_count", data)
+        self.assertIn("is_open", data)
+
+        # Alias /api/v1/pos/sessions
+        alias_status, alias_data = self._call("/api/v1/pos/sessions")
+        self.assertEqual(alias_status, 200)
+        self.assertEqual(len(alias_data["sessions"]), len(data["sessions"]))
+
+        # Checkout with nonexistent or closed session_id fails
+        status, res = self._call("/api/v1/checkout", {
+            "session_id": 999999,
+            "lines": [{"product_id": self.coffee.id, "qty": 1}],
+            "payment": "wallet",
+            "table_no": "4",
+        })
+        self.assertEqual(res.get("error"), "session_not_opened")
+
+        # POS checkout fails when no session is open
+        if not data["is_open"]:
+            status, res = self._call("/api/v1/checkout", {
+                "lines": [{"product_id": self.coffee.id, "qty": 1}],
+                "payment": "wallet",
+                "table_no": "4",
+            })
+            self.assertEqual(res.get("error"), "no_open_pos_session")
+
+
+
     # ------------------------------------------------------------------
     # order history
     # ------------------------------------------------------------------
     def test_order_history_and_detail(self):
         partner = self._me()
         placed = self._checkout("account", 1)[1]["order"]
-        listed = {o["id"]: o for o in self._call("/api/v1/orders")[1]["orders"]}
+        orders_resp = self._call("/api/v1/orders")[1]
+        self.assertIn("total", orders_resp)
+        self.assertEqual(orders_resp["total"], 1)
+        self.assertEqual(orders_resp["limit"], 20)
+        self.assertEqual(orders_resp["offset"], 0)
+        listed = {o["id"]: o for o in orders_resp["orders"]}
         self.assertEqual(listed[placed["id"]]["payment_status"], "to_pay")
 
         status, data = self._call("/api/v1/orders/detail", {"order_id": placed["id"]})
@@ -207,6 +268,14 @@ class TestAppApi(AppApiCase):
         self.assertNotIn(someone_else.id, listed)
         self.assertEqual(self._call("/api/v1/orders/detail", {"order_id": someone_else.id})[1],
                          {"error": "order_not_found"})
+
+    def test_out_of_stock_rejected(self):
+        self._me()
+        storable = self.env["product.product"].create({
+            "name": f"Storable {self.tag}", "is_storable": True, "sale_ok": True,
+            "available_in_app": True, "taxes_id": [Command.clear()]})
+        status, data = self._checkout("account", 1, product_id=storable.id)
+        self.assertEqual(data["error"], "out_of_stock")
 
     # ------------------------------------------------------------------
     # earlier routes still used for existing quotations
@@ -240,8 +309,25 @@ class TestAppApi(AppApiCase):
                       [p["id"] for p in self._call("/api/v1/wallet/topup/products")[1]["products"]])
         status, data = self._call("/api/v1/wallet/topup", {"product_id": self.topup_product.id})
         self.assertEqual((data["order"]["state"], data["order"]["amount_total"]), ("draft", 50.0))
+        # Custom amount with auto-selected topup product
+        status, data = self._call("/api/v1/wallet/topup", {"amount": 35.0})
+        self.assertEqual((data["order"]["state"], data["order"]["amount_total"]), ("draft", 35.0))
+        # Custom amount with explicit topup product
+        status, data = self._call("/api/v1/wallet/topup", {"product_id": self.topup_product.id, "amount": 75.0})
+        self.assertEqual((data["order"]["state"], data["order"]["amount_total"]), ("draft", 75.0))
+        # One-step top-up with phone
+        self._fake_gateway(APPROVED, COMMITTED)
+        status, data = self._call("/api/v1/wallet/topup", {"amount": 25.0, "phone": PHONE})
+        self.assertEqual(status, 200)
+        self.assertTrue(data.get("paid"))
+        self.assertTrue(data.get("topup"))
+        # Invalid amounts
+        self.assertEqual(self._call("/api/v1/wallet/topup", {"amount": -10})[1]["error"], "bad_amount")
+        self.assertEqual(self._call("/api/v1/wallet/topup", {"amount": "invalid"})[1]["error"], "bad_amount")
         self.assertEqual(self._call("/api/v1/wallet/topup", {"product_id": self.coffee.id})[1]["error"],
                          "not_a_topup_product")
+
+
 
     # ------------------------------------------------------------------
     # balance page
@@ -305,3 +391,16 @@ class TestAppApi(AppApiCase):
         self.assertEqual((first.amount_residual, second.amount_residual), (0.0, 0.0))
         self.assertEqual(self._call("/api/v1/invoices/clear", {"method": "wallet"})[1],
                          {"cleared": True, "paid": False, "amount_paid": 0.0, "invoices": []})
+
+    def test_unified_menu_endpoint(self):
+        partner = self._me()
+        self._card(partner, 75)
+        status, data = self._call("/api/v1/menu", {})
+        self.assertEqual(status, 200, data)
+        self.assertIn("customer", data)
+        self.assertIn("pos", data)
+        self.assertIn("categories", data)
+        self.assertIn("products", data)
+        self.assertEqual(data["customer"]["wallet_balance"], 75)
+        self.assertEqual(data["customer"]["partner_id"], partner.id)
+        self.assertTrue(any(p["id"] == self.coffee.id for p in data["products"]))

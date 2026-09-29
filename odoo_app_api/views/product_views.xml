@@ -8,6 +8,29 @@
             <field name="sale_ok" position="after">
                 <field name="available_in_app"/>
             </field>
+            <xpath expr="//field[@name='categ_id']" position="after">
+                <field name="app_section_ids" widget="many2many_tags"
+                       options="{'color_field': 'color', 'no_create_edit': True}"
+                       placeholder="Assign to Ads / Sections (Today's Best, Featured...)"
+                       string="App Sections / Ads"/>
+                <field name="cover_image_url" widget="url"
+                       placeholder="https://drive.google.com/file/d/... or direct image link"
+                       string="Cover Image URL"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_product_template_search_app" model="ir.ui.view">
+        <field name="name">product.template.search.app.api</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_search_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//search" position="inside">
+                <separator/>
+                <filter string="In Mobile App" name="filter_available_in_app" domain="[('available_in_app', '=', True)]"/>
+                <filter string="In Ads / App Sections" name="filter_has_app_section" domain="[('app_section_ids', '!=', False)]"/>
+            </xpath>
         </field>
     </record>
 </odoo>
+

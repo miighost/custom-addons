@@ -5,6 +5,7 @@ token. No endpoint accepts a partner id, and every invoice lookup carries the
 ownership clause in its own domain - so a customer cannot read or pay another
 customer's invoice by guessing an id.
 """
+import json
 import logging
 from datetime import date
 
@@ -110,7 +111,9 @@ class AppAccount(http.Controller):
             'open_invoice_count': len([m for m in open_invoices
                                        if m.move_type == 'out_invoice']),
             'can_clear_with_wallet': balance >= due > 0,
+            **partner._app_summary_extras(),
         }
+
 
     # -------------------------------------------------------- invoice list
     @http.route('/api/v1/invoices', **ROUTE)
@@ -156,7 +159,11 @@ class AppAccount(http.Controller):
                "phone": "2526..."}     ("invoice_id": 42 also works)
         """
         ids = payload.get('invoice_ids') or [payload.get('invoice_id')]
-        ids = {int(invoice_id) for invoice_id in ids if invoice_id}
+        if isinstance(ids, str):
+            # FlutterFlow can send a list as text: "[42,43]" or "42,43".
+            ids = json.loads(ids) if ids.strip().startswith('[') else ids.split(',')
+        ids = {int(str(invoice_id).strip()) for invoice_id in ids
+               if invoice_id not in (None, '') and str(invoice_id).strip()}
         if not ids:
             raise ApiError('no_invoices')
         moves = request.env['account.move'].sudo().search(

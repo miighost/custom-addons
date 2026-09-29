@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_restaurant_floor_form_inherit_app" model="ir.ui.view">
+        <field name="name">restaurant.floor.form.inherit.app</field>
+        <field name="model">restaurant.floor</field>
+        <field name="inherit_id" ref="pos_restaurant.view_restaurant_floor_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='table_ids']//field[@name='table_number']" position="after">
+                <field name="table_name" placeholder="e.g. VIP Booth, Window 1"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

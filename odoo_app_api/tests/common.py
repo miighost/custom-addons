@@ -110,9 +110,11 @@ class AppApiCase(HttpCase):
         return self.env["sale.order"].browse(data["id"])
 
     def _checkout(self, payment_method, qty, **extra):
+        product_id = extra.pop("product_id", self.coffee.id)
         return self._call("/api/v1/checkout", {
-            "lines": [{"product_id": self.coffee.id, "qty": qty}],
+            "lines": [{"product_id": product_id, "qty": qty}],
             "payment": payment_method, **extra})
+
 
     def _card(self, partner, points):
         return self.env["loyalty.card"].create({

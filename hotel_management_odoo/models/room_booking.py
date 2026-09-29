@@ -738,6 +738,17 @@ class RoomBooking(models.Model):
         self.ensure_one()
         return self.env.ref('hotel_management_odoo.action_report_reservation_acknowledgement').report_action(self)
 
+    def action_print_statement(self):
+        """Print Statement of Account PDF report directly for this booking folio."""
+        self.ensure_one()
+        if not self.partner_id:
+            raise ValidationError("Please select a customer before printing the statement.")
+        wizard = self.env['statement.account.wizard'].create({
+            'partner_id': self.partner_id.id,
+            'booking_id': self.id,
+        })
+        return wizard.action_print_pdf()
+
     def action_cancel(self):
         """
         @param self: object pointer
@@ -871,7 +882,7 @@ class RoomBooking(models.Model):
             if rec.get('tax_ids'):
                 move_line_vals['tax_ids'] = rec['tax_ids']
             self.env['account.move.line'].create([move_line_vals])
-        self.write({'invoice_status': "invoiced"})
+        self.write({'invoice_status': "invoiced", 'hotel_invoice_id': account_move.id})
         self.invoice_button_visible = True
         return {
             'type': 'ir.actions.act_window',
